@@ -1,0 +1,52 @@
+{
+  "groupKey": "cleaning-ravi",
+  "projectKey": "cleaning-ravi",
+  "targetProject": "cleaning-ravi",
+
+  "_comment": [
+    "Copy this file to config/cleaning-domains.json and fill in the real values,",
+    "then run: node scripts/register-naver-project-domains.mjs",
+    "",
+    "accounts[] must be registered before domains[], because",
+    "naver_project_domains.naver_account_id references naver_searchadvisor_accounts.",
+    "",
+    "naverMetaTag is the content= value of Search Advisor's 'HTML 태그' ownership",
+    "check. Leave it empty until the site is added in Search Advisor, then fill it",
+    "in, rebuild that domain with PUBLIC_NAVER_SITE_VERIFICATION set to the same",
+    "value, deploy, and run naver_ownership_only.py to flip the row to verified."
+  ],
+
+  "accounts": [
+    {
+      "accountId": "naver_id_01",
+      "accountOrder": 1,
+      "passwordPlain": "",
+      "organizationName": "라비홀딩스",
+      "accountIdentityType": "비실계",
+      "plannedDomainLimit": 100,
+      "status": "active",
+      "notes": "입주청소 프로젝트 전용"
+    }
+  ],
+
+  "domains": [
+    {
+      "host": "example-cleaning-01.kr",
+      "siteUrl": "https://example-cleaning-01.kr",
+      "naverAccountId": "naver_id_01",
+      "provider": "cloudflare",
+      "areaSlug": "gangnam",
+      "areaName": "강남구",
+      "regionLabel": "서울 강남구",
+      "subdomainGenerationStrategy": "manual",
+      "routeStyle": "static",
+      "postRouteMode": "slashless",
+      "pageCount": 1,
+      "staticPageCount": 1,
+      "sitemapUrlCount": 1,
+      "naverRegistrationStatus": "pending",
+      "naverMetaTag": "",
+      "naverConsoleUrl": ""
+    }
+  ]
+}

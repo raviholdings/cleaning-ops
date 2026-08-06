@@ -1,0 +1,28 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+tmp/
+logs/
+dist/
+dist-preview/
+.astro/
+apps/*/node_modules/
+apps/*/dist/
+apps/*/tmp/
+apps/*/.astro/
+.git/lost-found/
+private/
+local-secrets/
+*.corrupt.bak
+
+# 임시 작업 및 세션 복구 로그 폴더
+recovered/
+recovered*
+scratch/
+
+# 런타임 락 파일 및 바이너리/실행 파일
+*.lock
+.windows-naver-crawl.lock
+*.exe
+_binary/

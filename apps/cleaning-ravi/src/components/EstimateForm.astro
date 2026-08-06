@@ -1,0 +1,24 @@
+---
+import { SITE_CONFIG } from '../config/site';
+
+interface Props {
+  heading: string;
+  note: string;
+  id?: string;
+}
+
+const { heading, note, id } = Astro.props;
+---
+
+<div class="form-box" id={id}>
+  <div class="form-head">
+    <strong>{heading}</strong>
+    <span>{note}</span>
+  </div>
+  <iframe
+    src={SITE_CONFIG.formSrc}
+    title="견적 신청 폼"
+    loading="lazy"
+    scrolling="no"
+  ></iframe>
+</div>

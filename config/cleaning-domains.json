@@ -1,0 +1,102 @@
+[
+  {
+    "host": "amunsa.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://amunsa.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "lguxp4nlw"
+  },
+  {
+    "host": "anclose.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://anclose.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "noiuhejawrjjyso4n"
+  },
+  {
+    "host": "daddul.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://daddul.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "66cu93e1o"
+  },
+  {
+    "host": "ddulea.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://ddulea.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "nrxssn6875893"
+  },
+  {
+    "host": "naoheg.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://naoheg.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "es4ncf1zbq3la6wi"
+  },
+  {
+    "host": "neverfoul.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://neverfoul.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "txxwli74"
+  },
+  {
+    "host": "one-qfast.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://one-qfast.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "fbg6qgbmh"
+  },
+  {
+    "host": "oneshot-sewer.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://oneshot-sewer.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "rnjsihy3140202"
+  },
+  {
+    "host": "pipe-oneshot.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://pipe-oneshot.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "mdnfjwpton55"
+  },
+  {
+    "host": "uloung.com",
+    "group_key": "cleaning-ravi",
+    "target_project": "cleaning-ravi",
+    "site_url": "https://uloung.com",
+    "deployment_status": "active",
+    "is_visible": true,
+    "naver_registration_status": "pending",
+    "assigned_account_id": "wnxisi8ma"
+  }
+]

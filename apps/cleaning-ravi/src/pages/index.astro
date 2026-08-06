@@ -1,0 +1,225 @@
+---
+import Page from '../layouts/Page.astro';
+import EstimateForm from '../components/EstimateForm.astro';
+import Hero from '../components/Hero.astro';
+import { SITE_CONFIG, SITE_URL } from '../config/site';
+import { CLEANING_SCOPE } from '../lib/content';
+import { LOCATIONS, PAGE_COUNT, SITE_INDEX } from '../lib/locations';
+import { catalogEntry, pagePath } from '../lib/pageCatalog';
+import {
+  buildIndexMeta, heroSubCopy, normalizeLocation, pickFaqs, pickSubKeywords, pickReviews, pickNearbyLocations,
+  pickPromises, pickVendorTips, pickServiceCategories, pickProcessSteps,
+} from '../lib/pageMeta';
+
+const main = SITE_CONFIG.mainKeyword;
+const canonical = `${SITE_URL}/`;
+
+// 도메인별 메인 인덱스(/) 전용 동적 타이틀 및 메타 디스크립션 생성
+const indexMeta = buildIndexMeta(SITE_URL, LOCATIONS, main);
+const title = indexMeta.title;
+const description = indexMeta.description;
+
+const subs = pickSubKeywords(SITE_URL, main);
+const FAQS = pickFaqs(SITE_URL, main);
+const REVIEWS = pickReviews(SITE_URL, main, 3);
+const NEARBY = pickNearbyLocations(SITE_URL, LOCATIONS, 4);
+const PROMISES = pickPromises(SITE_URL, main);
+const TIPS = pickVendorTips(SITE_URL, main, 6);
+const CATEGORIES = pickServiceCategories(SITE_URL, main);
+const STEPS = pickProcessSteps(SITE_URL, main);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: 'ko-KR',
+    },
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '홈',
+          item: canonical,
+        },
+      ],
+    },
+    {
+      '@type': 'Service',
+      '@id': `${SITE_URL}/#service`,
+      serviceType: main,
+      description,
+      url: canonical,
+      areaServed: NEARBY.map((loc) => ({
+        '@type': 'AdministrativeArea',
+        name: loc,
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${SITE_URL}/#faq`,
+      mainEntity: FAQS.map((faq) => ({
+        '@type': 'Question',
+        name: faq.q,
+        acceptedAnswer: { '@type': 'Answer', text: faq.a },
+      })),
+    },
+  ],
+};
+
+const catalog = Array.from({ length: PAGE_COUNT }, (_, index) => {
+  const requestId = index + 1;
+  const entry = catalogEntry({ locations: LOCATIONS, siteIndex: SITE_INDEX, requestId, pageCount: PAGE_COUNT });
+  return {
+    href: pagePath(requestId),
+    label: `${normalizeLocation(entry.location)} ${entry.mainKeyword} 업체 비교`,
+  };
+});
+const regionLinks = catalog.slice(0, 30);
+---
+
+<Page title={title} description={description} canonical={canonical} jsonLd={jsonLd}>
+  <Hero
+    headline={`${main} 서비스 비교`}
+    sub={heroSubCopy(SITE_URL, main)}
+    alt={`${main} 서비스 안내`}
+  />
+
+  <h1>{title}</h1>
+  <p class="lede">
+    전국 {main} 업체의 서비스 조건과 비용을 비교해, 요청하신 조건에 가장 맞는 곳을 연결해 드립니다.
+    여러 곳에 따로 문의하실 필요 없이 한 번만 접수하시면 됩니다.
+  </p>
+
+  <!-- 견적 신청 폼 (다른 요소와 섞이지 않고 독립된 1칸 전체 차지) -->
+  <section id="estimate">
+    <EstimateForm heading="무료 맞춤 견적 신청" note="30초 접수 · 비교 후 연결 · 강요 없음" />
+  </section>
+
+  <!-- 3D 럭셔리 인포 카드 섹션 (동적 다변화) -->
+  <section>
+    <h2>프리미엄 3대 약속</h2>
+    <div class="luxury-cards-grid">
+      {PROMISES.map((p) => (
+        <div class="card-item">
+          <div class="card-badge">{p.badge}</div>
+          <div class="card-title">{p.title}</div>
+          <div class="card-desc">{p.desc}</div>
+          <ul class="card-checklist">
+            {p.checklist.map((item) => <li>{item}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- 고객 후기 및 평점 (화면 텍스트 전용) -->
+  <section id="reviews">
+    <h2>고객 실사용 평점 및 후기</h2>
+    <div class="review-score-box">
+      <div class="review-score-badge">4.9 / 5.0</div>
+      <div class="review-score-stars">★★★★★</div>
+      <div class="review-score-sub">실제 이용 고객 평균 만족도 점수입니다.</div>
+    </div>
+
+    <div class="reviews-grid">
+      {REVIEWS.map((review) => (
+        <div class="review-card">
+          <div>
+            <div class="review-header">
+              <span class="review-author">{review.author} 님</span>
+              <span class="review-rating">{'★'.repeat(review.rating)}</span>
+            </div>
+            <p class="review-text">"{review.text}"</p>
+          </div>
+          <div class="review-date">{review.date} 작성</div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- 서비스 위치 및 주변 동네 정보 -->
+  <section id="location">
+    <h2>서비스 제공 지역 안내</h2>
+    <div class="location-box">
+      <h3>📍 전국 주요 지역 지정 배정 시스템</h3>
+      <p class="lede-sm">
+        전국 각 시·구·동 전담 검증팀이 직접 현장으로 방문하여 최상의 서비스를 제공합니다.
+      </p>
+      {NEARBY.length > 0 && (
+        <p class="lede-sm">
+          <strong>주요 추천 지역:</strong> {NEARBY.join(', ')} 외 전국
+        </p>
+      )}
+      <div class="location-map-stub">
+        🗺️ 전국 지자체별 실시간 검증팀 배치 및 지도 배정 운영 중
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>{main} 서비스 범위 안내</h2>
+    <p>
+      이사 및 입주 전문 케어 서비스를 맞춤으로 제공합니다.
+      접수해 주시면 방문 가능한 전문 검증팀을 확인하여 빠른 견적을 안내해 드립니다.
+    </p>
+    {subs.length > 0 && (
+      <p class="lede-sm">
+        {subs.join(', ')} 관련 문의도 같은 폼으로 손쉽게 접수됩니다.
+      </p>
+    )}
+  </section>
+
+  <section>
+    <h2>기본 청소 범위</h2>
+    <div class="grid">
+      {CLEANING_SCOPE.map((item) => <div><span>{item.icon}</span>{item.label}</div>)}
+    </div>
+  </section>
+
+  <section>
+    <h2>청소 서비스 종류</h2>
+    <div class="cat-grid">
+      {CATEGORIES.map((category) => (
+        <div class="cat">
+          <strong>{category.name}</strong>
+          <p class="cat-detail">{category.detail}</p>
+          <span class="cat-items">{category.items.join(' · ')}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <h2>업체 고르기 전 확인 사항</h2>
+    <p class="lede-sm">아래 항목만 미리 확인해도 분쟁을 크게 줄일 수 있습니다.</p>
+    <ul class="tips">{TIPS.map((tip) => <li>{tip}</li>)}</ul>
+  </section>
+
+  <section>
+    <h2>진행 절차</h2>
+    <ol class="steps">{STEPS.map((step) => <li>{step}</li>)}</ol>
+  </section>
+
+  <section>
+    <h2>자주 묻는 질문</h2>
+    {FAQS.map((faq) => (
+      <details>
+        <summary>{faq.q}</summary>
+        <p>{faq.a}</p>
+      </details>
+    ))}
+  </section>
+
+  <section>
+    <h2>전국 서비스 카탈로그</h2>
+    <nav class="links">{regionLinks.map((item) => <a href={item.href}>{item.label}</a>)}</nav>
+  </section>
+</Page>

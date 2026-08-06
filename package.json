@@ -1,0 +1,14 @@
+{
+  "name": "cleaning-ops",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm --workspace=apps/cleaning-admin run dev",
+    "build:admin": "npm --workspace=apps/cleaning-admin run build",
+    "dev:ravi": "npm --workspace=apps/cleaning-ravi run dev",
+    "build:ravi": "npm --workspace=apps/cleaning-ravi run build"
+  }
+}

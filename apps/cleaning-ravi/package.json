@@ -1,0 +1,16 @@
+{
+  "name": "cleaning-ravi",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "devDependencies": {
+    "astro": "^5.0.0"
+  },
+  "description": "입주청소 정적 랜딩페이지 (Astro, 순수 정적 HTML). 도메인별로 PUBLIC_* 환경변수를 바꿔 재빌드한다."
+}

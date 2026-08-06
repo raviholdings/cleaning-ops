@@ -1,0 +1,360 @@
+---
+import Page from '../layouts/Page.astro';
+import EstimateForm from '../components/EstimateForm.astro';
+import Hero from '../components/Hero.astro';
+import { SITE_URL } from '../config/site';
+import { CLEANING_SCOPE } from '../lib/content';
+import { LOCATIONS, PAGE_COUNT, SITE_INDEX } from '../lib/locations';
+import { catalogEntry, pagePath } from '../lib/pageCatalog';
+import {
+  buildDescription, buildHeading, buildTitle, ctaLabel, heroSubCopy, normalizeLocation,
+  pickFaqs, pickSubKeywords, pickReviews, pickNearbyLocations,
+  pickPromises, pickVendorTips, pickServiceCategories, pickProcessSteps, type TitleVariant,
+} from '../lib/pageMeta';
+
+export function getStaticPaths() {
+  return Array.from({ length: PAGE_COUNT }, (_, index) => ({
+    params: { id: String(index + 1) },
+    props: { requestId: index + 1 },
+  }));
+}
+
+const { requestId } = Astro.props;
+
+const entry = catalogEntry({
+  locations: LOCATIONS,
+  siteIndex: SITE_INDEX,
+  requestId,
+  pageCount: PAGE_COUNT,
+});
+
+const variant = (import.meta.env.PUBLIC_TITLE_VARIANT === 'A' ? 'A' : 'B') as TitleVariant;
+
+const full = normalizeLocation(entry.location);
+const main = entry.mainKeyword;
+
+const title = buildTitle(full, main, variant);
+const description = buildDescription(full, main, variant);
+const heading = buildHeading(full, main);
+const cta = ctaLabel(full, main);
+const subs = pickSubKeywords(full, main);
+const canonical = `${SITE_URL}${pagePath(requestId)}`;
+
+const others = Array.from({ length: 15 }, (_, i) => i + 1)
+  .map((offset) => ((requestId - 1 + offset * 7) % PAGE_COUNT) + 1)
+  .filter((id) => id !== requestId)
+  .slice(0, 10)
+  .map((id) => {
+    const other = catalogEntry({ locations: LOCATIONS, siteIndex: SITE_INDEX, requestId: id, pageCount: PAGE_COUNT });
+    return {
+      href: pagePath(id),
+      label: `${normalizeLocation(other.location)} ${other.mainKeyword} 업체 비교`,
+    };
+  });
+
+const FAQS = pickFaqs(full, main);
+const REVIEWS = pickReviews(full, main, 3);
+const NEARBY = pickNearbyLocations(full, LOCATIONS, 4);
+const PROMISES = pickPromises(full, main);
+const TIPS = pickVendorTips(full, main, 6);
+const CATEGORIES = pickServiceCategories(full, main);
+const STEPS = pickProcessSteps(full, main);
+
+// 홀수/짝수 페이지에 따라 레이아웃 배치 순서 다변화 (SEO 중복 방지)
+const isAlternateLayout = requestId % 2 === 0;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '홈',
+          item: `${SITE_URL}/`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: `${full} ${main}`,
+          item: canonical,
+        },
+      ],
+    },
+    {
+      '@type': 'Service',
+      '@id': `${canonical}#service`,
+      serviceType: main,
+      name: heading,
+      description,
+      url: canonical,
+      areaServed: [full, ...NEARBY].map((loc) => ({
+        '@type': 'AdministrativeArea',
+        name: loc,
+      })),
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${canonical}#faq`,
+      mainEntity: FAQS.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ],
+};
+---
+
+<Page title={title} description={description} canonical={canonical} jsonLd={jsonLd}>
+  <div class="crumb">
+    <a href="/">홈</a> &gt; <span>{full} {main}</span>
+  </div>
+
+  <Hero
+    headline={`${main} 전문 비교 서비스`}
+    sub={heroSubCopy(full, main)}
+    alt={`${main} 서비스 안내`}
+  />
+
+  <h1>{heading}</h1>
+  <p class="lede">
+    {main} 업체를 비용과 조건으로 비교해, 요청하신 내용에 가장 맞는 곳을 연결해 드립니다.
+    여러 곳에 따로 문의하실 필요 없이 한 번만 접수하시면 됩니다.
+  </p>
+
+  <!-- 견적 신청 폼 (최상단 고정) -->
+  <section id="estimate">
+    <EstimateForm heading="무료 맞춤 견적 신청" note="30초 접수 · 비교 후 연결 · 강요 없음" />
+  </section>
+
+  {!isAlternateLayout ? (
+    <!-- 패턴 A (기본 순서) -->
+    <>
+      <section>
+        <h2>프리미엄 3대 약속</h2>
+        <div class="luxury-cards-grid">
+          {PROMISES.map((p) => (
+            <div class="card-item">
+              <div class="card-badge">{p.badge}</div>
+              <div class="card-title">{p.title}</div>
+              <div class="card-desc">{p.desc}</div>
+              <ul class="card-checklist">
+                {p.checklist.map((item) => <li>{item}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="reviews">
+        <h2>고객 실사용 평점 및 후기</h2>
+        <div class="review-score-box">
+          <div class="review-score-badge">4.9 / 5.0</div>
+          <div class="review-score-stars">★★★★★</div>
+          <div class="review-score-sub">실제 이용 고객 평균 만족도 점수입니다.</div>
+        </div>
+
+        <div class="reviews-grid">
+          {REVIEWS.map((review) => (
+            <div class="review-card">
+              <div>
+                <div class="review-header">
+                  <span class="review-author">{review.author} 님</span>
+                  <span class="review-rating">{'★'.repeat(review.rating)}</span>
+                </div>
+                <p class="review-text">"{review.text}"</p>
+              </div>
+              <div class="review-date">{review.date} 작성</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="location">
+        <h2>서비스 제공 지역 안내</h2>
+        <div class="location-box">
+          <h3>📍 담당 서비스 지역: {full}</h3>
+          <p class="lede-sm">
+            {full} 지역을 포함하여 인근 동네까지 전담 검증팀이 직접 방문하여 서비스를 진행합니다.
+          </p>
+          {NEARBY.length > 0 && (
+            <p class="lede-sm">
+              <strong>주변 주요 방문 지역:</strong> {NEARBY.join(', ')}
+            </p>
+          )}
+          <div class="location-map-stub">
+            🗺️ {full} 및 인근 {NEARBY.length}개 동네 지도 기반 배정 시스템 운영 중
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>{main} 서비스 범위 안내</h2>
+        <p>
+          이사 및 입주 전문 케어 서비스를 맞춤으로 제공합니다.
+          접수해 주시면 방문 가능한 전문 검증팀을 확인하여 빠른 견적을 안내해 드립니다.
+        </p>
+        {subs.length > 0 && (
+          <p class="lede-sm">
+            {subs.join(', ')} 관련 문의도 같은 폼으로 손쉽게 접수됩니다.
+          </p>
+        )}
+      </section>
+
+      <section>
+        <h2>기본 청소 범위</h2>
+        <div class="grid">
+          {CLEANING_SCOPE.map((item) => <div><span>{item.icon}</span>{item.label}</div>)}
+        </div>
+      </section>
+
+      <section>
+        <h2>청소 서비스 종류</h2>
+        <div class="cat-grid">
+          {CATEGORIES.map((category) => (
+            <div class="cat">
+              <strong>{category.name}</strong>
+              <p class="cat-detail">{category.detail}</p>
+              <span class="cat-items">{category.items.join(' · ')}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2>업체 고르기 전 확인 사항</h2>
+        <p class="lede-sm">아래 항목만 미리 확인해도 분쟁을 크게 줄일 수 있습니다.</p>
+        <ul class="tips">{TIPS.map((tip) => <li>{tip}</li>)}</ul>
+      </section>
+
+      <section>
+        <h2>진행 절차</h2>
+        <ol class="steps">{STEPS.map((step) => <li>{step}</li>)}</ol>
+      </section>
+    </>
+  ) : (
+    <!-- 패턴 B (후기 & 지역 강조 순서) -->
+    <>
+      <section id="reviews">
+        <h2>고객 실사용 평점 및 후기</h2>
+        <div class="review-score-box">
+          <div class="review-score-badge">4.9 / 5.0</div>
+          <div class="review-score-stars">★★★★★</div>
+          <div class="review-score-sub">실제 이용 고객 평균 만족도 점수입니다.</div>
+        </div>
+
+        <div class="reviews-grid">
+          {REVIEWS.map((review) => (
+            <div class="review-card">
+              <div>
+                <div class="review-header">
+                  <span class="review-author">{review.author} 님</span>
+                  <span class="review-rating">{'★'.repeat(review.rating)}</span>
+                </div>
+                <p class="review-text">"{review.text}"</p>
+              </div>
+              <div class="review-date">{review.date} 작성</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="location">
+        <h2>서비스 제공 지역 안내</h2>
+        <div class="location-box">
+          <h3>📍 담당 서비스 지역: {full}</h3>
+          <p class="lede-sm">
+            {full} 지역을 포함하여 인근 동네까지 전담 검증팀이 직접 방문하여 서비스를 진행합니다.
+          </p>
+          {NEARBY.length > 0 && (
+            <p class="lede-sm">
+              <strong>주변 주요 방문 지역:</strong> {NEARBY.join(', ')}
+            </p>
+          )}
+          <div class="location-map-stub">
+            🗺️ {full} 및 인근 {NEARBY.length}개 동네 지도 기반 배정 시스템 운영 중
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>프리미엄 3대 약속</h2>
+        <div class="luxury-cards-grid">
+          {PROMISES.map((p) => (
+            <div class="card-item">
+              <div class="card-badge">{p.badge}</div>
+              <div class="card-title">{p.title}</div>
+              <div class="card-desc">{p.desc}</div>
+              <ul class="card-checklist">
+                {p.checklist.map((item) => <li>{item}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2>청소 서비스 종류</h2>
+        <div class="cat-grid">
+          {CATEGORIES.map((category) => (
+            <div class="cat">
+              <strong>{category.name}</strong>
+              <p class="cat-detail">{category.detail}</p>
+              <span class="cat-items">{category.items.join(' · ')}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2>기본 청소 범위</h2>
+        <div class="grid">
+          {CLEANING_SCOPE.map((item) => <div><span>{item.icon}</span>{item.label}</div>)}
+        </div>
+      </section>
+
+      <section>
+        <h2>진행 절차</h2>
+        <ol class="steps">{STEPS.map((step) => <li>{step}</li>)}</ol>
+      </section>
+
+      <section>
+        <h2>업체 고르기 전 확인 사항</h2>
+        <p class="lede-sm">아래 항목만 미리 확인해도 분쟁을 크게 줄일 수 있습니다.</p>
+        <ul class="tips">{TIPS.map((tip) => <li>{tip}</li>)}</ul>
+      </section>
+
+      <section>
+        <h2>{main} 서비스 범위 안내</h2>
+        <p>
+          이사 및 입주 전문 케어 서비스를 맞춤으로 제공합니다.
+          접수해 주시면 방문 가능한 전문 검증팀을 확인하여 빠른 견적을 안내해 드립니다.
+        </p>
+        {subs.length > 0 && (
+          <p class="lede-sm">
+            {subs.join(', ')} 관련 문의도 같은 폼으로 손쉽게 접수됩니다.
+          </p>
+        )}
+      </section>
+    </>
+  )}
+
+  <section>
+    <h2>자주 묻는 질문</h2>
+    {FAQS.map((faq) => (
+      <details>
+        <summary>{faq.q}</summary>
+        <p>{faq.a}</p>
+      </details>
+    ))}
+  </section>
+
+  <section>
+    <h2>다른 관련 항목 안내</h2>
+    <nav class="links">{others.map((item) => <a href={item.href}>{item.label}</a>)}</nav>
+  </section>
+</Page>

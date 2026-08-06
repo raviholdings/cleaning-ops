@@ -1,0 +1,82 @@
+[
+  {
+    "id": "task-1",
+    "title": "Astro 기반 1,000개 서브도메인 정적 랜딩페이지 템플릿 구현 및 빌드 파이프라인 구축",
+    "category": "Frontend / Build",
+    "assignee": "개발팀",
+    "priority": "high",
+    "status": "completed",
+    "startDate": "2026-07-28",
+    "targetDate": "2026-07-31",
+    "completedDate": "2026-07-31",
+    "progress": 100,
+    "description": "Astro 5.x + React 기반 SEO 최적화, JSON-LD, Sitemap, Robots.txt 자동 생성 파이프라인 완성",
+    "notes": "도메인별 환경변수 기반 일괄 빌드 지원"
+  },
+  {
+    "id": "task-2",
+    "title": "Supabase DDL 데이터베이스 클린 스키마 마이그레이션 적용",
+    "category": "Database",
+    "assignee": "DBA / 개발팀",
+    "priority": "high",
+    "status": "completed",
+    "startDate": "2026-07-30",
+    "targetDate": "2026-07-31",
+    "completedDate": "2026-07-31",
+    "progress": 100,
+    "description": "14개 핵심 테이블 및 6개 뷰 스키마 정립, cleaning-ravi 프로젝트 그룹 시드 완료",
+    "notes": "PostgreSQL connection pooler 자동 연결 지원"
+  },
+  {
+    "id": "task-3",
+    "title": "Windows Runner & HaiIP IP 로테이션 자동 수집 요청 모듈 구축",
+    "category": "Automation",
+    "assignee": "개발팀",
+    "priority": "high",
+    "status": "in_progress",
+    "startDate": "2026-08-01",
+    "targetDate": "2026-08-10",
+    "progress": 75,
+    "description": "Playwright + PowerShell 기반 네이버 서치어드바이저 수집요청 자동화 (하루 5만건 타겟)",
+    "notes": "네이버 계정별 세션 분리 및 VPN 컨트롤 연동 완료"
+  },
+  {
+    "id": "task-4",
+    "title": "도메인 1,000개 등록 및 서치어드바이저 소유확인 메타태그 자동 발급/검증",
+    "category": "SEO / Ops",
+    "assignee": "개발팀 / 운영팀",
+    "priority": "high",
+    "status": "in_progress",
+    "startDate": "2026-08-03",
+    "targetDate": "2026-08-12",
+    "progress": 40,
+    "description": "서치어드바이저 HTML 태그 검증 자동화 script (`naver_ownership_only.py`) 적용 및 도메인 바인딩",
+    "notes": "도메인 등록 및 ownership 검증 연동 진행 중"
+  },
+  {
+    "id": "task-5",
+    "title": "Cloudflare R2 에셋 커스텀 도메인 이관 및 이미지 CDN 최적화",
+    "category": "Infrastructure",
+    "assignee": "DevOps",
+    "priority": "medium",
+    "status": "pending",
+    "startDate": "2026-08-10",
+    "targetDate": "2026-08-20",
+    "progress": 10,
+    "description": "cleaning-assets 버킷에 에셋 이관 및 커스텀 도메인(img.amunsa.com 등) 연결로 로딩 속도 극대화",
+    "notes": "현재 EC2 nginx 오리진 서빙 중"
+  },
+  {
+    "id": "task-6",
+    "title": "대표님 보고용 개발 팀 전체 진행과정 관제 대시보드 리팩토링 및 CRUD 구축",
+    "category": "Frontend / Admin",
+    "assignee": "개발팀",
+    "priority": "high",
+    "status": "in_progress",
+    "startDate": "2026-08-06",
+    "targetDate": "2026-08-07",
+    "progress": 90,
+    "description": "개발 현황 실시간 공유, 계정/도메인/배포/소유확인/수집요청 5대 관제 탭 통합 구축",
+    "notes": "실시간 데이터 조회 및 CRUD 인터페이스 제작 중"
+  }
+]

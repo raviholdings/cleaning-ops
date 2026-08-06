@@ -1,0 +1,29 @@
+---
+interface Props {
+  /** 이미지 위에 올릴 문구 */
+  headline: string;
+  sub: string;
+  alt: string;
+}
+
+const { headline, sub, alt } = Astro.props;
+---
+
+<div class="hero">
+  <picture>
+    <source srcset="/img/hero-1120.webp" type="image/webp" media="(min-width: 840px)" />
+    <source srcset="/img/hero-840.webp" type="image/webp" media="(min-width: 560px)" />
+    <img
+      src="/img/hero-560.webp"
+      alt={alt}
+      width="1120"
+      height="480"
+      fetchpriority="high"
+      decoding="async"
+    />
+  </picture>
+  <div class="hero-copy">
+    <strong>{headline}</strong>
+    <span>{sub}</span>
+  </div>
+</div>
