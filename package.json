@@ -9,6 +9,14 @@
     "dev:admin": "npm --workspace=apps/cleaning-admin run dev",
     "build:admin": "npm --workspace=apps/cleaning-admin run build",
     "dev:ravi": "npm --workspace=apps/cleaning-ravi run dev",
-    "build:ravi": "npm --workspace=apps/cleaning-ravi run build"
+    "build:ravi": "npm --workspace=apps/cleaning-ravi run build",
+    "db:migrate": "node scripts/apply-migrations.mjs",
+    "db:migrate:dry": "node scripts/apply-migrations.mjs --dry-run",
+    "domains:register": "node scripts/register-naver-project-domains.mjs",
+    "crawl:resume": "powershell -File ./scripts/run-windows-naver-crawl-resume.ps1"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "playwright": "^1.40.0"
   }
 }
