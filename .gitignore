@@ -27,3 +27,11 @@ scratch/
 *.exe
 _binary/.vite/
 apps/*/.vite/
+
+# 머신마다 다르게 쌓이는 실행 기록. 추적하면 VM 이 git pull 할 때마다
+# "local changes would be overwritten" 으로 막힌다. 계획 파일(reports/*.json)은
+# 배치 재현에 필요하므로 계속 추적한다.
+reports/haiip-windows-ip-changes.jsonl
+reports/naver-login/
+reports/verify-debug.png
+verify_debug.png
