@@ -168,6 +168,51 @@ function dbApiPlugin() {
             select count(*)::int as count from public.naver_index_check_runs;
           `);
 
+          // 5-1) 계정 요약 — 전체 500개 기준. 활성만 세면 실제 보유량을 알 수 없다.
+          //      "소유확인 완료 계정"은 배정된 도메인 100개가 전부 verified 인 계정.
+          const accountSummaryRes = await client.query(`
+            with per_account as (
+              select a.account_id,
+                     a.status,
+                     count(d.id)::int                                                        as domains,
+                     count(d.id) filter (where d.naver_registration_status = 'verified')::int as verified
+                from public.naver_searchadvisor_accounts a
+                left join public.naver_project_domains d on d.naver_account_id = a.account_id
+               group by a.account_id, a.status
+            )
+            select count(*)::int                                                      as total,
+                   count(*) filter (where status = 'active')::int                     as usable,
+                   count(*) filter (where status <> 'active')::int                    as suspended,
+                   count(*) filter (where domains > 0)::int                           as assigned,
+                   count(*) filter (where domains > 0 and verified = domains)::int    as fully_verified,
+                   count(*) filter (where domains > 0 and verified > 0
+                                      and verified < domains)::int                    as partially_verified
+              from per_account;
+          `);
+
+          // 5-2) 소유확인 요약 — 네이버 등록 전 / 완료 / 대기
+          //      pending = 아직 서치어드바이저 인증키를 못 받은 것
+          //      registered = 인증키는 있고 소유확인만 남은 것
+          const ownershipSummaryRes = await client.query(`
+            select count(*)::int                                                              as total,
+                   count(*) filter (where naver_registration_status = 'pending')::int         as not_registered,
+                   count(*) filter (where naver_registration_status = 'verified')::int        as verified,
+                   count(*) filter (where naver_registration_status = 'registered')::int      as waiting,
+                   count(*) filter (where deployed_at is not null)::int                       as deployed
+              from public.naver_project_domains;
+          `);
+
+          // 5-3) 오늘(KST) 수집요청. 누적과 섞으면 일일 한도와 비교할 수 없다.
+          const crawlTodayRes = await client.query(`
+            select count(*) filter (where status = 'submitted')::int        as submitted,
+                   count(*) filter (where status = 'quota-stop')::int       as quota_stop,
+                   count(*) filter (where status = 'failed')::int           as failed,
+                   count(distinct host)::int                                as hosts
+              from public.naver_searchadvisor_crawl_request_results
+             where (requested_at at time zone 'Asia/Seoul')::date
+                   = (now() at time zone 'Asia/Seoul')::date;
+          `);
+
           // 6) Lead Submissions
           const leadsRes = await client.query(`
             select * from public.lead_submissions order by created_at desc limit 50;
@@ -181,7 +226,11 @@ function dbApiPlugin() {
             domains: domainsRes.rows,
             crawlDaily: crawlRes.rows,
             recentCrawlLogs: recentCrawlLogsRes.rows,
-            crawlDailyQuota: 50000,
+            accountSummary: accountSummaryRes.rows[0],
+            ownershipSummary: ownershipSummaryRes.rows[0],
+            crawlToday: crawlTodayRes.rows[0],
+            // 사이트당 하루 50건. 배정된 도메인 수로 계산해야 실제 한도가 나온다.
+            crawlDailyQuota: (ownershipSummaryRes.rows[0]?.total || 0) * 50,
             todayKst: new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10),
             indexRunCount: indexRunsRes.rows[0]?.count || 0,
             leads: leadsRes.rows

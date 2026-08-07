@@ -66,6 +66,54 @@ export interface CatalogInput {
   seed?: string;
 }
 
+/**
+ * 최초 배포 때 쓴 사이트당 페이지 수. **절대 바꾸지 말 것.**
+ *
+ * 슬롯이 `siteIndex * pageCount + (page-1)` 이라, pageCount 를 바꾸면 모든
+ * 사이트의 시작점이 밀려 이미 배포·색인된 페이지의 지역·키워드가 통째로
+ * 뒤바뀐다. 실제로 100 -> 150 으로 바꾸면 기존 10,000 페이지 중 9,900 개의
+ * 조합이 달라진다.
+ *
+ * 그래서 기준선은 이 값으로 고정하고, 이보다 뒤 페이지는 별도 영역(확장 슬롯)
+ * 에서 가져온다. 레거시 bbungbbung-piping 의 expansion 슬롯과 같은 방식이다.
+ */
+export const BASELINE_PAGE_COUNT = 100;
+
+/**
+ * 확장 영역의 시작 슬롯. 기준선 영역과 절대 겹치면 안 된다.
+ * 기준선은 `siteIndex * 100` 이므로 사이트 N개면 [0, N*100) 을 쓴다.
+ * 여유를 둬 사이트 10,000개(= 슬롯 1,000,000)까지 기준선으로 예약한다.
+ */
+export const EXPANSION_SLOT_BASE = 1_000_000;
+
+/** 확장 페이지를 사이트마다 몇 개씩 끊어 배정할지. */
+export const EXPANSION_INCREMENT = 50;
+
+/**
+ * 페이지 번호 -> 전역 슬롯.
+ *
+ * 기준선 안(1~BASELINE_PAGE_COUNT)이면 예전 그대로 계산한다. 그래야 이미
+ * 배포된 페이지의 내용이 유지된다. 그 뒤 페이지만 확장 영역에서 가져온다.
+ */
+export function globalSlotFor(siteIndex: number, requestId: number): number {
+  const pageSlot = requestId - 1;
+  if (pageSlot < BASELINE_PAGE_COUNT) {
+    return siteIndex * BASELINE_PAGE_COUNT + pageSlot;
+  }
+  const extra = pageSlot - BASELINE_PAGE_COUNT;
+  const round = Math.floor(extra / EXPANSION_INCREMENT);
+  const within = extra % EXPANSION_INCREMENT;
+  // 라운드마다 전 사이트를 한 바퀴 돈다. 사이트별로 연속 블록을 주면
+  // 나중에 사이트가 늘 때 뒤 블록과 겹친다.
+  return EXPANSION_SLOT_BASE
+    + round * EXPANSION_SLOT_STRIDE
+    + siteIndex * EXPANSION_INCREMENT
+    + within;
+}
+
+/** 한 라운드가 소비하는 슬롯 폭. 예약 사이트 수 × 증가분. */
+const EXPANSION_SLOT_STRIDE = 10_000 * EXPANSION_INCREMENT;
+
 export function catalogEntry({
   locations,
   siteIndex,
@@ -76,7 +124,19 @@ export function catalogEntry({
   const comboCount = locations.length * MAIN_KEYWORDS.length;
   if (comboCount === 0) throw new Error('페이지 카탈로그 차원이 비어 있습니다.');
 
-  const globalSlot = siteIndex * pageCount + (requestId - 1);
+  const globalSlot = globalSlotFor(siteIndex, requestId);
+
+  // 슬롯이 조합수를 넘으면 modulo 로 되감기며 다른 사이트와 같은 조합이 나온다.
+  // 그 순간 내용이 통째로 중복되므로 조용히 넘어가지 않고 여기서 멈춘다.
+  if (globalSlot >= comboCount) {
+    throw new Error(
+      `슬롯 ${globalSlot} 이 조합수 ${comboCount} 를 넘었습니다 `
+      + `(사이트 #${siteIndex + 1}, 페이지 ${requestId}). `
+      + `지역 ${locations.length} × 키워드 ${MAIN_KEYWORDS.length} 로는 여기까지가 한계입니다. `
+      + `페이지를 더 늘리려면 키워드나 지역을 늘려야 합니다.`,
+    );
+  }
+
   const offset = hashString(seed) % comboCount;
   const step = coprimeStep(comboCount);
 

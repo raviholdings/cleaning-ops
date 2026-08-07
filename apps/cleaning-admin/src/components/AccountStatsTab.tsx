@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { KeyRound, ShieldCheck, AlertTriangle, Search, CheckCircle2, UserCheck, Calendar, Globe, Cpu } from 'lucide-react';
-import { AccountInfo, DomainInfo } from '../types';
+import { AccountInfo, DomainInfo, AccountSummary } from '../types';
 
 interface AccountStatsTabProps {
   accounts: AccountInfo[];
   domains: DomainInfo[];
+  summary?: AccountSummary | null;
 }
 
-export default function AccountStatsTab({ accounts, domains }: AccountStatsTabProps) {
+export default function AccountStatsTab({ accounts, domains, summary }: AccountStatsTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -47,31 +48,47 @@ export default function AccountStatsTab({ accounts, domains }: AccountStatsTabPr
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>총 관리 계정 수</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>보유 계정 전체</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
-              {totalAccounts} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
+              {summary ? summary.total : totalAccounts} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
             </div>
           </div>
 
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>정상 활성 계정 (Active)</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>사용 가능</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#34d399', marginTop: '4px' }}>
-              {activeAccounts.length} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
+              {summary ? summary.usable : activeAccounts.length} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
             </div>
           </div>
 
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>차단/정지 계정 (Blocked)</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>중지</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f87171', marginTop: '4px' }}>
-              {blockedAccounts.length} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
+              {summary ? summary.suspended : blockedAccounts.length} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
             </div>
           </div>
 
-          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>평균 계정당 등록 사이트</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
-              {totalAccounts > 0 ? (domains.length / totalAccounts).toFixed(1) : 0} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
+          {/* 소유확인이 끝난 계정을 따로 본다. 배정 도메인 100개가 전부 verified 인 계정만 센다. */}
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(52,211,153,0.25)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>소유확인 완료 계정</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#34d399', marginTop: '4px' }}>
+              {summary ? summary.fully_verified : '-'} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                / {summary ? summary.assigned : '-'} 배정
+              </span>
             </div>
+            {summary && summary.partially_verified > 0 && (
+              <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginTop: '4px' }}>
+                진행 중 {summary.partially_verified}개
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>도메인 미배정 계정</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#94a3b8', marginTop: '4px' }}>
+              {summary ? summary.total - summary.assigned : '-'} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>개</span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>확장 여력</div>
           </div>
         </div>
       </div>

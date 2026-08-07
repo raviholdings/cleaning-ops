@@ -16,6 +16,31 @@ export interface DevTask {
   notes?: string;
 }
 
+/** DB 에서 집계해 내려주는 요약. 3,000행을 프론트에서 세면 느리고 어긋난다. */
+export interface AccountSummary {
+  total: number;              // 보유 계정 전체 (활성만이 아니다)
+  usable: number;             // 사용 가능
+  suspended: number;          // 중지
+  assigned: number;           // 도메인이 배정된 계정
+  fully_verified: number;     // 배정 도메인이 전부 소유확인된 계정
+  partially_verified: number; // 일부만 된 계정
+}
+
+export interface OwnershipSummary {
+  total: number;          // 전체 도메인
+  not_registered: number; // 네이버 등록 전 (인증키 없음)
+  verified: number;       // 소유확인 완료
+  waiting: number;        // 소유확인 대기 (인증키는 받음)
+  deployed: number;
+}
+
+export interface CrawlToday {
+  submitted: number;
+  quota_stop: number;
+  failed: number;
+  hosts: number;
+}
+
 export interface AccountInfo {
   account_id: string;
   account_order: number;
@@ -36,7 +61,9 @@ export interface DomainInfo {
   project_key: string;
   naver_account_id?: string;
   area_name?: string;
-  naver_registration_status: 'verified' | 'registered' | 'failed' | 'unregistered';
+  // 스키마 주석 기준: pending | registered | verified.
+  // 'failed'/'unregistered' 는 DB 에 존재하지 않는 값이었다.
+  naver_registration_status: 'pending' | 'registered' | 'verified';
   naver_meta_tag_content?: string;
   deployed_at?: string;
   created_at: string;

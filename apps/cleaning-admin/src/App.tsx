@@ -10,7 +10,7 @@ import {
   Send,
   ChevronRight
 } from 'lucide-react';
-import { DevTask, AccountInfo, DomainInfo, CrawlDailyStat, CrawlLog, LeadSubmission } from './types';
+import { DevTask, AccountInfo, DomainInfo, CrawlDailyStat, CrawlLog, LeadSubmission, AccountSummary, OwnershipSummary } from './types';
 import DevRoadmapTab from './components/DevRoadmapTab';
 import AccountStatsTab from './components/AccountStatsTab';
 import DomainRegistryTab from './components/DomainRegistryTab';
@@ -37,6 +37,10 @@ export default function App() {
   const [crawlDailyQuota, setCrawlDailyQuota] = useState(50000);
   const [totalCrawlResultCount, setTotalCrawlResultCount] = useState(0);
   const [leadSubmissions, setLeadSubmissions] = useState<LeadSubmission[]>([]);
+
+  // DB 에서 집계해 내려주는 요약. 3,000행을 프론트에서 세면 느리고 값이 어긋난다.
+  const [accountSummary, setAccountSummary] = useState<AccountSummary | null>(null);
+  const [ownershipSummary, setOwnershipSummary] = useState<OwnershipSummary | null>(null);
 
   // Fetch Dev Tasks from Backend CRUD API
   const fetchDevTasks = async () => {
@@ -85,7 +89,19 @@ export default function App() {
           setTotalCrawlResultCount(sumCount);
           setCrawlDailyStats(chartList);
           setCrawlDailyQuota(Number(data.crawlDailyQuota) || 50000);
+          // DB 가 KST 기준으로 직접 세어준 값을 우선한다. 차트에서 찾아 쓰면
+        // 시간대 경계에서 어긋난다.
+        if (data.crawlToday) {
+          setTodayCrawl({
+            date: data.todayKst,
+            submitted: data.crawlToday.submitted || 0,
+            quotaStop: data.crawlToday.quota_stop || 0,
+            failed: data.crawlToday.failed || 0,
+            total: (data.crawlToday.submitted || 0) + (data.crawlToday.quota_stop || 0) + (data.crawlToday.failed || 0),
+          });
+        } else {
           setTodayCrawl(chartList.find((r) => r.date === data.todayKst) || null);
+        }
         }
 
         if (data.recentCrawlLogs) setRecentCrawlLogs(data.recentCrawlLogs);
@@ -150,11 +166,12 @@ export default function App() {
 
   const navItems = [
     { key: 'dev_roadmap', label: '🚀 개발팀 전체 진행과정', badge: `${devTasks.length}건`, icon: Kanban, isCrucial: true },
-    { key: 'account', label: '🔑 1. 계정 확인', badge: `${accounts.length}개`, icon: KeyRound },
-    { key: 'domain', label: '🌐 2. 도메인 등록', badge: `${domains.length}개`, icon: Globe },
-    { key: 'deployment', label: '🚀 3. 배포 현황', badge: `${domains.filter(d => d.deployed_at).length}개`, icon: Rocket },
-    { key: 'ownership', label: '🛡️ 4. 소유 확인', badge: `${domains.filter(d => d.naver_registration_status === 'verified').length}개`, icon: ShieldCheck },
-    { key: 'crawl', label: '📨 5. 수집 요청 현황', badge: `${(todayCrawl?.total || 0).toLocaleString()}건`, icon: Send }
+    { key: 'account', label: '🔑 1. 계정 확인', badge: `${accountSummary?.total ?? accounts.length}개`, icon: KeyRound },
+    { key: 'domain', label: '🌐 2. 도메인 등록', badge: `${ownershipSummary?.total ?? domains.length}개`, icon: Globe },
+    { key: 'deployment', label: '🚀 3. 배포 현황', badge: `${ownershipSummary?.deployed ?? domains.filter(d => d.deployed_at).length}개`, icon: Rocket },
+    { key: 'ownership', label: '🛡️ 4. 소유 확인', badge: `${ownershipSummary?.verified ?? domains.filter(d => d.naver_registration_status === 'verified').length}개`, icon: ShieldCheck },
+    // 수집요청 뱃지는 '오늘 제출'이다. 누적을 보여주면 일일 한도와 비교가 안 된다.
+    { key: 'crawl', label: '📨 5. 수집 요청 현황', badge: `오늘 ${(todayCrawl?.submitted || 0).toLocaleString()}건`, icon: Send }
   ];
 
   return (
@@ -289,7 +306,7 @@ export default function App() {
         )}
 
         {activeTab === 'account' && (
-          <AccountStatsTab accounts={accounts} domains={domains} />
+          <AccountStatsTab accounts={accounts} domains={domains} summary={accountSummary} />
         )}
 
         {activeTab === 'domain' && (
@@ -301,7 +318,7 @@ export default function App() {
         )}
 
         {activeTab === 'ownership' && (
-          <OwnershipVerifyTab domains={domains} />
+          <OwnershipVerifyTab domains={domains} summary={ownershipSummary} />
         )}
 
         {activeTab === 'crawl' && (
