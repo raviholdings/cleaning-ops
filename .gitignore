@@ -25,4 +25,5 @@ scratch/
 *.lock
 .windows-naver-crawl.lock
 *.exe
-_binary/
+_binary/.vite/
+apps/*/.vite/
