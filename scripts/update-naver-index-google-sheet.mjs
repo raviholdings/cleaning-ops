@@ -1,172 +1,834 @@
-# 관리자 페이지 제작 요청 (다른 세션에 붙여넣을 프롬프트)
+import { createSign } from 'node:crypto';
+import { dirname, resolve } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import pg from 'pg';
 
-아래 `---` 사이 내용을 그대로 복사해서 새 세션에 붙여넣으면 됩니다.
+const { Client } = pg;
 
----
+const projectRoot = process.cwd();
+const schemaPath = resolve(projectRoot, 'supabase/migrations/20260630093000_create_naver_index_check_registry.sql');
 
-## 무엇을 만드나
+loadLocalEnv(`${projectRoot}/.env`);
 
-`C:\Users\LD\Desktop\ravi\cleaning-ops` 프로젝트의 **운영 관리자 페이지**를 만들어 주세요.
-청소 서비스 SEO 프로젝트로, 네이버 서치어드바이저에 1,000개 도메인(계정 10개 × 100개)을
-등록·소유확인하고 수집요청을 넣어 색인을 만드는 파이프라인입니다.
+const explicitRunId = getArgValue('--run-id')
+	|| process.env.NAVER_INDEX_CHECK_RUN_ID
+	|| '';
+const forceBootstrap = process.env.NAVER_INDEX_FORCE_BOOTSTRAP === '1';
+const shareEmails = splitEnv(process.env.NAVER_INDEX_GOOGLE_SHEET_SHARE_EMAILS || '');
+const skipIfUnconfigured = process.env.NAVER_INDEX_GOOGLE_SHEET_SKIP_IF_UNCONFIGURED !== '0';
+const allowPartialRun = process.env.NAVER_INDEX_GOOGLE_SHEET_ALLOW_PARTIAL !== '0';
+const dryRun = process.env.NAVER_INDEX_GOOGLE_SHEET_DRY_RUN === '1';
+const allowBootstrapOnMissingRun = process.env.NAVER_INDEX_ALLOW_BOOTSTRAP_ON_MISSING_RUN === '1';
+const updateCrawlValues = process.env.NAVER_INDEX_GOOGLE_SHEET_UPDATE_CRAWL !== '0';
+const ignoreGroupHostSuffix = process.env.NAVER_INDEX_IGNORE_GROUP_HOST_SUFFIX === '1';
+const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
+if (!connectionString) throw new Error('DATABASE_URL or DIRECT_URL is required.');
+const targetPageCount = numberEnv('NAVER_INDEX_PAGE_COUNT', numberEnv('NAVER_INDEX_NUMERIC_PAGE_COUNT', 2750));
+let domainGroupKey = getArgValue('--group') || process.env.NAVER_INDEX_GROUP_KEY || process.env.NAVER_INDEX_DOMAIN_GROUP_KEY || '';
+let targetProject = process.env.NAVER_INDEX_TARGET_PROJECT || '';
+let deploymentAccountIds = splitEnv(process.env.NAVER_INDEX_DEPLOYMENT_ACCOUNT_IDS || '');
+let targetHostSuffix = normalizeHostSuffix(process.env.NAVER_INDEX_HOST_SUFFIX || '');
+let targetDomainKind = normalizeDomainKind(process.env.NAVER_INDEX_DOMAIN_KIND || '');
+let tableProject = process.env.NAVER_INDEX_TABLE_PROJECT || '';
+let sheetStatePath = '';
+let sheetState = {};
+let sheetId = '';
+let spreadsheetTitle = '';
+let sheetName = '';
+let reportTitle = '';
 
-## 왜 필요한가 (클라이언트 원문 요청)
+function getArgValue(name) {
+	const index = process.argv.indexOf(name);
+	if (index === -1) return '';
+	return process.argv[index + 1] || '';
+}
 
-> 목적은
-> 잘 배포가 되고 있는지
-> 색인이 잘 되고 있는지
-> 유입량이 일정하게 상승하고 있는지 체크하기 위함 입니다
->
-> 유입량으로 분석하다 보면 특정 일자에 유입이 급증 하던가, 급락 하게 되면
-> 네이버 검색 구좌가 바뀌었든, 색인이 풀리든, 이유를 빠르게 찾아 빠르게 복구하기 위함 입니다
+function runIdPrefix() {
+	return String(domainGroupKey || targetProject || 'naver-index').replaceAll('_', '-');
+}
 
-핵심은 **"이상 징후를 빨리 발견하는 것"** 입니다. 예쁜 대시보드보다 일자별 추이와
-급변 감지가 중요합니다. 숫자 하나만 크게 보여주는 화면은 쓸모가 없습니다.
+function loadLocalEnv(path) {
+	let text = '';
+	try {
+		text = readFileSync(path, 'utf8');
+	} catch (error) {
+		if (error && error.code === 'ENOENT') return;
+		throw error;
+	}
 
-## 먼저 읽을 것
+	for (const line of text.split(/\r?\n/)) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith('#')) continue;
 
-1. `AGENTS.md` — 전체 아키텍처, 환경변수, 스크립트 매핑
-2. `CLAUDE.md` — **운영 규칙. 특히 "확인 먼저, 실행은 그 다음"**
-3. `supabase/migrations/20260731000000_create_naver_ops_clean_schema.sql` — 스키마 전체(41KB).
-   테이블·뷰 정의가 전부 여기 있습니다
-4. `docs/HANDOVER.md` — 파이프라인 현재 진행 상황
+		const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+		if (!match || process.env[match[1]] !== undefined) continue;
 
-## 쓸 수 있는 데이터 (실제 존재하는 테이블)
+		let value = match[2].trim();
+		if (
+			(value.startsWith('"') && value.endsWith('"')) ||
+			(value.startsWith("'") && value.endsWith("'"))
+		) {
+			value = value.slice(1, -1);
+		}
+		process.env[match[1]] = value.replace(/\\n/g, '\n');
+	}
+}
 
-### 배포 현황 — `public.naver_project_domains` (1,000행)
-| 컬럼 | 용도 |
-|---|---|
-| `host`, `site_url` | 도메인 |
-| `naver_account_id` | 소속 계정 (10개) |
-| `group_key`, `target_project` | 그룹 구분 (현재 `cleaning-ravi`) |
-| `deployment_status`, `is_visible` | 배포 상태 |
-| `deployed_at` | ⚠️ **1,000행 전부 NULL. 아래 "데이터 공백" 참고** |
-| `page_count`, `static_page_count`, `sitemap_url_count` | 페이지 수 |
-| `naver_registration_status` | `pending` / `registered` / `verified` |
-| `naver_registered_at` | 등록 일시. **1,000행 전부 값 있음 ✅** |
-| `naver_verified_at` | 소유확인 일시. **약 650행 값 있음 ✅ (계속 늘어나는 중)** |
-| `region_label`, `area_name` | 지역 |
+function splitEnv(value) {
+	return String(value || '')
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean);
+}
 
-### 수집요청 현황
-- `public.naver_searchadvisor_crawl_request_runs` — 실행 단위.
-  `run_id`, `account_id`, `status`, `started_at`, `finished_at`,
-  `submitted_count`, `already_present_count`, `failed_count`, `quota_stop_count`,
-  `host_quota_stop_count`, `blocked_count`, `total_tasks`
-- `public.naver_searchadvisor_crawl_request_results` — URL 단위.
-  `url`, `host`, `status`, `requested_at`, `api_code`, `api_message`
-- `public.naver_project_page_crawl_state` — 페이지별 최신 상태(압축 로그)
+function numberEnv(name, fallback) {
+	const value = Number(process.env[name]);
+	return Number.isFinite(value) ? value : fallback;
+}
 
-### 색인 현황
-- `public.naver_index_check_runs` — `check_date`, `indexed_domain_count`,
-  `not_indexed_domain_count`, `indexed_post_total`, `indexed_url_total`,
-  `target_domain_count`, `checked_domain_count`, `error_domain_count`
-- `public.naver_index_check_results` — 도메인 단위.
-  `domain`, `checked_at`, `indexed`, `indexed_post_count`,
-  `visible_indexed_post_count`, `indexed_url_count`, `search_cap_reached`
-- `public.naver_index_check_urls` — URL 단위 색인 결과
+function normalizeDomainKind(value) {
+	const normalized = String(value || '').trim().toLowerCase();
+	if (['all', 'any', '*'].includes(normalized)) return 'all';
+	if ([
+		'custom',
+		'cloudflare',
+		'cloudflare-ec2',
+		'ec2',
+		'non_netlify',
+		'non-netlify'
+	].includes(normalized)) return 'non-netlify';
+	return 'netlify';
+}
 
-`naver_index_check_runs.check_date` 가 이미 일자 컬럼이라 **일자별 색인 추이는 바로 그릴 수 있습니다.**
+function normalizeHostValue(value) {
+	const trimmed = String(value || '').trim().toLowerCase();
+	if (!trimmed) return '';
+	try {
+		const url = new URL(trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`);
+		return url.host;
+	} catch {
+		return trimmed.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+	}
+}
 
-### 키워드 노출 순위
-- `public.naver_region_keyword_exposure_targets`
-- 뷰: `naver_region_keyword_exposure_latest`, `naver_region_keyword_exposure_latest_full_location`
+function normalizeHostSuffix(value) {
+	return normalizeHostValue(value).replace(/^\*\./, '');
+}
 
-### 이미 있는 뷰 (직접 만들지 말고 먼저 확인할 것)
-`naver_crawl_request_target_domains`, `naver_project_group_crawl_accounts`,
-`naver_index_check_target_domains`, `naver_crawl_request_page_candidates`
+function loadSheetState(path) {
+	if (!existsSync(path)) return {};
+	try {
+		return JSON.parse(readFileSync(path, 'utf8'));
+	} catch {
+		return {};
+	}
+}
 
-## ⚠️ 반드시 알아야 할 데이터 공백 (2026-08-05 실제 조회 결과)
+function saveSheetState(data) {
+	mkdirSync(dirname(sheetStatePath), { recursive: true });
+	writeFileSync(sheetStatePath, `${JSON.stringify(data, null, 2)}\n`);
+}
 
-클라이언트가 요청한 3가지 중 **온전히 만들 수 있는 건 사실상 없습니다.** 착수 전에
-이걸 먼저 이해하고, 없는 데이터로 차트를 지어내지 마세요.
+async function applyGroupConfig(client) {
+	if (!domainGroupKey) {
+		throw new Error('NAVER_INDEX_GROUP_KEY or NAVER_INDEX_DOMAIN_GROUP_KEY is required.');
+	}
 
-| 요청 | 상태 |
-|---|---|
-| 배포 체크 | ⚠️ `deployed_at` 이 **1,000행 전부 NULL**. 배포 일자 데이터 없음 |
-| 색인 체크 | ⚠️ `naver_index_check_*` 테이블 **3개 모두 0행**. 색인 체크를 아직 한 번도 안 돌림 |
-| 유입량 체크 | ❌ 수집 경로 자체가 없음 |
+	const { rows } = await client.query(
+		`
+			select group_key, target_project, spreadsheet_id, sheet_title, sheet_name, display_name, settings
+			from public.naver_project_groups
+			where group_key = $1
+			limit 1
+		`,
+		[domainGroupKey]
+	);
+	const group = rows[0];
+	if (!group) throw new Error(`naver_project_groups row not found: ${domainGroupKey}`);
 
-수치가 있는 것은 이것뿐입니다:
-- `naver_project_domains` 1,000행 — 등록 1,000 / 소유확인 약 650 (일시 컬럼 있음)
-- `naver_searchadvisor_crawl_request_results` **32,339행** — `requested_at` 있음.
-  **일자별 추이를 제대로 그릴 수 있는 유일한 테이블**
-- `naver_searchadvisor_crawl_request_runs` 10행
-- `naver_project_pages` 100,000행 (단, 날짜 컬럼 없음)
-- `naver_region_keyword_exposure_targets` 0행 — 키워드 순위도 비어 있음
+	const settings = group.settings || {};
+	targetProject = targetProject || group.target_project;
+	tableProject = tableProject || targetProject;
+	targetDomainKind = normalizeDomainKind(process.env.NAVER_INDEX_DOMAIN_KIND || settings.domainKind || 'all');
+	if (!ignoreGroupHostSuffix) {
+		targetHostSuffix = targetHostSuffix || normalizeHostSuffix(settings.hostSuffix || settings.domainRoot || '');
+	}
+	if (deploymentAccountIds.length === 0 && Array.isArray(settings.accountIds)) {
+		deploymentAccountIds = settings.accountIds.map((item) => String(item)).filter(Boolean);
+	}
 
-### 배포 일자를 어떻게 채울지
-`deployed_at` 이 비어 있어 "일자별 배포 추이"는 지금 불가능합니다. 조사해서 제안해 주세요.
-`created_at` 은 전부 2026-08-02 (일괄 임포트라 추이로 못 씀).
-`source_payload` jsonb 안에 배포 정보가 있는지 확인해 볼 가치가 있습니다.
+	sheetStatePath = resolve(
+		projectRoot,
+		process.env.NAVER_INDEX_GOOGLE_SHEET_STATE_PATH
+			|| settings.spreadsheetStatePath
+			|| `reports/naver-site-search/${runIdPrefix()}-index-google-sheet.json`
+	);
+	sheetState = loadSheetState(sheetStatePath);
+	sheetId = process.env.NAVER_INDEX_GOOGLE_SHEET_ID || group.spreadsheet_id || sheetState.sheetId || '';
+	sheetName = process.env.NAVER_INDEX_GOOGLE_SHEET_NAME || group.sheet_name || sheetState.sheetName || domainGroupKey;
+	spreadsheetTitle = process.env.NAVER_INDEX_GOOGLE_SHEET_TITLE || group.sheet_title || sheetState.title || `${sheetName} 네이버 색인 현황`;
+	reportTitle = process.env.NAVER_INDEX_REPORT_TITLE || group.sheet_title || `${sheetName} 네이버 색인 현황`;
 
-### 색인 데이터
-스키마·스크립트는 준비돼 있는데 실행을 안 한 상태입니다. 화면은 만들되
-**"아직 데이터 없음"을 정직하게 표시**하고, 색인 체크 실행 여부는 운영자와 상의하세요.
+	if (!targetProject) throw new Error(`target_project is missing for group: ${domainGroupKey}`);
+}
 
-### 유입량
-애널리틱스도, 액세스 로그 적재도 없습니다. **먼저 수집 방법을 조사해서 운영자에게
-선택지를 제시**해 주세요. 후보:
-1. 네이버 서치어드바이저 "검색 유입" 리포트를 크롤링해 일자별로 적재 (기존 서치어드바이저
-   세션·계정 인프라를 그대로 재사용 가능 — 가장 현실적)
-2. 랜딩페이지에 애널리틱스 삽입 (도메인 1,000개 재배포 필요)
-3. 호스팅 액세스 로그 수집
+function createClientConfig(value) {
+	const url = new URL(value);
+	const requiresSsl = url.searchParams.get('sslmode') === 'require' || url.searchParams.get('ssl') === 'true';
+	url.searchParams.delete('sslmode');
+	url.searchParams.delete('ssl');
 
-**수집 방식이 정해지기 전까지 유입량 영역은 "데이터 수집 준비 중"으로 비워두고,
-배포·색인·수집요청 3개 영역부터 완성**하는 게 맞습니다. 임의로 더미 데이터를 넣지 마세요.
+	return {
+		connectionString: url.toString(),
+		ssl: requiresSsl ? { rejectUnauthorized: false } : undefined
+	};
+}
 
-## 화면에 있어야 할 것
+function loadServiceAccount() {
+	const rawJson = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON
+		|| process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+		|| '';
+	if (rawJson) return JSON.parse(rawJson);
 
-**1. 상단 요약** — 전체 1,000개 대비 배포 완료 / 소유확인 완료 / 수집요청 완료 / 색인 완료 건수와 비율
+	const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+		|| process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_FILE
+		|| '';
+	if (credentialsPath) return JSON.parse(readFileSync(credentialsPath, 'utf8'));
 
-**2. 일자별 추이 (가장 중요)** — 하나의 시간축에 겹쳐 볼 수 있게:
-   - 일자별 소유확인 수 (`naver_verified_at`) — 데이터 있음 ✅
-   - 일자별 수집요청 제출 수 (`requested_at`) — 데이터 있음 ✅ 32,339행
-   - 일자별 색인된 도메인/URL 수 (`check_date`) — 지금은 0행, 자리만 잡아둘 것
-   - 일자별 배포 수 (`deployed_at`) — 지금은 전부 NULL, 자리만 잡아둘 것
-   - (추후) 일자별 유입량 — 수집 경로 미정
+	return null;
+}
 
-   **급증·급락을 눈에 띄게 표시**해 주세요. 클라이언트가 원한 건 이 지점입니다.
-   전일 대비 변화율이 임계치를 넘으면 강조하는 식이면 충분합니다.
+function base64Url(value) {
+	return Buffer.from(value)
+		.toString('base64')
+		.replaceAll('+', '-')
+		.replaceAll('/', '_')
+		.replaceAll('=', '');
+}
 
-**3. 계정별 현황 표** — 계정 10개 각각의 등록/소유확인/색인 진행률.
-   계정 하나가 막히면 바로 보여야 합니다
+async function getAccessToken(serviceAccount) {
+	const now = Math.floor(Date.now() / 1000);
+	const header = { alg: 'RS256', typ: 'JWT' };
+	const claim = {
+		iss: serviceAccount.client_email,
+		scope: [
+			'https://www.googleapis.com/auth/spreadsheets',
+			'https://www.googleapis.com/auth/drive'
+		].join(' '),
+		aud: 'https://oauth2.googleapis.com/token',
+		exp: now + 3600,
+		iat: now
+	};
+	const unsigned = `${base64Url(JSON.stringify(header))}.${base64Url(JSON.stringify(claim))}`;
+	const signer = createSign('RSA-SHA256');
+	signer.update(unsigned);
+	const signature = signer.sign(serviceAccount.private_key, 'base64')
+		.replaceAll('+', '-')
+		.replaceAll('/', '_')
+		.replaceAll('=', '');
+	const assertion = `${unsigned}.${signature}`;
 
-**4. 도메인 목록** — 검색·필터(계정, 지역, 상태별) 가능한 표.
-   도메인별로 배포일 / 소유확인 여부 / 수집요청 상태 / 색인 여부 / 색인된 포스트 수
+	const response = await fetch('https://oauth2.googleapis.com/token', {
+		method: 'POST',
+		headers: { 'content-type': 'application/x-www-form-urlencoded' },
+		body: new URLSearchParams({
+			grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+			assertion
+		})
+	});
+	const payload = await response.json();
+	if (!response.ok) throw new Error(`Google OAuth failed status=${response.status} body=${JSON.stringify(payload)}`);
+	return payload.access_token;
+}
 
-**5. 문제 도메인 뷰** — 배포됐는데 색인 안 된 것, 소유확인 실패한 것,
-   수집요청 실패한 것. 복구 대상을 찾는 화면입니다
+async function requestJson(url, { token, method = 'GET', body = null }) {
+	const response = await fetch(url, {
+		method,
+		headers: {
+			authorization: `Bearer ${token}`,
+			'content-type': 'application/json'
+		},
+		body: body ? JSON.stringify(body) : undefined
+	});
+	const text = await response.text();
+	const payload = text ? JSON.parse(text) : {};
+	if (!response.ok) throw new Error(`Google API failed status=${response.status} body=${text}`);
+	return payload;
+}
 
-## 기술 제약
+async function googleFetch(path, { token, method = 'GET', body = null }) {
+	if (!sheetId) throw new Error('Google Sheet ID is not set.');
+	return requestJson(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}${path}`, { token, method, body });
+}
 
-- **DB 접속**: `.env` 의 `DATABASE_URL` / `DIRECT_URL` (Supabase Postgres).
-  루트에 `pg` 패키지가 이미 설치돼 있습니다
-- **기존 앱 `apps/cleaning-ravi` 는 건드리지 마세요.** 이건 Astro 정적 랜딩페이지
-  생성기라 대시보드를 넣을 곳이 아닙니다. `apps/` 아래 **별도 앱**으로 만드세요
-- **읽기 전용으로 시작하세요.** 이 DB 는 운영 중인 파이프라인이 실시간으로 쓰고 있습니다.
-  조회만 하고, 쓰기가 필요하면 먼저 물어보세요
-- 마이그레이션이 필요하면 `npm run db:migrate:dry` 로 먼저 확인
-- 로컬 실행 우선. 배포는 운영자 확인 후
+async function createSpreadsheet(token) {
+	const payload = await requestJson('https://sheets.googleapis.com/v4/spreadsheets', {
+		token,
+		method: 'POST',
+		body: {
+			properties: { title: spreadsheetTitle },
+			sheets: [{ properties: { title: sheetName } }]
+		}
+	});
+	sheetId = payload.spreadsheetId;
+	const state = {
+		sheetId,
+		sheetName,
+		title: spreadsheetTitle,
+		spreadsheetUrl: payload.spreadsheetUrl,
+		createdAt: new Date().toISOString()
+	};
+	saveSheetState(state);
+	return state;
+}
 
-## 진행 방식
+async function ensureSpreadsheet(token) {
+	if (sheetId) {
+		let metadata = await googleFetch('?fields=spreadsheetId,spreadsheetUrl,properties(title),sheets(properties(sheetId,title))', { token });
+		const hasSheet = metadata.sheets?.some((item) => item.properties?.title === sheetName);
+		if (!hasSheet) {
+			await googleFetch(':batchUpdate', {
+				token,
+				method: 'POST',
+				body: {
+					requests: [
+						{
+							addSheet: {
+								properties: { title: sheetName }
+							}
+						}
+					]
+				}
+			});
+			metadata = await googleFetch('?fields=spreadsheetId,spreadsheetUrl,properties(title),sheets(properties(sheetId,title))', { token });
+		}
+		saveSheetState({
+			...sheetState,
+			sheetId,
+			sheetName,
+			title: metadata.properties?.title || spreadsheetTitle,
+			spreadsheetUrl: metadata.spreadsheetUrl,
+			checkedAt: new Date().toISOString()
+		});
+		return {
+			sheetId,
+			sheetName,
+			title: metadata.properties?.title || spreadsheetTitle,
+			spreadsheetUrl: metadata.spreadsheetUrl
+		};
+	}
+	return createSpreadsheet(token);
+}
 
-`CLAUDE.md` 규칙에 따라 **한 번에 다 만들지 말고** 단계마다 확인받으세요:
+async function shareSpreadsheet(token, emails) {
+	if (!emails.length) return [];
+	const shared = [];
+	for (const email of emails) {
+		try {
+			const permission = await requestJson(
+				`https://www.googleapis.com/drive/v3/files/${sheetId}/permissions?sendNotificationEmail=false`,
+				{
+					token,
+					method: 'POST',
+					body: {
+						type: 'user',
+						role: 'writer',
+						emailAddress: email
+					}
+				}
+			);
+			shared.push({ email, permissionId: permission.id || null, status: 'shared' });
+		} catch (error) {
+			shared.push({ email, permissionId: null, status: 'skipped', error: error.message });
+		}
+	}
+	return shared;
+}
 
-1. 먼저 위 테이블들을 **실제로 조회**해서 각 테이블에 데이터가 몇 건 있고
-   어떤 값이 들어있는지 파악한 뒤 보고 (스키마에 있어도 비어 있는 테이블이 있습니다.
-   특히 색인 체크는 아직 안 돌렸을 수 있습니다)
-2. 화면 구성안 제시 → 확인
-3. 구현 → 로컬에서 보여주기 → 확인
-4. 임의로 정한 값(임계치, 색상 기준, 페이지네이션 크기 등)은 **반드시 목록으로 보고**
+function sheetRange(range) {
+	return `'${sheetName.replaceAll("'", "''")}'!${range}`;
+}
 
----
+function kst(value) {
+	const date = new Date(value);
+	return new Intl.DateTimeFormat('ko-KR', {
+		timeZone: 'Asia/Seoul',
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hour12: false
+	}).format(date);
+}
 
-## 참고: 이 프롬프트를 쓸 때 알아두면 좋은 현재 상태 (2026-08-05 기준)
+async function loadIndexRun(client) {
+	if (forceBootstrap) return loadBootstrapIndexRun(client);
 
-- 소유확인 651/1000 완료, 2차 패스가 **지금 백그라운드에서 돌고 있음**.
-  대시보드를 만드는 동안에도 숫자가 계속 변합니다
-- 수집요청 결과 32,339행 적재됨
-- 색인 체크는 **한 번도 안 돌렸음** (테이블 3개 전부 0행) — 위에서 확인함
-- `one-qfast.com` 90개 도메인은 Cloudflare 존 문제로 접속 불가 상태
-- `scripts/update-naver-index-google-sheet.mjs` 는 현재 깨져 있습니다
-  (없어진 마이그레이션 파일을 참조). 구글시트 연동을 참고할 거면 이 점 유의
+	let runSql = explicitRunId
+		? `
+			select *
+			from public.naver_index_check_runs
+			where run_id = $1
+				and group_key = $2
+			limit 1
+		`
+		: `
+			select *
+			from public.naver_index_check_runs
+			where status in ('succeeded', 'partial')
+				and group_key = $1
+				and target_project = $2
+			order by finished_at desc nulls last, updated_at desc
+			limit 1
+		`;
+	let runValues = explicitRunId ? [explicitRunId, domainGroupKey] : [domainGroupKey, targetProject];
+	const runResult = await client.query(runSql, runValues);
+	const run = runResult.rows[0];
+	if (!run) {
+		if (explicitRunId) throw new Error(`index check run not found: ${explicitRunId}`);
+		if (allowBootstrapOnMissingRun) return loadBootstrapIndexRun(client);
+		throw new Error(`completed index check run not found for group=${domainGroupKey} targetProject=${targetProject}`);
+	}
+	if (!allowPartialRun && run.status !== 'succeeded') {
+		throw new Error(`refusing to update sheet from non-succeeded index check run: ${run.run_id} status=${run.status}`);
+	}
+	return loadRegistryIndexRun(client, run);
+}
+
+async function loadRegistryIndexRun(client, run) {
+	const result = await client.query(
+		`
+			with target_rows as (
+				select distinct on (target.host)
+					target.host as domain,
+					target.site_url,
+					target.naver_account_id as city_slug,
+					coalesce(target.region_label, target.area_name, target.display_name) as region_label,
+					coalesce(nullif(target.page_count, 0), $2)::integer as page_count,
+					target.sitemap_url_count,
+					target.deployed_at,
+					null::timestamptz as updated_at
+				from public.naver_index_check_target_domains target
+				where target.group_key = $4
+					and target.target_project = $3
+					and (coalesce(array_length($5::text[], 1), 0) = 0 or target.naver_account_id = any($5::text[]))
+					and (
+						$6::text = 'all'
+						or ($6::text = 'netlify' and lower(target.host) like '%.netlify.app')
+						or ($6::text = 'non-netlify' and lower(target.host) not like '%.netlify.app')
+					)
+					and (
+						$7::text = ''
+						or lower(target.host) = $7::text
+						or lower(target.host) like concat('%.', $7::text)
+					)
+				order by target.host, target.deployed_at desc nulls last
+			),
+			crawl as (
+				select
+					latest.host,
+					count(*) filter (where latest.status in ('submitted', 'already-present'))::integer as crawl_submitted_or_present,
+					count(*)::integer as crawl_processed_count,
+					max(latest.requested_at) as crawl_last_requested_at
+				from (
+					select distinct on (result.host, result.url)
+						result.host,
+						result.url,
+						result.status,
+						result.requested_at,
+						result.id
+					from public.naver_searchadvisor_crawl_request_results result
+					join public.naver_searchadvisor_crawl_request_runs run
+						on run.run_id = result.run_id
+					join target_rows target
+						on target.domain = result.host
+					where $8::boolean
+						and run.target_project = $3
+					order by result.host, result.url, result.requested_at desc, result.id desc
+				) latest
+				group by latest.host
+			),
+			deployments as (
+				select
+					target.domain,
+					target.site_url,
+					target.city_slug,
+					target.region_label,
+					target.page_count,
+					target.sitemap_url_count,
+					target.deployed_at,
+					target.updated_at,
+					coalesce(crawl.crawl_submitted_or_present, 0)::integer as crawl_submitted_or_present,
+					coalesce(crawl.crawl_processed_count, 0)::integer as crawl_processed_count,
+					crawl.crawl_last_requested_at
+				from target_rows target
+				left join crawl
+					on crawl.host = target.domain
+				order by target.domain
+			)
+			select
+				deployments.domain,
+				deployments.region_label,
+				deployments.page_count,
+				coalesce(effective_result.indexed_post_count, 0)::integer as indexed_post_count,
+				coalesce(effective_result.indexed_static_url_count, 0)::integer as indexed_static_url_count,
+				coalesce(effective_result.source_payload, '{}'::jsonb) || jsonb_build_object(
+					'checked', current_result.id is not null and current_result.error is null,
+					'partialFallback', current_result.error is not null and effective_result.run_id is distinct from current_result.run_id,
+					'currentRunError', current_result.error,
+					'crawlSubmittedOrPresent', deployments.crawl_submitted_or_present,
+					'crawlProcessedCount', deployments.crawl_processed_count,
+					'crawlLastRequestedAt', deployments.crawl_last_requested_at,
+					'searchCapReached', coalesce(effective_result.search_cap_reached, false)
+				) as source_payload
+			from deployments
+			left join public.naver_index_check_results current_result
+				on current_result.run_id = $1
+				and current_result.domain = deployments.domain
+			left join lateral (
+				(
+					select current_result.*, 0 as priority
+					where current_result.id is not null
+						and current_result.error is null
+				)
+				union all
+				(
+					select previous_result.*, 1 as priority
+					from public.naver_index_check_results previous_result
+					join public.naver_index_check_runs previous_run
+						on previous_run.run_id = previous_result.run_id
+					where previous_result.group_key = $4
+						and previous_result.domain = deployments.domain
+						and previous_result.error is null
+						and previous_result.run_id <> $1
+						and previous_run.status in ('succeeded', 'partial')
+					order by previous_result.checked_at desc, previous_result.id desc
+					limit 1
+				)
+				order by priority
+				limit 1
+			) effective_result on true
+			order by deployments.domain
+		`,
+		[
+			run.run_id,
+			targetPageCount,
+			targetProject,
+			domainGroupKey,
+			deploymentAccountIds,
+			targetDomainKind,
+			targetHostSuffix,
+			updateCrawlValues
+		]
+	);
+	return { run, results: result.rows };
+}
+
+async function loadBootstrapIndexRun(client) {
+	const result = await client.query(
+		`
+			with target_rows as (
+				select distinct on (target.host)
+					target.host as domain,
+					coalesce(target.region_label, target.area_name, target.display_name) as region_label,
+					coalesce(nullif(target.page_count, 0), $1)::integer as page_count,
+					target.run_order
+				from public.naver_index_check_target_domains target
+				where target.group_key = $3
+					and target.target_project = $2
+					and (coalesce(array_length($4::text[], 1), 0) = 0 or target.naver_account_id = any($4::text[]))
+					and (
+						$5::text = 'all'
+						or ($5::text = 'netlify' and lower(target.host) like '%.netlify.app')
+						or ($5::text = 'non-netlify' and lower(target.host) not like '%.netlify.app')
+					)
+					and (
+						$6::text = ''
+						or lower(target.host) = $6::text
+						or lower(target.host) like concat('%.', $6::text)
+					)
+				order by target.host, target.deployed_at desc nulls last
+			),
+			crawl as (
+				select
+					latest.host,
+					count(*) filter (where latest.status in ('submitted', 'already-present'))::integer as crawl_submitted_or_present,
+					count(*)::integer as crawl_processed_count,
+					max(latest.requested_at) as crawl_last_requested_at
+				from (
+					select distinct on (result.host, result.url)
+						result.host,
+						result.url,
+						result.status,
+						result.requested_at,
+						result.id
+					from public.naver_searchadvisor_crawl_request_results result
+					join public.naver_searchadvisor_crawl_request_runs run
+						on run.run_id = result.run_id
+					join target_rows target
+						on target.domain = result.host
+					where $7::boolean
+						and run.target_project = $2
+					order by result.host, result.url, result.requested_at desc, result.id desc
+				) latest
+				group by latest.host
+				)
+				select
+					target.domain,
+					target.region_label,
+				target.page_count,
+				0::integer as indexed_post_count,
+				jsonb_build_object(
+					'checked', false,
+					'bootstrap', true,
+					'crawlSubmittedOrPresent', coalesce(crawl.crawl_submitted_or_present, 0),
+					'crawlProcessedCount', coalesce(crawl.crawl_processed_count, 0),
+					'crawlLastRequestedAt', crawl.crawl_last_requested_at,
+					'searchCapReached', false
+				) as source_payload
+				from target_rows target
+				left join crawl
+					on crawl.host = target.domain
+				order by target.run_order, target.domain
+			`,
+			[
+				targetPageCount,
+				targetProject,
+				domainGroupKey,
+				deploymentAccountIds,
+				targetDomainKind,
+				targetHostSuffix,
+				updateCrawlValues
+			]
+		);
+	const now = new Date().toISOString();
+	return {
+		run: {
+			run_id: `${runIdPrefix()}-sheet-bootstrap`,
+			status: 'partial',
+			finished_at: now,
+			updated_at: now,
+			target_domain_count: result.rows.length,
+			indexed_domain_count: 0,
+			not_indexed_domain_count: result.rows.length,
+			indexed_post_total: 0
+		},
+		results: result.rows
+	};
+}
+
+function buildRows({ run, results }) {
+	const totalPages = results.reduce((sum, row) => sum + Number(row.page_count || 0), 0);
+	const totalCrawl = results.reduce((sum, row) => (
+		sum + Number(row.source_payload?.crawlSubmittedOrPresent || 0)
+	), 0);
+	const searchCapReachedDomainCount = results.filter((row) => row.source_payload?.searchCapReached).length;
+	const indexedDomainCount = results.filter((row) => (
+		Number(row.indexed_post_count || 0) > 0 || Number(row.indexed_static_url_count || 0) > 0
+	)).length;
+	const indexedPostTotal = results.reduce((sum, row) => sum + Number(row.indexed_post_count || 0), 0);
+	const rows = [
+		[reportTitle],
+		['마지막 갱신(KST)', kst(new Date())],
+		['확인 기준', 'site:https://도메인/'],
+		['전체 도메인수', results.length],
+		['색인 확인 도메인수', indexedDomainCount],
+		['미색인 도메인수', results.length - indexedDomainCount],
+		['전체 페이지수', totalPages],
+		['수집요청 완료 페이지수', totalCrawl],
+		['색인 페이지수', indexedPostTotal],
+		['10페이지 상한 도메인수', searchCapReachedDomainCount],
+		['비고', `${sheetName} 탭입니다. 네이버 검색 결과가 10페이지까지 꽉 찬 도메인은 수집요청 완료 페이지수 기준으로 색인 페이지수를 반영했습니다.`],
+		[],
+		['No', '지역', '도메인', '페이지수', '수집요청 완료', '색인 페이지수']
+	];
+	results.forEach((row, index) => {
+		rows.push([
+			index + 1,
+			row.region_label || '',
+			domainLink(row.domain),
+			Number(row.page_count || 0),
+			Number(row.source_payload?.crawlSubmittedOrPresent || 0),
+			Number(row.indexed_post_count || 0)
+		]);
+	});
+	return rows;
+}
+
+function domainLink(domain) {
+	const host = normalizeHostValue(domain);
+	if (!host) return '';
+	const url = `https://${host}`;
+	return `=HYPERLINK("${url.replaceAll('"', '""')}","${host.replaceAll('"', '""')}")`;
+}
+
+async function loadExistingSheetRows(token) {
+	try {
+		const payload = await googleFetch(`/values/${encodeURIComponent(sheetRange('A:Z'))}`, { token });
+		return payload.values || [];
+	} catch (error) {
+		console.warn(`[sheet] could not load existing rows to preserve crawl values: ${error.message}`);
+		return [];
+	}
+}
+
+function applyExistingCrawlValues(rows, existingRows) {
+	if (!existingRows.length) return rows;
+
+	const summaryRow = existingRows.find((row) => String(row?.[0] || '').trim() === '수집요청 완료 페이지수');
+	const nextSummaryRow = rows.find((row) => String(row?.[0] || '').trim() === '수집요청 완료 페이지수');
+	if (summaryRow && nextSummaryRow && summaryRow[1] !== undefined) {
+		nextSummaryRow[1] = summaryRow[1];
+	}
+
+	const headerIndex = existingRows.findIndex((row) => (
+		String(row?.[2] || '').trim() === '도메인'
+		&& String(row?.[4] || '').trim() === '수집요청 완료'
+	));
+	if (headerIndex < 0) return rows;
+
+	const crawlByDomain = new Map();
+	for (const row of existingRows.slice(headerIndex + 1)) {
+		const host = extractDomainFromSheetCell(row?.[2]);
+		if (!host) continue;
+		crawlByDomain.set(host, row?.[4] ?? '');
+	}
+
+	for (const row of rows) {
+		const host = extractDomainFromSheetCell(row?.[2]);
+		if (!host || !crawlByDomain.has(host)) continue;
+		row[4] = crawlByDomain.get(host);
+	}
+
+	return rows;
+}
+
+function extractDomainFromSheetCell(value) {
+	const text = String(value || '').trim();
+	if (!text) return '';
+	const urlMatch = text.match(/https?:\/\/([^/",)]+)/i);
+	if (urlMatch) return normalizeHostValue(urlMatch[1]);
+	const formulaLabelMatch = text.match(/,\s*"([^"]+)"\s*\)$/);
+	if (formulaLabelMatch) return normalizeHostValue(formulaLabelMatch[1]);
+	return normalizeHostValue(text);
+}
+
+async function updateSheet(rows, token) {
+	await googleFetch(`/values/${encodeURIComponent(sheetRange('A:Z'))}:clear`, {
+		token,
+		method: 'POST',
+		body: {}
+	});
+	const updateResult = await googleFetch(`/values/${encodeURIComponent(sheetRange('A1'))}?valueInputOption=USER_ENTERED`, {
+		token,
+		method: 'PUT',
+		body: { values: rows }
+	});
+
+	const metadata = await googleFetch('?fields=sheets(properties(sheetId,title))', { token });
+	const sheet = metadata.sheets?.find((item) => item.properties?.title === sheetName);
+	if (sheet) {
+		const sheetIdNumber = sheet.properties.sheetId;
+		await googleFetch(':batchUpdate', {
+			token,
+			method: 'POST',
+			body: {
+				requests: [
+					{
+						updateSheetProperties: {
+							properties: { sheetId: sheetIdNumber, gridProperties: { frozenRowCount: 13 } },
+							fields: 'gridProperties.frozenRowCount'
+						}
+					},
+					{
+						repeatCell: {
+							range: { sheetId: sheetIdNumber, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 6 },
+							cell: { userEnteredFormat: { textFormat: { bold: true } } },
+							fields: 'userEnteredFormat.textFormat.bold'
+						}
+					},
+					{
+						repeatCell: {
+							range: { sheetId: sheetIdNumber, startRowIndex: 12, endRowIndex: 13, startColumnIndex: 0, endColumnIndex: 6 },
+							cell: { userEnteredFormat: { textFormat: { bold: true } } },
+							fields: 'userEnteredFormat.textFormat.bold'
+						}
+					},
+					{
+						autoResizeDimensions: {
+							dimensions: { sheetId: sheetIdNumber, dimension: 'COLUMNS', startIndex: 0, endIndex: 6 }
+						}
+					}
+				]
+			}
+		});
+	}
+	return updateResult;
+}
+
+const client = new Client(createClientConfig(connectionString));
+await client.connect();
+
+try {
+	await ensureSchema(client);
+	await applyGroupConfig(client);
+	const indexRun = await loadIndexRun(client);
+	const rows = buildRows(indexRun);
+	if (dryRun) {
+		console.log(JSON.stringify({
+			ok: true,
+			dryRun: true,
+			runId: indexRun.run.run_id,
+			groupKey: domainGroupKey,
+			targetProject,
+			sheetId,
+			sheetName,
+			rowCount: rows.length,
+			firstRows: rows.slice(0, 15)
+		}, null, 2));
+	} else {
+		const serviceAccount = loadServiceAccount();
+		if (!serviceAccount) {
+			const message = 'Google Sheets service account credentials are not configured; skipped sheet update.';
+			if (skipIfUnconfigured) {
+				console.log(JSON.stringify({ ok: true, skipped: true, reason: message, groupKey: domainGroupKey, sheetName }));
+			} else {
+				throw new Error(message);
+			}
+		} else {
+			const token = await getAccessToken(serviceAccount);
+			const spreadsheet = await ensureSpreadsheet(token);
+			const shared = await shareSpreadsheet(token, shareEmails);
+			if (!updateCrawlValues) {
+				applyExistingCrawlValues(rows, await loadExistingSheetRows(token));
+			}
+			const updateResult = await updateSheet(rows, token);
+			saveSheetState({
+				...sheetState,
+				...spreadsheet,
+				shareEmails,
+				lastRunId: indexRun.run.run_id,
+				lastUpdatedAt: new Date().toISOString()
+			});
+			console.log(JSON.stringify({
+				ok: true,
+				runId: indexRun.run.run_id,
+				sheetId,
+				sheetName,
+				spreadsheetUrl: spreadsheet.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${sheetId}/edit`,
+				shared,
+				crawlValuesUpdated: updateCrawlValues,
+				rowCount: rows.length,
+				updatedRange: updateResult.updatedRange || null
+			}, null, 2));
+		}
+	}
+} finally {
+	await client.end();
+}
+
+async function ensureSchema(client) {
+	await client.query(readFileSync(schemaPath, 'utf8'));
+}

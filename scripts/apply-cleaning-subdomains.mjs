@@ -1,331 +1,175 @@
 #!/usr/bin/env node
-// Seed accounts / domains / keywords for the cleaning-ravi project group.
-//
-//   node scripts/seed-cleaning-ops-data.mjs --dry-run   # 무엇이 몇 건 들어가는지만 출력
-//   node scripts/seed-cleaning-ops-data.mjs             # 실제 적용
-//
-// Sources (경로는 플래그로 덮어쓸 수 있음):
-//   --accounts  "C:/Users/LD/Desktop/해외비실 500ea.csv"
-//   --keywords  "C:/Users/LD/Desktop/ravi/청소 키워드.txt"
-//
-// 도메인 10개와 계정 배정은 아래 DOMAINS 상수에 고정되어 있다. CSV 상위 10개
-// 계정이 목록 순서대로 1:1 배정된다.
-//
-// 전 구간이 단일 트랜잭션이며 upsert라서 재실행해도 안전하다.
+/**
+ * plan-cleaning-subdomains.mjs 가 만든 계획을 naver_project_domains 에 적용한다.
+ *
+ *   node scripts/apply-cleaning-subdomains.mjs --plan reports/cleaning-subdomain-plan-batch3.json --dry-run
+ *   node scripts/apply-cleaning-subdomains.mjs --plan reports/cleaning-subdomain-plan-batch3.json
+ *
+ * 전부 한 트랜잭션이다. --dry-run 이면 넣어본 뒤 롤백한다.
+ *
+ * post_url_pattern 을 반드시 넣는다. 비워두면 크롤 스크립트의 buildPostUrl 이
+ * `/1/` 형태로 URL 을 만드는데, 우리 정적 빌드는 `/1.html` 이라 전부 404 가 된다.
+ *
+ * 2026-08-06 git reset 사고로 원본이 사라져 다시 작성했다. 그때 신규 1,000행이
+ * 통째로 사라졌는데 언제 어떻게 없어졌는지 추적할 근거가 전혀 없었다. 그래서
+ * 실행 전후 행수를 찍고, 예상과 다르면 커밋하지 않는다.
+ */
 
 import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
-const args = process.argv.slice(2);
-const dryRun = args.includes('--dry-run');
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+loadEnv(resolve(projectRoot, '.env'));
 
-const accountsPath = optionValue('--accounts') || 'C:/Users/LD/Desktop/해외비실 500ea.csv';
-const keywordsPath = optionValue('--keywords') || 'C:/Users/LD/Desktop/ravi/청소 키워드.txt';
+const options = parseOptions(process.argv.slice(2));
+const dryRun = Boolean(options.dryRun);
+const planPath = resolve(projectRoot, options.plan || 'reports/cleaning-subdomain-plan.json');
+const plan = JSON.parse(readFileSync(planPath, 'utf8'));
 
-const GROUP_KEY = 'cleaning-ravi';
-const PROJECT_KEY = 'cleaning-ravi';
-const TARGET_PROJECT = 'cleaning-ravi';
+const POST_URL_PATTERN = '/:postId.html';
+const SOURCE_TABLE = 'cleaning-ops-subdomain-plan';
 
-/** 배정 순서 = CSV 행 순서. i번째 도메인 <- i번째 계정. */
-const DOMAINS = [
-  'amunsa.com',
-  'anclose.com',
-  'daddul.com',
-  'ddulea.com',
-  'naoheg.com',
-  'neverfoul.com',
-  'one-qfast.com',
-  'oneshot-sewer.com',
-  'pipe-oneshot.com',
-  'uloung.com',
-];
+if (!Array.isArray(plan.sites) || !plan.sites.length) throw new Error(`${planPath} 에 sites[] 가 없습니다.`);
+const groupKey = plan.generatedFor || 'cleaning-ravi';
+const pageCount = Number(plan.pageCountPerSite || 100);
 
-loadLocalEnv('.env');
-
-// ── 소스 파싱 ────────────────────────────────────────────────────────────────
-const accounts = parseAccountsCsv(accountsPath);
-const keywords = parseKeywords(keywordsPath);
-
-if (accounts.length < DOMAINS.length) {
-  throw new Error(`계정이 ${accounts.length}개뿐이라 도메인 ${DOMAINS.length}개를 배정할 수 없습니다`);
+for (const [i, s] of plan.sites.entries()) {
+  for (const key of ['host', 'siteUrl', 'accountId', 'globalSiteOrder', 'accountSiteOrder', 'domainRoot', 'subdomain']) {
+    if (s[key] === undefined || s[key] === null || s[key] === '') throw new Error(`sites[${i}].${key} 가 없습니다.`);
+  }
 }
 
-const assignments = DOMAINS.map((host, index) => ({
-  host,
-  siteUrl: `https://${host}`,
-  accountId: accounts[index].accountId,
-  accountName: accounts[index].personalName,
-}));
-
-if (dryRun) {
-  console.log(
-    JSON.stringify(
-      {
-        dryRun: true,
-        groupKey: GROUP_KEY,
-        sources: { accountsPath, keywordsPath },
-        counts: {
-          accounts: accounts.length,
-          domains: assignments.length,
-          keywords: keywords.length,
-        },
-        accountSample: accounts.slice(0, 3).map(redactAccount),
-        assignments,
-        keywordSample: keywords.slice(0, 8),
-      },
-      null,
-      2,
-    ),
-  );
-  process.exit(0);
-}
-
-// ── 적용 ─────────────────────────────────────────────────────────────────────
 const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
-if (!connectionString) throw new Error('DATABASE_URL 또는 DIRECT_URL 이 필요합니다');
-
+if (!connectionString) throw new Error('DATABASE_URL 또는 DIRECT_URL 이 필요합니다.');
 const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
 await client.connect();
 
+let started = false;
 try {
-  const { rowCount: groupExists } = await client.query(
-    'select 1 from public.naver_project_groups where group_key = $1',
-    [GROUP_KEY],
+  await client.query('begin');
+  started = true;
+
+  const beforeRow = await client.query('select count(*)::int n from public.naver_project_domains');
+  const beforeTotal = beforeRow.rows[0].n;
+  console.log(JSON.stringify({ phase: 'before', totalRows: beforeTotal, planSites: plan.sites.length, plan: planPath }));
+
+  // 계획 호스트가 이미 있으면 중단한다. 덮어쓰면 기존 토큰·소유확인 상태가 날아간다.
+  const planHosts = plan.sites.map((s) => s.host);
+  const clash = await client.query(
+    'select host from public.naver_project_domains where host = any($1::text[])',
+    [planHosts],
   );
-  if (!groupExists) {
-    throw new Error(`naver_project_groups 행이 없습니다: ${GROUP_KEY}. 먼저 npm run db:migrate`);
+  if (clash.rowCount) {
+    throw new Error(`계획의 호스트가 이미 존재합니다(${clash.rowCount}건): ${clash.rows.slice(0, 5).map((r) => r.host).join(', ')}`);
   }
 
-  await client.query('begin');
+  // 계정이 실제로 있는지 확인한다. 없는 계정으로 넣으면 FK 로 막히지만
+  // 어느 계정인지 알려주는 편이 낫다.
+  const accountIds = [...new Set(plan.sites.map((s) => s.accountId))];
+  const known = await client.query(
+    'select account_id from public.naver_searchadvisor_accounts where account_id = any($1::text[])',
+    [accountIds],
+  );
+  const knownSet = new Set(known.rows.map((r) => r.account_id));
+  const missing = accountIds.filter((a) => !knownSet.has(a));
+  if (missing.length) throw new Error(`DB 에 없는 계정: ${missing.join(', ')}`);
 
-  // 1. 계정 -------------------------------------------------------------------
-  await client.query(
-    `
-      insert into public.naver_searchadvisor_accounts (
-        account_id, account_order, password_plain, status,
-        personal_name, personal_birth_date, personal_gender,
-        personal_info_source, personal_info_imported_at, notes
-      )
-      select
-        input.account_id,
-        input.account_order,
-        input.password_plain,
-        input.status,
-        nullif(input.personal_name, ''),
-        nullif(input.personal_birth_date, '')::date,
-        nullif(input.personal_gender, ''),
-        $2,
-        now(),
-        nullif(input.notes, '')
-      from jsonb_to_recordset($1::jsonb) as input(
-        account_id text,
-        account_order integer,
-        password_plain text,
-        status text,
-        personal_name text,
-        personal_birth_date text,
-        personal_gender text,
-        notes text
-      )
-      on conflict (account_id) do update set
-        password_plain = excluded.password_plain,
-        status = excluded.status,
-        personal_name = excluded.personal_name,
-        personal_birth_date = excluded.personal_birth_date,
-        personal_gender = excluded.personal_gender,
-        personal_info_source = excluded.personal_info_source,
-        personal_info_imported_at = excluded.personal_info_imported_at,
-        notes = excluded.notes,
-        updated_at = now()
-    `,
-    [JSON.stringify(accounts.map(toAccountRow)), sourceLabel(accountsPath)],
+  let inserted = 0;
+  const batchSize = 200;
+  for (let offset = 0; offset < plan.sites.length; offset += batchSize) {
+    const batch = plan.sites.slice(offset, offset + batchSize);
+    const payload = batch.map((s) => ({
+      host: s.host,
+      site_url: s.siteUrl,
+      account_id: s.accountId,
+      page_count: pageCount,
+      payload: {
+        word1: s.word1,
+        word2: s.word2,
+        subdomain: s.subdomain,
+        domainRoot: s.domainRoot,
+        accountOrder: s.accountOrder,
+        globalSiteOrder: s.globalSiteOrder,
+        accountSiteOrder: s.accountSiteOrder,
+      },
+    }));
+
+    const res = await client.query(
+      `insert into public.naver_project_domains (
+         group_key, project_key, target_project, host, site_url, naver_account_id,
+         deployment_status, is_visible, page_count, post_url_pattern,
+         subdomain_generation_strategy, naver_registration_status, source_table, source_payload
+       )
+       select $1, $1, $1, input.host, input.site_url, input.account_id,
+              'active', true, input.page_count, $2,
+              'random-two-words', 'pending', $3, input.payload
+         from jsonb_to_recordset($4::jsonb) as input(
+           host text, site_url text, account_id text, page_count integer, payload jsonb
+         )`,
+      [groupKey, POST_URL_PATTERN, SOURCE_TABLE, JSON.stringify(payload)],
+    );
+    inserted += res.rowCount;
+  }
+
+  const afterRow = await client.query('select count(*)::int n from public.naver_project_domains');
+  const afterTotal = afterRow.rows[0].n;
+  const expected = beforeTotal + inserted;
+  if (afterTotal !== expected) {
+    throw new Error(`행수가 예상과 다릅니다: 이전 ${beforeTotal} + 삽입 ${inserted} = ${expected} 인데 ${afterTotal} 입니다.`);
+  }
+
+  const verify = await client.query(
+    `select count(*)::int total,
+            count(*) filter (where post_url_pattern = $1)::int with_pattern,
+            count(distinct naver_account_id)::int accounts,
+            sum(page_count)::int pages
+       from public.naver_project_domains where group_key = $2`,
+    [POST_URL_PATTERN, groupKey],
   );
 
-  // 2. 도메인 -----------------------------------------------------------------
-  await client.query(
-    `
-      insert into public.naver_project_domains (
-        group_key, project_key, target_project, host, site_url,
-        naver_account_id, deployment_status, is_visible,
-        subdomain_generation_strategy, naver_registration_status,
-        source_table
-      )
-      select
-        $1, $2, $3, input.host, input.site_url,
-        input.account_id, 'active', true,
-        'manual', 'pending',
-        'cleaning-ops-seed'
-      from jsonb_to_recordset($4::jsonb) as input(
-        host text,
-        site_url text,
-        account_id text
-      )
-      on conflict (host) do update set
-        group_key = excluded.group_key,
-        project_key = excluded.project_key,
-        target_project = excluded.target_project,
-        site_url = excluded.site_url,
-        naver_account_id = excluded.naver_account_id,
-        updated_at = now()
-    `,
-    [
-      GROUP_KEY,
-      PROJECT_KEY,
-      TARGET_PROJECT,
-      JSON.stringify(
-        assignments.map((row) => ({
-          host: row.host,
-          site_url: row.siteUrl,
-          account_id: row.accountId,
-        })),
-      ),
-    ],
-  );
+  console.log(JSON.stringify({
+    phase: dryRun ? 'dry-run' : 'complete',
+    insertedSubdomains: inserted,
+    totalRows: afterTotal,
+    verify: verify.rows[0],
+  }, null, 2));
 
-  // 3. 메인 키워드 -------------------------------------------------------------
-  await client.query(
-    `
-      insert into public.naver_page_keywords (name)
-      select value from unnest($1::text[]) as input(value)
-      on conflict (name) do nothing
-    `,
-    [keywords],
-  );
-
-  await client.query('commit');
-
-  const summary = await client.query(`
-    select
-      (select count(*)::int from public.naver_searchadvisor_accounts) as accounts,
-      (select count(*)::int from public.naver_project_domains where group_key = 'cleaning-ravi') as domains,
-      (select count(*)::int from public.naver_page_keywords) as keywords
-  `);
-  console.log(JSON.stringify({ applied: true, totals: summary.rows[0] }, null, 2));
+  if (dryRun) {
+    await client.query('rollback');
+    started = false;
+    console.log('\n(dry-run: 롤백했습니다. DB 는 변경되지 않았습니다.)');
+  } else {
+    await client.query('commit');
+    started = false;
+  }
 } catch (error) {
-  await client.query('rollback').catch(() => {});
+  if (started) await client.query('rollback').catch(() => {});
   throw error;
 } finally {
   await client.end();
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-function parseAccountsCsv(path) {
-  const text = readFileSync(path, 'utf8').replace(/^\uFEFF/, '');
-  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
-  if (lines.length < 2) throw new Error(`${path} 에 데이터 행이 없습니다`);
-
-  const header = lines[0].split(',').map((cell) => cell.trim());
-  const expected = ['아이디', '비밀번호', '이름', '생년월일', '성별', '생성일', '구매일'];
-  if (header.join(',') !== expected.join(',')) {
-    throw new Error(`CSV 헤더가 예상과 다릅니다.\n  기대: ${expected.join(',')}\n  실제: ${header.join(',')}`);
+function parseOptions(argv) {
+  const result = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (!arg.startsWith('--')) continue;
+    const key = arg.slice(2).replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+    const next = argv[i + 1];
+    if (next && !next.startsWith('--')) { result[key] = next; i += 1; } else { result[key] = true; }
   }
-
-  const seen = new Set();
-  return lines.slice(1).map((line, index) => {
-    const cells = line.split(',').map((cell) => cell.trim());
-    if (cells.length !== expected.length) {
-      throw new Error(`${index + 2}행 컬럼 수가 ${cells.length}개입니다 (기대 ${expected.length})`);
-    }
-    const [accountId, password, name, birthDate, gender, createdDate, purchasedDate] = cells;
-    if (!accountId || !password) throw new Error(`${index + 2}행: 아이디 또는 비밀번호가 비어 있습니다`);
-    if (seen.has(accountId)) throw new Error(`${index + 2}행: 아이디 중복 ${accountId}`);
-    seen.add(accountId);
-    if (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
-      throw new Error(`${index + 2}행: 생년월일 형식 오류 ${birthDate}`);
-    }
-
-    return {
-      accountId,
-      password,
-      personalName: name,
-      personalBirthDate: birthDate,
-      personalGender: gender,
-      createdDate,
-      purchasedDate,
-      accountOrder: index + 1,
-    };
-  });
+  return result;
 }
 
-function toAccountRow(account) {
-  const notes = [
-    account.createdDate ? `생성일=${account.createdDate}` : '',
-    account.purchasedDate ? `구매일=${account.purchasedDate}` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
-
-  return {
-    account_id: account.accountId,
-    account_order: account.accountOrder,
-    password_plain: account.password,
-    status: 'active',
-    personal_name: account.personalName,
-    personal_birth_date: account.personalBirthDate,
-    personal_gender: account.personalGender,
-    notes,
-  };
-}
-
-function redactAccount(account) {
-  return {
-    accountId: account.accountId,
-    accountOrder: account.accountOrder,
-    password: '***',
-    personalName: account.personalName,
-    personalBirthDate: account.personalBirthDate,
-    personalGender: account.personalGender,
-  };
-}
-
-function parseKeywords(path) {
-  const raw = readFileSync(path, 'utf8')
-    .replace(/^\uFEFF/, '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const unique = [...new Set(raw)];
-  if (unique.length !== raw.length) {
-    console.error(`경고: 키워드 ${raw.length - unique.length}건 중복을 제거했습니다`);
-  }
-  return unique;
-}
-
-function sourceLabel(path) {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function optionValue(name) {
-  const index = args.indexOf(name);
-  if (index === -1) return '';
-  const next = args[index + 1];
-  return next && !next.startsWith('--') ? next : '';
-}
-
-function loadLocalEnv(path) {
-  let text = '';
+function loadEnv(path) {
   try {
-    text = readFileSync(path, 'utf8');
-  } catch (error) {
-    if (error && error.code === 'ENOENT') return;
-    throw error;
-  }
-
-  for (const line of text.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-
-    const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-    if (!match || process.env[match[1]] !== undefined) continue;
-
-    let value = match[2].trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
+    for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
     }
-    process.env[match[1]] = value;
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
   }
 }

@@ -43,6 +43,9 @@ const haiIpScript = resolve(projectRoot, 'scripts/haiip-windows-ui-control.ps1')
 const SEARCH_ADVISOR_URL = 'https://searchadvisor.naver.com/console/board';
 const LOGIN_URL = 'https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fsearchadvisor.naver.com%2Fconsole%2Fboard';
 const LOGIN_TIMEOUT_MS = Number(options.loginTimeoutMs || 300_000);
+// 값만 채우고 로그인 버튼은 사람이 누른다. IP보안·로그인유지를 직접 고를 수 있고,
+// 반복 자동 로그인으로 추가 인증이 걸리는 것도 줄어든다.
+const noAutoClick = Boolean(options.noAutoClick);
 
 const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!connectionString) throw new Error('DATABASE_URL or DIRECT_URL is required.');
@@ -168,7 +171,12 @@ async function captureOne(account) {
       await page.waitForSelector('#id', { timeout: 15_000 });
       filled.id = await fillAndVerify(page, '#id', account.account_id);
       filled.pw = await fillAndVerify(page, '#pw', account.password_plain);
-      if (filled.id && filled.pw) {
+      // 네이버가 반복 로그인을 감지하면 영수증 금액 계산 같은 추가 인증을 띄운다.
+      // 사람이 IP보안·로그인유지를 먼저 고르고 직접 누르는 편이 덜 걸린다.
+      // --no-auto-click 이면 값만 채워두고 클릭은 사람에게 맡긴다.
+      if (noAutoClick) {
+        console.log('  아이디·비밀번호만 채웠습니다. 브라우저에서 직접 로그인해 주세요.');
+      } else if (filled.id && filled.pw) {
         // 버튼 셀렉터가 안 잡히는 경우가 있어 엔터로 물러선다.
         try {
           await page.click('#log\\.login, .btn_login, button[type=submit]', { timeout: 8000 });
@@ -319,7 +327,25 @@ async function verifySearchAdvisor(statePath) {
     const url = page.url();
     if (url.includes('nid.naver.com')) return { ok: false, reason: '로그인 페이지로 튕겼습니다.' };
     if (response && response.status() >= 400) return { ok: false, reason: `HTTP ${response.status()}` };
-    return { ok: true, title: (await page.title()).slice(0, 40) };
+
+    // URL 만 보면 안 된다. searchadvisor 도메인 그대로 로그인 화면을 그리는 경우가 있어,
+    // 실제로 "로그인 - 네이버 서치어드바이저" 화면을 통과시켜 깨진 세션을 저장했다.
+    // 그 세션이 멀쩡하던 것을 덮어써서 소유확인 1,000건이 통째로 실패했다(2026-08-06).
+    // 화면 내용으로 로그인 여부를 확정한다.
+    await page.waitForTimeout(1500);
+    const title = (await page.title()) || '';
+    const body = (await page.evaluate(() => document.body?.innerText || '')).replace(/\s+/g, ' ');
+    if (/아이디 또는 전화번호|로그인 상태 유지|QR 코드 로그인|추가 확인을 해주세요/.test(body)) {
+      return { ok: false, reason: '로그인 화면이 그려져 있습니다(추가 인증이 필요할 수 있습니다).' };
+    }
+    if (/^NAVER 로그인|로그인 - /.test(title)) {
+      return { ok: false, reason: `로그인 화면 제목입니다: ${title.slice(0, 40)}` };
+    }
+    // 콘솔에 들어갔다면 사이트 관리 UI 가 보여야 한다.
+    if (!/사이트 관리|웹마스터 도구|사이트 등록/.test(body)) {
+      return { ok: false, reason: `서치어드바이저 콘솔 화면이 아닙니다: ${body.slice(0, 60)}` };
+    }
+    return { ok: true, title: title.slice(0, 40) };
   } finally {
     await browser.close().catch(() => {});
   }

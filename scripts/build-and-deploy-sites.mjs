@@ -42,6 +42,11 @@ if (!process.env.DEPLOY_HEAP_APPLIED) {
 
 const options = parseOptions(process.argv.slice(2));
 const limit = options.limit ? Number(options.limit) : null;
+// 계정 범위를 좁힌다. 이미 배포·소유확인이 끝난 사이트를 다시 올리면 빌드 시간이
+// 배로 들고, 멀쩡히 도는 것을 건드릴 이유도 없다. 기본은 전체.
+//   node scripts/build-and-deploy-sites.mjs --from-order 15 --to-order 20
+const fromOrder = Number(options.fromOrder || 1);
+const toOrder = Number(options.toOrder || 9999);
 const deploy = !options.noDeploy;
 const groupKey = options.groupKey || 'cleaning-ravi';
 const appDir = resolve(projectRoot, 'apps/cleaning-ravi');
@@ -63,13 +68,15 @@ await client.connect();
 let domains;
 try {
   const result = await client.query(
-    `select id, host, site_url, page_count, naver_verification_token,
-            (source_payload->>'globalSiteOrder')::int as global_site_order
-       from public.naver_project_domains
-      where group_key = $1 and deployment_status = 'active' and is_visible = true
-      order by (source_payload->>'globalSiteOrder')::int
+    `select d.id, d.host, d.site_url, d.page_count, d.naver_verification_token,
+            (d.source_payload->>'globalSiteOrder')::int as global_site_order
+       from public.naver_project_domains d
+       join public.naver_searchadvisor_accounts a on a.account_id = d.naver_account_id
+      where d.group_key = $1 and d.deployment_status = 'active' and d.is_visible = true
+        and a.account_order between $2 and $3
+      order by (d.source_payload->>'globalSiteOrder')::int
       ${limit ? 'limit ' + Number(limit) : ''}`,
-    [groupKey],
+    [groupKey, fromOrder, toOrder],
   );
   domains = result.rows;
 } finally {
