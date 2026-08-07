@@ -1,28 +1,25 @@
----
-import { SITE_CONFIG } from '../config/site';
+<!--
+  test.html 의 폼이 아니라 기존 배포본의 폼이다. 두 가지가 다르다.
 
-interface Props {
-  heading: string;
-  note: string;
-  id?: string;
-}
-
-const { heading, note, id } = Astro.props;
----
-
-<div class="cpa-form" id={id}>
+  1. iframe src 가 test.html 에는 code=MwNJSXOiNt 로 박혀 있다. 실제 배포는
+     PUBLIC_LEAD_FORM_URL 로 갈아끼울 수 있어야 해서 {{form.src}} 로 둔다.
+  2. test.html 은 $('#ifrCCAl') 을 바로 부른다. jQuery 로딩이 실패하면
+     ReferenceError 로 그 뒤 스크립트가 통째로 죽는다. 기존 배포본의
+     typeof 가드를 그대로 가져왔다.
+-->
+<div class="cpa-form">
   <iframe
     name="ifrm_icode"
     id="ifrCCAl"
     scrolling="no"
     frameborder="0"
     width="100%"
-    src={SITE_CONFIG.formSrc}
+    src="{{form.src}}"
     title="무료 비교 견적 신청"
   ></iframe>
-  <script type="text/javascript" src={SITE_CONFIG.jqueryUrl} is:inline></script>
-  <script type="text/javascript" src={SITE_CONFIG.iframeResizerUrl} is:inline></script>
-  <script type="text/javascript" is:inline>
+  <script type="text/javascript" src="{{form.jquery}}"></script>
+  <script type="text/javascript" src="{{form.iframeResizer}}"></script>
+  <script type="text/javascript">
     if (typeof $ !== 'undefined' && $('#ifrCCAl').length) {
       $('#ifrCCAl').iFrameResize({
         autoResize: true,

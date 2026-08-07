@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>전국 청소업체 무료 비교 견적 | 클린프렌즈</title>
+    <style>
+      :root {
+        --navy: #1b2a4a;
+        --blue: #2f6fed;
+        --blue-dark: #1e4fc4;
+        --mint: #12b886;
+        --orange: #ff7a45;
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #293246;
+        --muted: #6b7488;
+        --border: #e6eaf2;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        overflow-x: hidden;
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* ===== Top bar ===== */
+      .topbar {
+        background: var(--navy);
+        color: #cfe0ff;
+        font-size: 13px;
+        padding: 6px 0;
+        text-align: center;
+      }
+
+      /* ===== Header ===== */
+      header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+      .logo {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--navy);
+        letter-spacing: -0.5px;
+      }
+      .logo span {
+        color: var(--blue);
+      }
+      .header-cta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .btn-call {
+        background: var(--navy);
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 16px;
+        border-radius: 8px;
+      }
+
+      /* ===== Hero ===== */
+      .hero {
+        background: linear-gradient(135deg, #eaf1ff 0%, #f5f7fb 60%);
+        padding: 56px 0 40px;
+      }
+      .hero-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      .badge {
+        display: inline-block;
+        background: #e7f0ff;
+        color: var(--blue-dark);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+      }
+      .hero h1 {
+        font-size: 34px;
+        font-weight: 800;
+        color: var(--navy);
+        line-height: 1.35;
+        letter-spacing: -0.8px;
+      }
+      .hero h1 em {
+        color: var(--blue);
+        font-style: normal;
+      }
+      .hero p {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 16px;
+      }
+      .hero-stats {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin-top: 22px;
+      }
+      .hero-stats div {
+        font-size: 13px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .hero-stats strong {
+        display: block;
+        font-size: 20px;
+        color: var(--navy);
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      /* ===== CPA button row ===== */
+      .cpa-row {
+        margin-top: 26px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .cpa-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 8px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 14px;
+        color: #fff;
+        text-align: center;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
+      .cpa-btn:hover {
+        transform: translateY(-3px);
+      }
+      .cpa-btn small {
+        font-weight: 600;
+        font-size: 11px;
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+      .cpa-btn.c1 {
+        background: linear-gradient(135deg, #2f6fed, #1e4fc4);
+      }
+      .cpa-btn.c2 {
+        background: linear-gradient(135deg, #12b886, #0b8f68);
+      }
+      .cpa-btn.c3 {
+        background: linear-gradient(135deg, #ff7a45, #ea580c);
+      }
+
+      /* ===== Section generic ===== */
+      section {
+        padding: 56px 0;
+      }
+      .section-head {
+        text-align: center;
+        margin-bottom: 34px;
+      }
+      .eyebrow {
+        color: var(--blue);
+        font-weight: 800;
+        font-size: 13px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-top: 8px;
+        letter-spacing: -0.5px;
+      }
+      .section-head p {
+        color: var(--muted);
+        margin-top: 8px;
+        font-size: 15px;
+      }
+
+      /* ===== Vendor compare cards ===== */
+      .vendor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .vendor-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        position: relative;
+        box-shadow: 0 4px 14px rgba(27, 42, 74, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .vendor-card.best {
+        border: 2px solid var(--blue);
+      }
+      .vendor-flag {
+        position: absolute;
+        top: -1px;
+        right: 16px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 6px 12px;
+        border-radius: 0 0 8px 8px;
+      }
+      .vendor-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .vendor-thumb-wrap {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .vendor-thumb-wrap img {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+      .vendor-num {
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--blue);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #fff;
+      }
+      .vendor-card h3 {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--navy);
+      }
+      .vendor-stars {
+        font-size: 12.5px;
+        color: #f5a623;
+        margin-top: 4px;
+      }
+      .vendor-stars span {
+        color: var(--navy);
+        font-weight: 700;
+        margin-left: 4px;
+      }
+      .vendor-stars em {
+        color: var(--muted);
+        font-weight: 500;
+        font-style: normal;
+      }
+      .vendor-feat-box {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 14px;
+        font-size: 13px;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .vendor-cta {
+        display: block;
+        text-align: center;
+        padding: 13px;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 14.5px;
+        color: #fff;
+        background: var(--blue);
+      }
+      .vendor-cta:hover {
+        background: var(--blue-dark);
+      }
+
+      /* ===== Process ===== */
+      .process {
+        background: #fff;
+      }
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 14px;
+      }
+      .step {
+        background: var(--bg);
+        border-radius: 14px;
+        padding: 20px 14px;
+        text-align: center;
+        border: 1px solid var(--border);
+      }
+      .step .num {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--navy);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 14px;
+        margin: 0 auto 10px;
+      }
+      .step h4 {
+        font-size: 14.5px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 6px;
+      }
+      .step p {
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+
+      /* ===== Gallery ===== */
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .gallery-grid img {
+        border-radius: 12px;
+        height: 130px;
+        width: 100%;
+        object-fit: cover;
+      }
+
+      /* ===== CPA Form ===== */
+      .form-section {
+        background: linear-gradient(135deg, var(--navy), #233a66);
+        color: #fff;
+      }
+      .form-section .section-head h2 {
+        color: #fff;
+      }
+      .form-section .section-head p {
+        color: #c6d3ee;
+      }
+      .cpa-form {
+        max-width: 640px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 18px;
+        padding: 20px;
+        color: var(--text);
+        box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+      }
+
+      /* ===== Testimonials ===== */
+      .testi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .testi {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        font-size: 13.5px;
+      }
+      .testi .stars {
+        color: #f5a623;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .testi .who {
+        margin-top: 12px;
+        font-size: 12.5px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      /* ===== FAQ ===== */
+      .faq-list {
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      details {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+      }
+      summary {
+        font-weight: 700;
+        color: var(--navy);
+        cursor: pointer;
+        font-size: 14.5px;
+      }
+      details p {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+
+      /* ===== Sticky bottom CTA (mobile) ===== */
+      .sticky-cta {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        padding: 10px 14px;
+        display: none;
+        gap: 8px;
+        z-index: 60;
+        box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+      }
+      .sticky-cta a {
+        flex: 1;
+        text-align: center;
+        padding: 12px;
+        border-radius: 9px;
+        font-weight: 800;
+        font-size: 13px;
+        color: #fff;
+      }
+
+      footer {
+        background: var(--navy);
+        color: #a9b7d6;
+        padding: 34px 0;
+        font-size: 12.5px;
+      }
+      footer .wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      footer strong {
+        color: #fff;
+      }
+      .disclaimer {
+        font-size: 11px;
+        color: #7f8db3;
+        margin-top: 14px;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 860px) {
+        .vendor-grid {
+          grid-template-columns: 1fr;
+        }
+        .steps {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .gallery-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .testi-grid {
+          grid-template-columns: 1fr;
+        }
+        .sticky-cta {
+          display: flex;
+        }
+        body {
+          padding-bottom: 64px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .wrap {
+          padding: 0 16px;
+        }
+        .topbar {
+          font-size: 11px;
+          padding: 7px 10px;
+          line-height: 1.5;
+        }
+        header .wrap {
+          padding-top: 10px;
+          padding-bottom: 10px;
+        }
+        .logo {
+          font-size: 18px;
+        }
+        .btn-call {
+          font-size: 12.5px;
+          padding: 9px 13px;
+        }
+        .hero {
+          padding: 32px 0 24px;
+        }
+        .hero h1 {
+          font-size: 24px;
+          line-height: 1.4;
+          letter-spacing: -0.4px;
+        }
+        .hero p {
+          font-size: 13.5px;
+          margin-top: 10px;
+        }
+        .badge {
+          font-size: 11.5px;
+          padding: 5px 10px;
+        }
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          margin-top: 18px;
+          width: 100%;
+        }
+        .hero-stats div {
+          font-size: 11px;
+          white-space: normal;
+        }
+        .hero-stats strong {
+          font-size: 16px;
+        }
+        .cpa-row {
+          gap: 8px;
+          margin-top: 20px;
+        }
+        .cpa-btn {
+          padding: 12px 8px;
+          font-size: 13px;
+        }
+        .cpa-btn small {
+          font-size: 10.5px;
+        }
+        section {
+          padding: 40px 0;
+        }
+        .section-head h2 {
+          font-size: 21px;
+        }
+        .section-head p {
+          font-size: 13.5px;
+        }
+        .vendor-card {
+          padding: 18px;
+        }
+        .cpa-form {
+          padding: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">📍 전국 출장 가능 · 무료 방문 견적 · 상담 후 비용 결정</div>
+
+    <header>
+      <div class="wrap">
+        <div class="logo">클린<span>프렌즈</span></div>
+        <div class="header-cta">
+          <a href="#cpa-form" class="btn-call">무료 견적 신청</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <span class="badge">청소업체 비교 플랫폼</span>
+        <h1>
+          입주청소 · 이사청소 · 사무실청소<br /><em>3곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
+        </h1>
+        <p>
+          혼자 알아보면 시간도 오래 걸리고 가격 비교도 어렵습니다. 클린프렌즈가 검증된 업체 3곳의 견적을 한 번에 모아
+          비교해드립니다.
+        </p>
+        <div class="hero-stats">
+          <div><strong>4.8 / 5.0</strong>평균 고객 만족도</div>
+          <div><strong>32,000+</strong>누적 견적 매칭 건수</div>
+          <div><strong>30분</strong>평균 상담 회신 시간</div>
+        </div>
+        <div class="cpa-row">
+          <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener"
+            >✨ 새집느낌<small>홈케어 전문 청소</small></a
+          >
+          <a class="cpa-btn c2" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener"
+            >🧹 이사방청소<small>비교 후 진행하는 청소</small></a
+          >
+          <a class="cpa-btn c3" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener"
+            >🚀 24번가 입주청소<small>가격비교 업계 1위</small></a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMPARE ===== -->
+    <section id="compare">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Compare</span>
+          <h2>입주청소, 어느 업체가 나에게 맞을까요?</h2>
+          <p>고객님의 조건에 맞는 우수 업체 3곳을 찾았습니다. 후기와 특징을 비교해보고 견적을 신청하세요.</p>
+        </div>
+        <div class="vendor-grid">
+          <div class="vendor-card best">
+            <span class="vendor-flag">🔥 BEST 1위 추천</span>
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">1</span>
+                <img
+                  src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=200&h=200&q=80"
+                  alt="새집느낌 청소 담당자"
+                />
+              </div>
+              <div>
+                <h3>새집느낌</h3>
+                <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(1,890+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 홈케어 한 가지만 연구해온 전문 청소업체</div>
+              <div>✓ 친환경 세정제·피톤치드 살균 소독 포함</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener"
+              >해당 업체 무료 견적 받기</a
+            >
+          </div>
+
+          <div class="vendor-card">
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">2</span>
+                <img
+                  src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=200&h=200&q=80"
+                  alt="이사방청소 담당자"
+                />
+              </div>
+              <div>
+                <h3>이사방청소</h3>
+                <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(1,100+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 여러 업체를 비교한 뒤 진행하는 검증형 매칭 서비스</div>
+              <div>✓ 전국 신속 출동, 당일 견적 비교 가능</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener"
+              >해당 업체 무료 견적 받기</a
+            >
+          </div>
+
+          <div class="vendor-card">
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">3</span>
+                <img
+                  src="https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=200&h=200&q=80"
+                  alt="24번가 입주청소 담당자"
+                />
+              </div>
+              <div>
+                <h3>24번가 입주청소</h3>
+                <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(1,890+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 전국 입주·이사청소 가격비교 업계 압도적 1등</div>
+              <div>✓ 24시간 언제든 온라인 접수, 합리적인 가성비</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener"
+              >해당 업체 무료 견적 받기</a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CPA FORM ===== -->
+    <section class="form-section" id="cpa-form">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow" style="color: #8fb4ff">Free Quote</span>
+          <h2>30초면 끝! 무료 비교 견적 신청</h2>
+          <p>아래 폼을 작성하면 제휴 업체와 바로 연결됩니다.</p>
+        </div>
+
+        <div class="cpa-form">
+          <iframe
+            name="ifrm_icode"
+            id="ifrCCAl"
+            scrolling="no"
+            frameborder="0"
+            width="100%"
+            src="https://replyalba.com/intros/_frm/index.php?code=MwNJSXOiNt"
+          ></iframe>
+          <script type="text/javascript" src="https://replyalba.com/js/jquery-1.11.0.min.js"></script>
+          <script type="text/javascript" src="https://replyalba.com/js/iframeResizer.min.js"></script>
+          <script type="text/javascript">
+            $('#ifrCCAl').iFrameResize({
+              autoResize: true,
+              bodyBackground: null,
+              bodyMargin: null,
+              bodyMarginV1: 0,
+              bodyPadding: null,
+              checkOrigin: true,
+              enablePublicMethods: false,
+              heightCalculationMethod: 'offset',
+              interval: 32,
+              log: false,
+              maxHeight: Infinity,
+              maxWidth: Infinity,
+              minHeight: 0,
+              minWidth: 0,
+              scrolling: false,
+              sizeHeight: true,
+              sizeWidth: false,
+              tolerance: 0,
+              closedCallback: function () {},
+              initCallback: function () {},
+              messageCallback: function () {},
+              resizedCallback: function () {},
+              callback: function (messageData) {
+                return true;
+              },
+            });
+          </script>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section class="process">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Process</span>
+          <h2>상담부터 완료까지, 5단계로 진행됩니다</h2>
+          <p>모든 단계에서 범위와 비용을 먼저 안내한 뒤 작업합니다.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h4>상담·견적</h4>
+            <p>평수와 원하는 서비스를 확인하고 견적을 안내합니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h4>업체 비교</h4>
+            <p>조건에 맞는 업체 1~3곳을 매칭해 비교해드립니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h4>일정 확정</h4>
+            <p>이사·입주 일정에 맞춰 방문 날짜를 확정합니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">4</div>
+            <h4>현장 청소</h4>
+            <p>전문 장비로 안내된 범위 기준 작업을 진행합니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">5</div>
+            <h4>검수·완료</h4>
+            <p>함께 확인 후 미흡한 부분은 즉시 보완합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GALLERY ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Gallery</span>
+          <h2>이런 공간을 이렇게 청소합니다</h2>
+        </div>
+        <div class="gallery-grid">
+          <img
+            src="https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=500&q=80"
+            alt="욕실 청소 전후"
+          />
+          <img
+            src="https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=500&q=80"
+            alt="이사 후 빈 방 청소"
+          />
+          <img
+            src="https://images.unsplash.com/photo-1596263576915-cb46b0568cc2?auto=format&fit=crop&w=500&q=80"
+            alt="깨끗한 거실 공간"
+          />
+          <img
+            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=500&q=80"
+            alt="청소 도구와 장비"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Review</span>
+          <h2>먼저 이용해본 고객들의 이야기</h2>
+        </div>
+        <div class="testi-grid">
+          <div class="testi">
+            <div class="stars">★★★★★</div>
+            "여러 업체 전화 돌릴 필요 없이 한 번에 비교돼서 편했어요. 이사 날짜에 맞춰 딱 맞게 진행됐습니다."
+            <div class="who">김OO 님 · 입주청소</div>
+          </div>
+          <div class="testi">
+            <div class="stars">★★★★★</div>
+            "견적 비교표로 가격 차이를 바로 확인할 수 있어서 합리적으로 선택했습니다. 만족도 높아요."
+            <div class="who">박OO 님 · 이사청소</div>
+          </div>
+          <div class="testi">
+            <div class="stars">★★★★★</div>
+            "사무실 이전 전에 신청했는데 주말 작업까지 맞춰주셔서 업무 지장 없이 진행했습니다."
+            <div class="who">이OO 님 · 사무실청소</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">FAQ</span>
+          <h2>자주 묻는 질문</h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>비교 견적 신청은 정말 무료인가요?</summary>
+            <p>네, 견적 비교 및 상담 신청은 무료입니다. 실제 계약 여부는 상담 후 고객님이 직접 결정하시면 됩니다.</p>
+          </details>
+          <details>
+            <summary>몇 개 업체와 비교할 수 있나요?</summary>
+            <p>
+              선택하신 서비스에 따라 최대 1~3곳의 업체 견적을 비교해드립니다. 지역과 일정에 따라 매칭 가능한 업체 수는
+              달라질 수 있습니다.
+            </p>
+          </details>
+          <details>
+            <summary>당일 신청도 방문이 가능한가요?</summary>
+            <p>
+              지역과 업체 일정에 따라 당일 방문이 가능한 경우도 있습니다. 신청서에 희망 일정을 남겨주시면 우선
+              안내드립니다.
+            </p>
+          </details>
+          <details>
+            <summary>견적 후 계약을 하지 않아도 되나요?</summary>
+            <p>물론입니다. 비교 견적은 참고용 상담이며, 계약 여부는 전적으로 고객님의 선택입니다.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <strong>클린프렌즈 청소 비교 서비스</strong>
+        <div>전국 출장 상담 가능 · 무료 견적 문의</div>
+        <div class="disclaimer">
+          본 페이지는 청소 관련 서비스 비교·상담 신청을 위한 랜딩페이지이며, 각 CPA 버튼 및 신청 폼은 제휴 파트너사
+          페이지로 연결됩니다. 실제 시공은 제휴 파트너사를 통해 진행되며, 본 사이트는 견적 비교 및 상담 신청 매칭 역할을
+          합니다. 게재된 이미지는 서비스 이해를 돕기 위한 참고 이미지입니다.
+        </div>
+      </div>
+    </footer>
+
+    <div class="sticky-cta">
+      <a href="https://replyalba.com/pt/BtMoZvIUJs" style="background: var(--blue)" target="_blank" rel="noopener"
+        >새집느낌</a
+      >
+      <a href="https://replyalba.com/pt/DD7ERrwYox" style="background: var(--mint)" target="_blank" rel="noopener"
+        >이사방청소</a
+      >
+      <a href="https://replyalba.com/pt/MwNJSXOiNt" style="background: var(--orange)" target="_blank" rel="noopener"
+        >24번가 입주청소</a
+      >
+    </div>
+  </body>
+</html>

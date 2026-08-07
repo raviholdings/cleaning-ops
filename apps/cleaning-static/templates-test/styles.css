@@ -1,0 +1,688 @@
+
+      :root {
+        --navy: #1b2a4a;
+        --blue: #2f6fed;
+        --blue-dark: #1e4fc4;
+        --mint: #12b886;
+        --orange: #ff7a45;
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #293246;
+        --muted: #6b7488;
+        --border: #e6eaf2;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        overflow-x: hidden;
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* ===== Top bar ===== */
+      .topbar {
+        background: var(--navy);
+        color: #cfe0ff;
+        font-size: 13px;
+        padding: 6px 0;
+        text-align: center;
+      }
+
+      /* ===== Header ===== */
+      header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+      .logo {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--navy);
+        letter-spacing: -0.5px;
+      }
+      .logo span {
+        color: var(--blue);
+      }
+      .header-cta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .btn-call {
+        background: var(--navy);
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 16px;
+        border-radius: 8px;
+      }
+
+      /* ===== Hero ===== */
+      .hero {
+        background: linear-gradient(135deg, #eaf1ff 0%, #f5f7fb 60%);
+        padding: 56px 0 40px;
+      }
+      .hero-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      .badge {
+        display: inline-block;
+        background: #e7f0ff;
+        color: var(--blue-dark);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+      }
+      .hero h1 {
+        font-size: 34px;
+        font-weight: 800;
+        color: var(--navy);
+        line-height: 1.35;
+        letter-spacing: -0.8px;
+      }
+      .hero h1 em {
+        color: var(--blue);
+        font-style: normal;
+      }
+      .hero p {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 16px;
+      }
+      .hero-stats {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin-top: 22px;
+      }
+      .hero-stats div {
+        font-size: 13px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .hero-stats strong {
+        display: block;
+        font-size: 20px;
+        color: var(--navy);
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      /* ===== CPA button row ===== */
+      .cpa-row {
+        margin-top: 26px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .cpa-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 8px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 14px;
+        color: #fff;
+        text-align: center;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
+      .cpa-btn:hover {
+        transform: translateY(-3px);
+      }
+      .cpa-btn small {
+        font-weight: 600;
+        font-size: 11px;
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+      .cpa-btn.c1 {
+        background: linear-gradient(135deg, #2f6fed, #1e4fc4);
+      }
+      .cpa-btn.c2 {
+        background: linear-gradient(135deg, #12b886, #0b8f68);
+      }
+      .cpa-btn.c3 {
+        background: linear-gradient(135deg, #ff7a45, #ea580c);
+      }
+
+      /* ===== Section generic ===== */
+      section {
+        padding: 56px 0;
+      }
+      .section-head {
+        text-align: center;
+        margin-bottom: 34px;
+      }
+      .eyebrow {
+        color: var(--blue);
+        font-weight: 800;
+        font-size: 13px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-top: 8px;
+        letter-spacing: -0.5px;
+      }
+      .section-head p {
+        color: var(--muted);
+        margin-top: 8px;
+        font-size: 15px;
+      }
+
+      /* ===== Vendor compare cards ===== */
+      .vendor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .vendor-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        position: relative;
+        box-shadow: 0 4px 14px rgba(27, 42, 74, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .vendor-card.best {
+        border: 2px solid var(--blue);
+      }
+      .vendor-flag {
+        position: absolute;
+        top: -1px;
+        right: 16px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 6px 12px;
+        border-radius: 0 0 8px 8px;
+      }
+      .vendor-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .vendor-thumb-wrap {
+        position: relative;
+        flex-shrink: 0;
+      }
+      .vendor-thumb-wrap img {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+      .vendor-num {
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--blue);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #fff;
+      }
+      .vendor-card h3 {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--navy);
+      }
+      .vendor-stars {
+        font-size: 12.5px;
+        color: #f5a623;
+        margin-top: 4px;
+      }
+      .vendor-stars span {
+        color: var(--navy);
+        font-weight: 700;
+        margin-left: 4px;
+      }
+      .vendor-stars em {
+        color: var(--muted);
+        font-weight: 500;
+        font-style: normal;
+      }
+      .vendor-feat-box {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 14px;
+        font-size: 13px;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .vendor-cta {
+        display: block;
+        text-align: center;
+        padding: 13px;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 14.5px;
+        color: #fff;
+        background: var(--blue);
+      }
+      .vendor-cta:hover {
+        background: var(--blue-dark);
+      }
+
+      /* ===== Process ===== */
+      .process {
+        background: #fff;
+      }
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 14px;
+      }
+      .step {
+        background: var(--bg);
+        border-radius: 14px;
+        padding: 20px 14px;
+        text-align: center;
+        border: 1px solid var(--border);
+      }
+      .step .num {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--navy);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 14px;
+        margin: 0 auto 10px;
+      }
+      .step h4 {
+        font-size: 14.5px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 6px;
+      }
+      .step p {
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+
+      /* ===== Gallery ===== */
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .gallery-grid img {
+        border-radius: 12px;
+        height: 130px;
+        width: 100%;
+        object-fit: cover;
+      }
+
+      /* ===== CPA Form ===== */
+      .form-section {
+        background: linear-gradient(135deg, var(--navy), #233a66);
+        color: #fff;
+      }
+      .form-section .section-head h2 {
+        color: #fff;
+      }
+      .form-section .section-head p {
+        color: #c6d3ee;
+      }
+      .cpa-form {
+        max-width: 640px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 18px;
+        padding: 20px;
+        color: var(--text);
+        box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+      }
+
+      /* ===== Testimonials ===== */
+      .testi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .testi {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        font-size: 13.5px;
+      }
+      .testi .stars {
+        color: #f5a623;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .testi .who {
+        margin-top: 12px;
+        font-size: 12.5px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      /* ===== FAQ ===== */
+      .faq-list {
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      details {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+      }
+      summary {
+        font-weight: 700;
+        color: var(--navy);
+        cursor: pointer;
+        font-size: 14.5px;
+      }
+      details p {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+
+      /* ===== Sticky bottom CTA (mobile) ===== */
+      .sticky-cta {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        padding: 10px 14px;
+        display: none;
+        gap: 8px;
+        z-index: 60;
+        box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+      }
+      .sticky-cta a {
+        flex: 1;
+        text-align: center;
+        padding: 12px;
+        border-radius: 9px;
+        font-weight: 800;
+        font-size: 13px;
+        color: #fff;
+      }
+
+      footer {
+        background: var(--navy);
+        color: #a9b7d6;
+        padding: 34px 0;
+        font-size: 12.5px;
+      }
+      footer .wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      footer strong {
+        color: #fff;
+      }
+      .disclaimer {
+        font-size: 11px;
+        color: #7f8db3;
+        margin-top: 14px;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 860px) {
+        .vendor-grid {
+          grid-template-columns: 1fr;
+        }
+        .steps {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .gallery-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .testi-grid {
+          grid-template-columns: 1fr;
+        }
+        .sticky-cta {
+          display: flex;
+        }
+        body {
+          padding-bottom: 64px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .wrap {
+          padding: 0 16px;
+        }
+        .topbar {
+          font-size: 11px;
+          padding: 7px 10px;
+          line-height: 1.5;
+        }
+        header .wrap {
+          padding-top: 10px;
+          padding-bottom: 10px;
+        }
+        .logo {
+          font-size: 18px;
+        }
+        .btn-call {
+          font-size: 12.5px;
+          padding: 9px 13px;
+        }
+        .hero {
+          padding: 32px 0 24px;
+        }
+        .hero h1 {
+          font-size: 24px;
+          line-height: 1.4;
+          letter-spacing: -0.4px;
+        }
+        .hero p {
+          font-size: 13.5px;
+          margin-top: 10px;
+        }
+        .badge {
+          font-size: 11.5px;
+          padding: 5px 10px;
+        }
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+          margin-top: 18px;
+          width: 100%;
+        }
+        .hero-stats div {
+          font-size: 11px;
+          white-space: normal;
+        }
+        .hero-stats strong {
+          font-size: 16px;
+        }
+        .cpa-row {
+          gap: 8px;
+          margin-top: 20px;
+        }
+        .cpa-btn {
+          padding: 12px 8px;
+          font-size: 13px;
+        }
+        .cpa-btn small {
+          font-size: 10.5px;
+        }
+        section {
+          padding: 40px 0;
+        }
+        .section-head h2 {
+          font-size: 21px;
+        }
+        .section-head p {
+          font-size: 13.5px;
+        }
+        .vendor-card {
+          padding: 18px;
+        }
+        .cpa-form {
+          padding: 12px;
+        }
+      }
+
+/* ------------------------------------------------------------------
+   여기서부터는 test.html 에 없던 규칙이다.
+   test.html 은 홈 한 장짜리라 내부 링크 목록이 필요 없었다. 하위 페이지는
+   사이트당 100장이 서로를 가리켜야 해서 링크 내비게이션이 하나 더 붙는다.
+   위쪽 규칙은 test.html 원본 그대로이며 한 줄도 바꾸지 않았다.
+   ------------------------------------------------------------------ */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.links a {
+  display: inline-block;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.links a:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* ------------------------------------------------------------------
+   CPA 버튼 크기 조정.
+
+   test.html 은 .hero-inner 를 760px 로 묶어놨다. 그 안에 버튼 3개를 나란히
+   놓으니 PC 에서 한 칸이 240px 남짓이라 "24번가 입주청소" 같은 긴 이름이
+   눌려 보였다. 히어로 컨테이너만 넓히고 문단 줄길이는 원래대로 잡아둔다.
+
+   모바일(600px 이하)에서는 3칸을 유지하면 한 칸이 100px 밖에 안 돼서
+   글자가 세 줄로 접힌다. 세로로 쌓고 이름과 설명을 한 줄에 붙인다.
+
+   위쪽 규칙은 test.html 원본 그대로다. 여기서 덮어쓰기만 한다.
+   ------------------------------------------------------------------ */
+.hero-inner {
+  max-width: 940px;
+}
+.hero-inner > p {
+  max-width: 680px;
+}
+.cpa-row {
+  width: 100%;
+  gap: 14px;
+  margin-top: 30px;
+}
+.cpa-btn {
+  padding: 18px 14px;
+  font-size: 16px;
+  min-height: 70px;
+  line-height: 1.35;
+}
+.cpa-btn small {
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+@media (max-width: 860px) {
+  .hero-inner {
+    max-width: 760px;
+  }
+  .cpa-btn {
+    padding: 15px 10px;
+    font-size: 14.5px;
+    min-height: 62px;
+  }
+  .cpa-btn small {
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 600px) {
+  .cpa-row {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-top: 22px;
+  }
+  .cpa-btn {
+    flex-direction: row;
+    justify-content: center;
+    align-items: baseline;
+    gap: 8px;
+    padding: 14px 12px;
+    font-size: 15px;
+    min-height: 0;
+  }
+  .cpa-btn small {
+    margin-top: 0;
+    font-size: 12px;
+  }
+}

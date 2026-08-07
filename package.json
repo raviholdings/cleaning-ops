@@ -13,7 +13,10 @@
     "db:migrate": "node scripts/apply-migrations.mjs",
     "db:migrate:dry": "node scripts/apply-migrations.mjs --dry-run",
     "domains:register": "node scripts/register-naver-project-domains.mjs",
-    "crawl:resume": "powershell -File ./scripts/run-windows-naver-crawl-resume.ps1"
+    "crawl:resume": "powershell -File ./scripts/run-windows-naver-crawl-resume.ps1",
+    "render:one": "node scripts/render-static-site.mjs",
+    "render:vars": "node scripts/render-static-site.mjs --inspect",
+    "render:compare": "node scripts/compare-static-render.mjs"
   },
   "dependencies": {
     "pg": "^8.11.3",

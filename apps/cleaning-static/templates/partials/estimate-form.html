@@ -1,28 +1,8 @@
----
-import { SITE_CONFIG } from '../config/site';
-
-interface Props {
-  heading: string;
-  note: string;
-  id?: string;
-}
-
-const { heading, note, id } = Astro.props;
----
-
-<div class="cpa-form" id={id}>
-  <iframe
-    name="ifrm_icode"
-    id="ifrCCAl"
-    scrolling="no"
-    frameborder="0"
-    width="100%"
-    src={SITE_CONFIG.formSrc}
-    title="무료 비교 견적 신청"
-  ></iframe>
-  <script type="text/javascript" src={SITE_CONFIG.jqueryUrl} is:inline></script>
-  <script type="text/javascript" src={SITE_CONFIG.iframeResizerUrl} is:inline></script>
-  <script type="text/javascript" is:inline>
+<div class="cpa-form">
+  <iframe name="ifrm_icode" id="ifrCCAl" scrolling="no" frameborder="0" width="100%" src="{{form.src}}" title="무료 비교 견적 신청"></iframe>
+  <script type="text/javascript" src="{{form.jquery}}"></script>
+  <script type="text/javascript" src="{{form.iframeResizer}}"></script>
+  <script type="text/javascript">
     if (typeof $ !== 'undefined' && $('#ifrCCAl').length) {
       $('#ifrCCAl').iFrameResize({
         autoResize: true,

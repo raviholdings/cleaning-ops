@@ -39,8 +39,6 @@ const ogImage = `${SITE_URL}/img/hero-1120.webp`;
     <meta property="og:image" content={ogImage} />
     <meta property="og:locale" content="ko_KR" />
 
-    {/* 파비콘. 네이버 가이드는 파비콘을 문서의 일부로 보므로 수집을 막지 않는다.
-        파일은 사이트마다 복사하지 않고 오리진의 shared 한 벌을 nginx 가 서빙한다. */}
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -53,16 +51,41 @@ const ogImage = `${SITE_URL}/img/hero-1120.webp`;
   </head>
 
   <body>
-    <div class="wrap">
-      <slot />
+    <div class="topbar">📍 전국 출장 가능 · 무료 방문 견적 · 상담 후 비용 결정</div>
 
-      <footer>
-        <p style="padding:0">
-          본 사이트는 {SITE_CONFIG.mainKeyword} 업체 비교 및 견적 연결 서비스를 제공합니다.
-          서비스 내용과 가격은 업체 사정에 따라 변동될 수 있습니다.
-        </p>
-      </footer>
+    <header>
+      <div class="wrap">
+        <div class="logo">클린<span>프렌즈</span></div>
+        <div class="header-cta">
+          <a href="#cpa-form" class="btn-call">무료 견적 신청</a>
+        </div>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer>
+      <div class="wrap">
+        <strong>클린프렌즈 청소 비교 서비스</strong>
+        <div>전국 출장 상담 가능 · 무료 견적 문의</div>
+        <div class="disclaimer">
+          본 페이지는 청소 관련 서비스 비교·상담 신청을 위한 랜딩페이지이며, 각 CPA 버튼 및 신청 폼은 제휴 파트너사
+          페이지로 연결됩니다. 실제 시공은 제휴 파트너사를 통해 진행되며, 본 사이트는 견적 비교 및 상담 신청 매칭 역할을
+          합니다. 게재된 이미지는 서비스 이해를 돕기 위한 참고 이미지입니다.
+        </div>
+      </div>
+    </footer>
+
+    <div class="sticky-cta">
+      <a href="https://replyalba.com/pt/BtMoZvIUJs" style="background: var(--blue)" target="_blank" rel="noopener"
+        >새집느낌</a
+      >
+      <a href="https://replyalba.com/pt/DD7ERrwYox" style="background: var(--mint)" target="_blank" rel="noopener"
+        >이사방청소</a
+      >
+      <a href="https://replyalba.com/pt/MwNJSXOiNt" style="background: var(--orange)" target="_blank" rel="noopener"
+        >24번가 입주청소</a
+      >
     </div>
   </body>
 </html>
-

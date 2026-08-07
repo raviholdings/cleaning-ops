@@ -1,35 +1,35 @@
-import { subKeywordsFor } from './keywords.ts';
-import { FAQ_POOL, REVIEW_POOL, SERVICE_CATEGORIES_TEMPLATE, VENDOR_TIPS_POOL } from './content.ts';
-
-const GU_ABBREVIATIONS = new Set([
-  '중', '남', '동', '북', '서',
-  '처인', '수지', '기흥',
-  '분당', '수정', '중원',
-  '만안', '동안',
-  '덕양', '일산동', '일산서',
-  '상록', '단원',
-  '팔달', '영통', '장안', '권선',
-  '성산', '의창', '마산합포', '마산회원', '진해',
-  '완산', '덕진',
-  '상당', '서원', '흥덕', '청원',
-  '동남', '서북',
-]);
+import { ADMIN_DIVISION_EXPANSIONS } from './adminDivisions.ts';
+import { MAIN_KEYWORDS, subKeywordsFor } from './keywords.ts';
+import {
+  FAQ_POOL, REVIEW_AUTHORS, REVIEW_TEXTS, SERVICE_CATEGORIES_TEMPLATE, VENDOR_TIPS_POOL,
+} from './content.ts';
 
 /**
- * 축약된 구 명칭(예: 울산 중 북정동 -> 울산 중구 북정동)을 정형화한다.
+ * 축약된 행정구역명을 정식 명칭으로 편다.
+ *   서울 동작 흑석동      -> 서울 동작구 흑석동
+ *   경기 수원 장안구 파장동 -> 경기 수원시 장안구 파장동
+ *
+ * 첫 토큰(시도)과 마지막 토큰(동/리)은 건드리지 않는다. 가운데만 편다.
+ *
+ * ⚠ 이 함수의 결과를 해시 입력으로 쓰면 안 된다.
+ * rollout-locations.json 에는 "서울 종로 청운동" 과 "서울 종로구 청운동" 이
+ * 서로 다른 항목으로 들어 있고, 카탈로그는 둘을 다른 페이지에 배정한다.
+ * 정규화한 문자열로 해시를 돌리면 두 페이지의 제목·FAQ·후기가 통째로
+ * 같아진다(지역의 10%가 이런 쌍이다). 표시할 때만 펴고, 해시는 항상 원본
+ * 문자열로 돌린다. 그래야 같은 동네를 가리키는 두 페이지가 서로 다른
+ * 문장을 갖는다.
  */
 export function normalizeLocation(location: string): string {
   if (!location) return '';
-  const tokens = location.trim().split(/s+/);
+  const tokens = location.trim().split(/\s+/);
   if (tokens.length <= 1) return location;
 
-  const normalized = tokens.map((token, idx) => {
-    if (idx > 0 && idx < tokens.length - 1 && GU_ABBREVIATIONS.has(token)) {
-      return token + '구';
-    }
-    return token;
-  });
-  return normalized.join(' ');
+  return tokens
+    .map((token, index) => {
+      if (index === 0 || index === tokens.length - 1) return token;
+      return ADMIN_DIVISION_EXPANSIONS[token] ?? token;
+    })
+    .join(' ');
 }
 
 /**
@@ -137,8 +137,7 @@ function getRecentReviewDate(daysAgo: number): string {
  * 배포/생성 시점 기준 1일~30일 이내 최신 작성 날짜 자동 부여.
  */
 export function pickReviews(location: string, main: string, count = 3) {
-  const pool = REVIEW_POOL;
-  const size = pool.length;
+  const size = REVIEW_TEXTS.length;
   if (size === 0) return [];
   const take = Math.min(count, size);
 
@@ -146,25 +145,61 @@ export function pickReviews(location: string, main: string, count = 3) {
   let step = (seed % (size - 1)) + 1;
   while (step > 1 && size % step === 0) step -= 1;
 
-  const fill = (text: string) => text.replaceAll('{main}', main).replaceAll('{location}', shortLocation(location));
+  const fill = fillTokens(location, main);
+  const services = reviewServices(seed, take, main);
 
-  const picked: { author: string; rating: number; date: string; text: string }[] = [];
+  const picked: {
+    author: string; rating: number; date: string; text: string; service: string;
+  }[] = [];
+
   for (let i = 0; i < take; i += 1) {
     const idx = (seed + i * step) % size;
-    const item = pool[idx];
-    if (!item) continue;
+    const text = REVIEW_TEXTS[idx];
+    if (!text) continue;
+
+    // 성씨와 본문을 따로 고른다. 짝을 고정하지 않아야 조합 수가 늘어난다.
+    const author = REVIEW_AUTHORS[(seed + i * 31 + idx * 7) % REVIEW_AUTHORS.length] ?? '김**';
+
+    // 별점은 5점 위주로 하되 가끔 4점을 섞는다. 전부 5점이면 오히려 조작처럼 보인다.
+    const rating = (seed + i * 13) % 7 === 0 ? 4 : 5;
 
     const daysAgo = ((seed + i * 7 + idx) % 30) + 1;
-    const reviewDate = getRecentReviewDate(daysAgo);
 
     picked.push({
-      author: item.author,
-      rating: item.rating,
-      date: reviewDate,
-      text: fill(item.text),
+      author,
+      rating,
+      date: getRecentReviewDate(daysAgo),
+      text: fill(text),
+      // 이름 옆에 붙는 서비스명. 이 페이지의 지역이 아니라 우리가 다루는
+      // 서비스 종류를 보여준다 (입주청소 · 이사청소 · 사무실청소 …).
+      service: services[i] ?? main,
     });
   }
   return picked;
+}
+
+/**
+ * 후기 옆에 붙일 서비스명 목록. 서로 겹치지 않게 고른다.
+ *
+ * 첫 번째는 이 페이지의 메인 키워드를 그대로 쓴다. 페이지 주제와 후기가
+ * 완전히 따로 놀면 어색하다. 나머지는 다른 서비스로 채워, 우리가 청소 전반을
+ * 다룬다는 것을 보여준다.
+ */
+function reviewServices(seed: number, count: number, main: string): string[] {
+  const size = MAIN_KEYWORDS.length;
+  const out: string[] = [main];
+  const used = new Set<string>([main]);
+
+  let index = seed % size;
+  while (out.length < count && used.size < size) {
+    const candidate = MAIN_KEYWORDS[index % size];
+    if (candidate && !used.has(candidate)) {
+      out.push(candidate);
+      used.add(candidate);
+    }
+    index += 1;
+  }
+  return out;
 }
 
 /**
@@ -231,7 +266,7 @@ function hash(value: string): number {
 
 export function shortLocation(location: string): string {
   const norm = normalizeLocation(location);
-  return norm.trim().split(/s+/).pop() ?? norm;
+  return lastLocationToken(norm);
 }
 
 export function pickSubKeywords(location: string, main: string, count = 2): string[] {
@@ -260,12 +295,48 @@ function cta(location: string, main: string) {
   };
 }
 
+/**
+ * 제목 뒷부분에 붙는 표현들.
+ *
+ * 네이버는 검색어를 토큰으로 쪼개서 맞춘다. '나성동 하수구 막힘' 으로 검색해도
+ * 제목에 '하수구막힘' 이 있으면 '막힘' 토큰이 걸려 노출된다. 그래서 제목이
+ * 길수록, 서로 다른 단어가 많이 들어갈수록 걸리는 검색어가 늘어난다.
+ *
+ * 다만 같은 단어를 반복하면 반대로 감점이다. 조합을 흔들어 페이지마다 다른
+ * 단어 묶음이 나오게 한다.
+ */
+const TITLE_TAILS = ['업체 비교 추천', '전문업체 비교', '업체 추천 순위', '업체 비교 견적'] as const;
+const TITLE_HOOKS = ['무료 견적', '비용 견적', '가격 비교', '견적 문의'] as const;
+
+/**
+ * 제목 상한. 네이버 검색결과는 대략 이 길이에서 잘리지만, 잘린 뒤 글자도
+ * 색인에는 들어간다. 그래서 잘림을 감수하고 토큰을 더 넣는다.
+ */
+const TITLE_MAX = 78;
+
 export function buildTitle(location: string, main: string, variant: TitleVariant = 'A'): string {
   const norm = normalizeLocation(location);
-  const { verb, count } = cta(norm, main);
+  const { verb, count } = cta(location, main);
 
   if (variant === 'B') {
-    return `${norm} ${main} ${verb} ${count}곳`;
+    const seed = hash(`title|${location}|${main}`);
+    const subs = pickSubKeywords(norm, main, 2);
+    const sub = subs[0] ?? main;
+    const tail = TITLE_TAILS[seed % TITLE_TAILS.length] ?? TITLE_TAILS[0];
+    const hook = TITLE_HOOKS[Math.floor(seed / 5) % TITLE_HOOKS.length] ?? TITLE_HOOKS[0];
+
+    const patterns = [
+      `${norm} ${main} ${tail} ${count}곳 | ${sub} ${hook}`,
+      `${norm} ${main} ${sub} ${tail} | ${hook} ${count}곳`,
+      `${norm} ${main} 잘하는곳 ${count}곳 ${tail} · ${sub} ${hook}`,
+      `${norm} ${main} ${verb} ${count}곳 | ${sub} ${tail}`,
+    ];
+    const picked = patterns[Math.floor(seed / 11) % patterns.length] ?? patterns[0];
+
+    // 지역명이 유난히 긴 곳(예: 세종특별자치시 …)은 뒤를 한 단계 줄인다.
+    if (picked.length <= TITLE_MAX) return picked;
+    const shortened = `${norm} ${main} ${tail} ${count}곳 | ${hook}`;
+    return shortened.length <= TITLE_MAX ? shortened : `${norm} ${main} ${tail} ${count}곳`;
   }
 
   const base = `${shortLocation(norm)} ${main}`;
@@ -275,12 +346,29 @@ export function buildTitle(location: string, main: string, variant: TitleVariant
   return base;
 }
 
+const DESC_OPENERS = [
+  '{location} {main} 업체를 비용·작업범위·후기로 한 번에 비교하세요.',
+  '{location} 지역 {main} 업체 조건을 모아 비교해 드립니다.',
+  '{location} {main}, 여러 곳에 전화 돌릴 필요 없이 한 번만 접수하세요.',
+  '{location} {main} 업체 견적을 나란히 놓고 비교할 수 있습니다.',
+] as const;
+
+const DESC_CLOSERS = [
+  '{sub} {sub2} 포함 여부까지 확인하고 30초 무료 견적을 받아보세요.',
+  '{sub} 비용과 {sub2} 조건을 함께 안내해 드립니다. 상담은 무료입니다.',
+  '{sub} 가격대와 AS 조건까지 비교한 뒤 결정하시면 됩니다.',
+  '{sub} 및 {sub2} 작업이 가능한 업체만 추려 드립니다. 무료 접수 30초.',
+] as const;
+
 export function buildDescription(location: string, main: string, variant: TitleVariant = 'A'): string {
   const norm = normalizeLocation(location);
-  const subs = pickSubKeywords(norm, main);
 
   if (variant === 'B') {
-    return `${norm} ${main} 업체 비교. ${subs.join(' ')} 정보와 무료 견적을 한 번에 확인하세요.`;
+    const seed = hash(`desc|${location}|${main}`);
+    const fill = fillTokens(norm, main);
+    const opener = DESC_OPENERS[seed % DESC_OPENERS.length] ?? DESC_OPENERS[0];
+    const closer = DESC_CLOSERS[Math.floor(seed / 7) % DESC_CLOSERS.length] ?? DESC_CLOSERS[0];
+    return fill(`${opener} ${closer}`);
   }
 
   const short = shortLocation(norm);
@@ -290,11 +378,89 @@ export function buildDescription(location: string, main: string, variant: TitleV
     : `${short} ${main} 업체 비교, 무료 견적 신청`;
 }
 
+/**
+ * 본문 곳곳에 흩뿌릴 문장들.
+ *
+ * 주변 지역명과 서브 키워드를 본문에 자연스럽게 넣기 위한 것이다. 지역명을
+ * 제목에만 넣으면 그 지역 검색어 하나에만 걸리지만, 본문에 인근 동네가 같이
+ * 있으면 옆 동네 검색에도 잡힌다. 같은 문장이 30만 장에 그대로 깔리면 역효과라
+ * (지역, 키워드) 해시로 표현을 바꾼다.
+ *
+ * @param nearby pickNearbyLocations 결과. 비어 있어도 동작한다.
+ */
+export function buildBodyCopy(location: string, main: string, nearby: readonly string[] = []) {
+  const norm = normalizeLocation(location);
+  const seed = hash(`body|${location}|${main}`);
+  const fill = fillTokens(norm, main);
+
+  // 인근 지역은 전부 나열하지 않는다. 문장마다 다른 개수를 쓴다.
+  const near = nearby.filter(Boolean);
+  const nearList = near.length ? near.join(', ') : norm;
+  const nearOne = near[seed % Math.max(1, near.length)] ?? norm;
+  const nearTwo = near.slice(0, 2).join('·') || norm;
+
+  const pick = <T,>(pool: readonly T[], salt: number): T => pool[Math.floor(seed / salt) % pool.length] ?? pool[0]!;
+
+  return {
+    /** 히어로 아래 리드 문장 */
+    lede: fill(pick([
+      `{main} 업체를 비용과 조건으로 비교해, {location} 요청하신 내용에 가장 맞는 곳을 연결해 드립니다. 여러 곳에 따로 문의하실 필요 없이 한 번만 접수하시면 됩니다.`,
+      `{location}에서 {main} 알아보고 계신가요. {sub} 포함 여부까지 확인해 조건에 맞는 업체만 추려 드립니다. 접수는 30초면 끝납니다.`,
+      `혼자 알아보면 시간도 오래 걸리고 가격 비교도 어렵습니다. {location} 방문이 가능한 {main} 업체 견적을 한 번에 모아 비교해 드립니다.`,
+      `{location} {main} 업체마다 포함 항목과 금액이 다릅니다. {sub}와 {sub2}까지 같은 기준으로 맞춰 비교해 드립니다.`,
+    ], 3)),
+
+    /** 비교 섹션 설명 */
+    compareNote: fill(pick([
+      `{location} 조건에 맞는 우수 업체를 찾았습니다. 후기와 특징을 비교해보고 견적을 신청하세요.`,
+      `{location} 및 ${nearTwo} 지역에 방문 가능한 업체입니다. 조건을 비교한 뒤 선택하시면 됩니다.`,
+      `{sub} 작업까지 가능한 곳으로 추렸습니다. 금액과 작업 범위를 나란히 확인해 보세요.`,
+      `{location} 지역 담당 업체입니다. 견적과 일정을 비교하고 마음에 드는 곳으로 진행하세요.`,
+    ], 5)),
+
+    /** 서비스 지역 안내 문단 */
+    areaNote: fill(pick([
+      `{location} 지역을 포함하여 ${nearList} 등 인근 동네까지 전담 검증팀이 직접 방문합니다.`,
+      `{location}은 물론 ${nearOne} 방면까지 같은 팀이 담당합니다. 경계 지역이라도 방문이 가능한지 확인해 드립니다.`,
+      `{location}과 ${nearTwo} 일대를 함께 커버합니다. 이사 전후로 두 지역을 오가는 경우에도 한 번에 처리됩니다.`,
+      `{location} 중심으로 ${nearList} 범위까지 배정합니다. 위치를 알려주시면 가장 가까운 팀으로 연결해 드립니다.`,
+    ], 13)),
+
+    /** 인근 지역 나열 (템플릿에서 굵게 처리) */
+    nearbyList: nearList,
+    nearbyOne: nearOne,
+
+    /** FAQ 위에 놓을 한 줄 */
+    faqNote: fill(pick([
+      `{location} {main} 문의에서 가장 많이 나온 질문을 모았습니다.`,
+      `{main}와 {sub} 관련해 자주 받는 질문입니다.`,
+      `{location} 지역 접수 전에 확인하시면 좋은 내용입니다.`,
+      `{main} 견적 비교 전에 많이 물어보시는 항목입니다.`,
+    ], 17)),
+
+    /** 내부 링크 섹션 위 한 줄 */
+    linksNote: fill(pick([
+      `${nearOne} 등 인근 지역과 다른 청소 항목도 함께 확인해 보세요.`,
+      `{location} 주변 지역 및 {sub} 관련 페이지입니다.`,
+      `가까운 지역의 {main} 정보도 같이 보실 수 있습니다.`,
+      `${nearTwo} 방면 및 다른 서비스 항목 안내입니다.`,
+    ], 19)),
+  };
+}
+
 export function buildHeading(location: string, main: string): string {
   const norm = normalizeLocation(location);
   return `${norm} ${main} 업체 비교`;
 }
 
+/**
+ * FAQ 를 고른다.
+ *
+ * 주제를 고르는 것으로 끝나지 않고, 주제 안의 질문·답변 변형까지 페이지마다
+ * 다르게 뽑는다. 30만 페이지가 같은 문장을 그대로 쓰면 중복 문서로 묶이기
+ * 때문이다. 질문과 답변의 변형 번호를 서로 다른 해시로 굴려서, 같은 질문에
+ * 늘 같은 답이 붙는 패턴도 생기지 않게 했다.
+ */
 export function pickFaqs(location: string, main: string, count = 5) {
   const pool = FAQ_POOL;
   const size = pool.length;
@@ -305,15 +471,81 @@ export function pickFaqs(location: string, main: string, count = 5) {
   let step = (seed % (size - 1)) + 1;
   while (step > 1 && size % step === 0) step -= 1;
 
-  const sub = pickSubKeywords(location, main, 1)[0] ?? main;
-  const fill = (text: string) => text.replaceAll('{main}', main).replaceAll('{sub}', sub);
+  const fill = fillTokens(location, main);
 
   const picked: { q: string; a: string }[] = [];
   for (let i = 0; i < take; i += 1) {
-    const item = pool[(seed + i * step) % size];
-    if (item) picked.push({ q: fill(item.q), a: fill(item.a) });
+    const topicIndex = (seed + i * step) % size;
+    const topic = pool[topicIndex];
+    if (!topic) continue;
+
+    const qVariant = topic.q[(seed + topicIndex * 3 + i) % topic.q.length];
+    const aVariant = topic.a[(seed + topicIndex * 11 + i * 5) % topic.a.length];
+    if (!qVariant || !aVariant) continue;
+
+    picked.push({ q: fill(qVariant), a: fill(aVariant) });
   }
   return picked;
+}
+
+/**
+ * 콘텐츠 풀의 치환 자리를 채우는 함수를 만든다.
+ *
+ *   {location}  전체 지역명 (예: 충남 공주 정안면 내문리)
+ *   {short}     끝 동/리 이름만 (예: 내문리)
+ *   {main}      메인 키워드
+ *   {sub}       연관 서브 키워드 1
+ *   {sub2}      연관 서브 키워드 2
+ *
+ * 서브 키워드가 없는 메인(공장청소·기숙사청소)은 메인으로 되돌린다. 빈 문자열이
+ * 들어가면 "와 를 같이 되나요?" 같은 문장이 나간다.
+ */
+function fillTokens(location: string, main: string) {
+  const full = normalizeLocation(location);
+  const subs = pickSubKeywords(location, main, 2);
+  const sub = subs[0] ?? main;
+  const sub2 = secondKeyword(location, main, sub);
+
+  return (text: string) => text
+    .replaceAll('{location}', full)
+    .replaceAll('{short}', lastLocationToken(full))
+    .replaceAll('{main}', main)
+    .replaceAll('{sub2}', sub2)
+    .replaceAll('{sub}', sub);
+}
+
+/**
+ * 두 번째 연관 키워드.
+ *
+ * 서브 키워드가 하나뿐인 메인(병원청소·호텔청소·모텔청소·오피스텔청소)은
+ * 그냥 두면 {sub} 와 {sub2} 가 같아져서 "병원청소업체 병원청소업체 포함
+ * 여부까지" 같은 문장이 나간다. 그럴 때는 다른 메인 키워드를 빌려온다.
+ * 어차피 우리가 다 다루는 서비스라 문맥도 맞는다.
+ */
+function secondKeyword(location: string, main: string, sub: string): string {
+  const own = pickSubKeywords(location, main, 2);
+  if (own[1] && own[1] !== sub) return own[1];
+
+  const seed = hash(`sub2|${location}|${main}`);
+  const size = MAIN_KEYWORDS.length;
+  for (let offset = 0; offset < size; offset += 1) {
+    const candidate = MAIN_KEYWORDS[(seed + offset) % size];
+    if (candidate && candidate !== main && candidate !== sub) return candidate;
+  }
+  return sub;
+}
+
+/**
+ * 지역명의 마지막 토큰(동/리/읍/면).
+ *
+ * shortLocation() 은 쓰지 않는다. 그 함수의 정규식이 `/s+/` 라 공백이 아니라
+ * 알파벳 s 로 나뉘고, 한글 지역명에는 s 가 없어 전체 문자열이 그대로 나온다.
+ * 이미 배포·색인된 30만 페이지의 title 이 그 동작에 묶여 있어 여기서 고치지
+ * 않고, 본문용으로만 제대로 자른 값을 따로 만든다.
+ */
+function lastLocationToken(location: string): string {
+  const parts = location.trim().split(/\s+/).filter(Boolean);
+  return parts[parts.length - 1] ?? location;
 }
 
 export function ctaLabel(location: string, main: string): string {

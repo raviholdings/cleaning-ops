@@ -10,6 +10,12 @@
  *
  *   node scripts/build-and-deploy-sites.mjs --limit 5 --no-deploy   # 빌드만
  *   node scripts/build-and-deploy-sites.mjs                          # 전체 빌드 + 배포
+ *   node scripts/build-and-deploy-sites.mjs --renderer static        # Astro 없이 빌드
+ *
+ * --renderer static 은 Astro 대신 scripts/lib/static-site-renderer.mjs 를 쓴다.
+ * 같은 데이터 모듈(pageCatalog / pageMeta / content)을 그대로 읽으므로 결과가
+ * 같아야 하고, scripts/compare-static-render.mjs 로 대조해 확인한다.
+ * 실측(2026-08-07): Astro 1.91 사이트/초 -> 12.2 사이트/초, 힙 16GB 불필요.
  */
 
 import { execSync, spawnSync } from 'node:child_process';
@@ -27,8 +33,13 @@ loadEnv(resolve(projectRoot, '.env'));
 // 기본 힙(이 PC 기준 약 4.2GB)을 넘긴다. 2,000개를 돌리다 1,000개 지점에서
 // "JavaScript heap out of memory" 로 죽었다(2026-08-06).
 // PC 메모리는 128GB 라 남아돈다. 힙 상한만 올려 스스로를 다시 띄운다.
+//
+// static 렌더러는 모듈 그래프를 쌓지 않아 이 재기동이 필요 없다.
+const useStaticRenderer = process.argv.includes('--renderer')
+  && process.argv[process.argv.indexOf('--renderer') + 1] === 'static';
+
 const HEAP_MB = Number(process.env.DEPLOY_HEAP_MB || 16384);
-if (!process.env.DEPLOY_HEAP_APPLIED) {
+if (!useStaticRenderer && !process.env.DEPLOY_HEAP_APPLIED) {
   const currentMb = getHeapStatistics().heap_size_limit / 1024 / 1024;
   if (currentMb < HEAP_MB * 0.9) {
     const relaunch = spawnSync(
@@ -48,6 +59,10 @@ const limit = options.limit ? Number(options.limit) : null;
 const fromOrder = Number(options.fromOrder || 1);
 const toOrder = Number(options.toOrder || 9999);
 const deploy = !options.noDeploy;
+// 오타로 astro 를 계속 쓰는 사고를 막는다. 지정했으면 둘 중 하나여야 한다.
+if (options.renderer !== undefined && !['astro', 'static'].includes(options.renderer)) {
+  throw new Error(`--renderer 는 astro 또는 static 이어야 합니다: ${options.renderer}`);
+}
 const groupKey = options.groupKey || 'cleaning-ravi';
 const appDir = resolve(projectRoot, 'apps/cleaning-ravi');
 // 스테이지는 반드시 앱 디렉터리 안이어야 한다. Astro 가 빌드 중간 청크를 outDir 에
@@ -105,21 +120,49 @@ console.log(JSON.stringify({ phase: 'start', domains: domains.length, deploy, st
  * PUBLIC_* 는 build() 를 부를 때마다 Vite 가 process.env 에서 다시 읽으므로
  * 호출 전에 값을 바꿔주면 사이트별로 다른 결과가 나온다.
  */
-const appRequire = createRequire(resolve(appDir, 'package.json'));
-const { build } = await import(pathToFileURL(appRequire.resolve('astro')).href);
+let buildOne;
+
+if (useStaticRenderer) {
+  const renderer = await import(pathToFileURL(resolve(projectRoot, 'scripts/lib/static-site-renderer.mjs')).href);
+  const locations = renderer.loadLocations();
+  // --templates 로 디자인 세트를 고른다. 기본은 templates.
+  //   templates       Astro 앱과 같은 마크업 (대조 검사가 통과하는 기준선)
+  //   templates-test  test.html 디자인
+  const templateDir = resolve(projectRoot, 'apps/cleaning-static', options.templates || 'templates');
+  const templates = renderer.loadTemplates(templateDir);
+  console.log(JSON.stringify({ phase: 'renderer', kind: 'static', templates: templates.dir, css: templates.cssPath }));
+
+  buildOne = (domain) => {
+    renderer.renderSite({
+      templates,
+      locations,
+      outDir: resolve(stageDir, domain.host),
+      siteUrl: domain.site_url,
+      siteIndex: domain.global_site_order - 1,
+      pageCount: domain.page_count,
+      // 소유확인 태그. 아직 없으면 빈 값이라 meta 가 안 나간다.
+      naverSiteVerification: domain.naver_verification_token || '',
+    });
+  };
+} else {
+  const appRequire = createRequire(resolve(appDir, 'package.json'));
+  const { build } = await import(pathToFileURL(appRequire.resolve('astro')).href);
+
+  buildOne = async (domain) => {
+    process.env.PUBLIC_SITE_URL = domain.site_url;
+    process.env.PUBLIC_SITE_INDEX = String(domain.global_site_order - 1);
+    process.env.PUBLIC_PAGE_COUNT = String(domain.page_count);
+    process.env.PUBLIC_NAVER_SITE_VERIFICATION = domain.naver_verification_token || '';
+    process.env.ASTRO_DIST_DIR = resolve(stageDir, domain.host);
+    await build({ root: appDir, logLevel: 'error' });
+  };
+}
 
 const startedAt = Date.now();
 let built = 0;
 
 for (const domain of domains) {
-  process.env.PUBLIC_SITE_URL = domain.site_url;
-  process.env.PUBLIC_SITE_INDEX = String(domain.global_site_order - 1);
-  process.env.PUBLIC_PAGE_COUNT = String(domain.page_count);
-  // 소유확인 태그. 아직 없으면 빈 값이라 meta 가 안 나간다.
-  process.env.PUBLIC_NAVER_SITE_VERIFICATION = domain.naver_verification_token || '';
-  process.env.ASTRO_DIST_DIR = resolve(stageDir, domain.host);
-
-  await build({ root: appDir, logLevel: 'error' });
+  await buildOne(domain);
 
   built += 1;
   if (built % 50 === 0 || built === domains.length) {
