@@ -90,10 +90,21 @@ try {
     throw new Error(`Expected ${totalSites} subdomains, picked ${selected.length}.`);
   }
 
+  // globalSiteOrder 는 전 배치를 통틀어 유일해야 한다.
+  // PUBLIC_SITE_INDEX = globalSiteOrder - 1 이 페이지 내용을 정하기 때문에,
+  // 값이 겹치면 새 사이트가 기존 사이트의 글자까지 똑같은 복제본이 된다.
+  // 2차 배치에서 실제로 1~1000 이 겹쳐 배포 직전에 잡았다(2026-08-06).
+  const maxUsed = await client.query(
+    `select coalesce(max((source_payload->>'globalSiteOrder')::int), 0) as m
+       from public.naver_project_domains`,
+  );
+  const orderOffset = Number(maxUsed.rows[0].m);
+  console.log(`globalSiteOrder 시작값: ${orderOffset + 1} (기존 최대 ${orderOffset})`);
+
   const sites = selected.map((candidate, index) => {
     const account = accounts.rows[Math.floor(index / sitesPerAccount)];
     return {
-      globalSiteOrder: index + 1,
+      globalSiteOrder: orderOffset + index + 1,
       accountOrder: account.account_order,
       accountId: account.account_id,
       accountSiteOrder: (index % sitesPerAccount) + 1,

@@ -129,9 +129,14 @@ function Invoke-VerifyAndCrawl {
 	foreach ($acc in $Accounts) {
 		$id = $acc.accountId; $ord = $acc.accountOrder
 
-		$sess = Get-FreshSession -AccountId $id -AccountOrder $ord -Phase $Phase
+		$sess = Test-SessionUsable -AccountId $id -AccountOrder $ord -Phase $Phase
 		Write-FinishLog "  세션 #$ord $id -> $sess"
-		if ($sess -eq 'failed') { $out += "#${ord} ${id}: session=failed"; continue }
+		if ($sess -ne 'ok') {
+			# 세션이 죽었으면 사람이 capture-naver-session.mjs 로 다시 잡아야 한다.
+			# 여기서 재로그인을 시도하면 추가 인증에 걸려 멀쩡한 세션까지 망가진다.
+			$out += "#${ord} ${id}: session=$sess (사람이 재캡처 필요)"
+			continue
+		}
 
 		$vLog = Join-Path $LogDir "finish-$Stamp-verify-$ord-$id.log"
 		$v = Invoke-Step -FilePath $Node -Arguments @('scripts/verify-naver-searchadvisor-sites.mjs', '--account', $id) `
@@ -178,9 +183,9 @@ try {
 	$need = Get-Accounts -From $NeedTokenFrom -To $NeedTokenTo
 	foreach ($acc in $need) {
 		$id = $acc.accountId; $ord = $acc.accountOrder
-		$sess = Get-FreshSession -AccountId $id -AccountOrder $ord -Phase 'reg'
+		$sess = Test-SessionUsable -AccountId $id -AccountOrder $ord -Phase 'reg'
 		Write-FinishLog "  세션 #$ord $id -> $sess"
-		if ($sess -eq 'failed') { $summary += "#${ord} ${id}: session=failed"; continue }
+		if ($sess -ne 'ok') { $summary += "#${ord} ${id}: session=$sess (사람이 재캡처 필요)"; continue }
 
 		# 사이트는 이미 네이버에 등록돼 있고 DB 의 토큰만 없는 상태다.
 		# 소유확인 화면에서 인증키를 다시 읽는 복구 모드로 돈다.
