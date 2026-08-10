@@ -203,46 +203,145 @@ function reviewServices(seed: number, count: number, main: string): string[] {
 }
 
 /**
- * 주어진 위치 근처의 주변 동네 목록을 중복 없이 추출한다.
- * 동일한 끝 동/리(shortLocation)명이 중복 출력되지 않도록 필터링한다.
+ * 지역명에서 상위 행정구역(시/군/구)만 떼어낸다.
+ *   충남 예산군 신암면 중예리 -> 충남 예산군 신암면
+ *   서울 동작구 흑석동       -> 서울 동작구
+ * 마지막 토큰(동/리)만 빼면 된다.
+ */
+function parentArea(location: string): string {
+  const tokens = normalizeLocation(location).trim().split(/\s+/);
+  return tokens.length <= 1 ? tokens.join(' ') : tokens.slice(0, -1).join(' ');
+}
+
+interface LocationIndex {
+  /** 지역 문자열 -> 배열 위치 */
+  positionOf: Map<string, number>;
+  /** 상위 행정구역(예: 충남 예산군 신암면) -> 그 안의 배열 위치들 */
+  byParent: Map<string, number[]>;
+  /** 시도(예: 충남) -> 그 안의 배열 위치들 */
+  byProvince: Map<string, number[]>;
+  /**
+   * 끝 동/리 이름 -> 그 이름이 속한 상위 구역.
+   *
+   * 지역 목록에는 "차용동" 처럼 시도·시군구 없이 동 이름만 있는 항목이
+   * 8,966건(12%) 있다. 그것만 보면 어디인지 알 수 없어서 인근 지역이
+   * 엉뚱한 도시로 나왔다. 같은 이름이 들어간 전체 표기를 찾아 상위 구역을
+   * 되짚는다.
+   */
+  parentOfLeaf: Map<string, string>;
+}
+
+/**
+ * 지역 목록 인덱스. 목록은 7만 건이라 페이지마다 훑으면 안 된다.
+ *
+ * 실제로 그렇게 짰다가 렌더가 1,150 페이지/초에서 42 페이지/초로 떨어졌다.
+ * 30만 페이지면 27배 차이라 배포 시간이 2분에서 2시간이 된다.
+ * 목록은 빌드 내내 같은 배열이므로 WeakMap 으로 한 번만 만들어 재사용한다.
+ */
+const locationIndexCache = new WeakMap<readonly string[], LocationIndex>();
+
+function locationIndex(locations: readonly string[]): LocationIndex {
+  const cached = locationIndexCache.get(locations);
+  if (cached) return cached;
+
+  const built: LocationIndex = {
+    positionOf: new Map(),
+    byParent: new Map(),
+    byProvince: new Map(),
+    parentOfLeaf: new Map(),
+  };
+
+  locations.forEach((raw, position) => {
+    if (!built.positionOf.has(raw)) built.positionOf.set(raw, position);
+
+    const tokens = normalizeLocation(raw).trim().split(/\s+/);
+    if (tokens.length <= 1) return;
+
+    const parent = tokens.slice(0, -1).join(' ');
+    const bucket = built.byParent.get(parent);
+    if (bucket) bucket.push(position); else built.byParent.set(parent, [position]);
+
+    const province = tokens[0]!;
+    const pBucket = built.byProvince.get(province);
+    if (pBucket) pBucket.push(position); else built.byProvince.set(province, [position]);
+
+    // 가장 자세한 표기를 남긴다. "차용동" 을 "경남 창원시 성산구" 로 되짚기 위해서다.
+    // 같은 동 이름이 여러 시에 있으면 먼저 나온 것을 쓴다. 어차피 하나를 골라야 한다.
+    const leaf = tokens[tokens.length - 1]!;
+    const known = built.parentOfLeaf.get(leaf);
+    if (!known || parent.split(' ').length > known.split(' ').length) {
+      built.parentOfLeaf.set(leaf, parent);
+    }
+  });
+
+  locationIndexCache.set(locations, built);
+  return built;
+}
+
+/**
+ * 주변 동네 목록.
+ *
+ * 예전에는 지역 배열 순서만 보고 일정 보폭으로 건너뛰며 골랐다. 그 배열은
+ * 지리 순서가 아니라서 "충남 예산군" 페이지에 "충남 태안군" 이 이웃으로
+ * 나왔다. 차로 한 시간 거리다. 방문 가능하다고 적어놓고 못 가면 거짓말이다.
+ *
+ * 그래서 같은 상위 행정구역(면/읍/구)을 먼저 채우고, 모자라면 같은 시도,
+ * 그래도 모자라면 예전 방식으로 채운다.
  */
 export function pickNearbyLocations(location: string, locations: readonly string[], count = 4): string[] {
   if (!locations || locations.length === 0) return [];
-  const index = locations.indexOf(location);
-  const baseIndex = index >= 0 ? index : hash(location) % locations.length;
-  const targetShort = shortLocation(location);
+
+  const index = locationIndex(locations);
+  const at = index.positionOf.get(location);
+  const baseIndex = at ?? hash(location) % locations.length;
+  const seed = hash(`nearby|${location}`);
 
   const picked: string[] = [];
-  const pickedShorts = new Set<string>([targetShort]);
+  const pickedShorts = new Set<string>([shortLocation(normalizeLocation(location))]);
 
-  const seed = hash(`nearby|${location}`);
-  const step = (seed % 17) + 7;
+  const take = (candidate: string | undefined): void => {
+    if (!candidate || picked.length >= count) return;
+    const norm = normalizeLocation(candidate);
+    const short = shortLocation(norm);
+    if (pickedShorts.has(short)) return;
+    picked.push(norm);
+    pickedShorts.add(short);
+  };
 
-  for (let i = 1; i <= locations.length && picked.length < count; i += 1) {
-    const candidateIndex = (baseIndex + i * step) % locations.length;
-    const nearby = locations[candidateIndex];
-    if (!nearby) continue;
+  const tokens = normalizeLocation(location).trim().split(/\s+/);
+  // 동 이름만 있는 항목("차용동")은 전체 표기에서 상위 구역을 되짚는다.
+  const parent = tokens.length > 1
+    ? tokens.slice(0, -1).join(' ')
+    : (index.parentOfLeaf.get(tokens[0] ?? '') ?? '');
+  const province = tokens.length > 1 ? (tokens[0] ?? '') : (parent.split(' ')[0] ?? '');
 
-    const normNearby = normalizeLocation(nearby);
-    const nearbyShort = shortLocation(normNearby);
-    if (!pickedShorts.has(nearbyShort)) {
-      picked.push(normNearby);
-      pickedShorts.add(nearbyShort);
+  // 버킷 안에서 내 위치 근처부터 양옆으로 퍼져 나간다. 배열 순서가 대체로
+  // 행정 코드 순이라, 가까운 순번이 실제로도 가까운 동네다.
+  const sweep = (bucket: number[] | undefined) => {
+    if (!bucket || bucket.length === 0 || picked.length >= count) return;
+    // 이진 탐색으로 내 위치의 삽입 지점을 찾는다.
+    let lo = 0, hi = bucket.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (bucket[mid]! < baseIndex) lo = mid + 1; else hi = mid;
     }
-  }
-
-  if (picked.length < count) {
-    for (let i = 1; i <= locations.length && picked.length < count; i += 1) {
-      const nearby = locations[(baseIndex + i) % locations.length];
-      if (!nearby) continue;
-
-      const normNearby = normalizeLocation(nearby);
-      const nearbyShort = shortLocation(normNearby);
-      if (!pickedShorts.has(nearbyShort)) {
-        picked.push(normNearby);
-        pickedShorts.add(nearbyShort);
+    for (let offset = 0; offset < bucket.length && picked.length < count; offset += 1) {
+      for (const direction of [1, -1]) {
+        const cursor = direction === 1 ? lo + offset : lo - 1 - offset;
+        if (cursor < 0 || cursor >= bucket.length) continue;
+        take(locations[bucket[cursor]!]);
+        if (picked.length >= count) break;
       }
     }
+  };
+
+  sweep(index.byParent.get(parent));
+  sweep(index.byProvince.get(province));
+
+  // 그래도 모자라면 (지역이 하나뿐인 시/군) 예전 방식으로 채운다.
+  const step = (seed % 17) + 7;
+  for (let i = 1; i <= locations.length && picked.length < count; i += 1) {
+    take(locations[(baseIndex + i * step) % locations.length]);
   }
 
   return picked;
@@ -285,6 +384,66 @@ export function pickSubKeywords(location: string, main: string, count = 2): stri
   return picked;
 }
 
+/**
+ * 이 페이지가 노려야 할 연관 검색어 묶음.
+ *
+ * 서브키워드는 메인당 평균 3.3개(최소 1, 최대 8)뿐이라, 자기 것만 쓰면
+ * 페이지가 걸리는 검색어가 두세 개에서 끝난다. 모자라는 만큼 다른 메인의
+ * 서브를 빌려온다. 어차피 우리가 전부 다루는 서비스라 문맥도 맞는다.
+ *
+ * 한 URL 이 여러 롱테일 검색어에 걸리게 하는 것이 목적이다. 페이지 수를
+ * 늘리는 것보다 이쪽이 싸다.
+ */
+export function relatedKeywords(location: string, main: string, count = 8): string[] {
+  const picked: string[] = [];
+  const seen = new Set<string>([main]);
+
+  const add = (candidate: string | undefined) => {
+    if (!candidate || seen.has(candidate) || picked.length >= count) return;
+    picked.push(candidate);
+    seen.add(candidate);
+  };
+
+  // 1순위: 자기 서브키워드 전부
+  for (const sub of subKeywordsFor(main)) add(sub);
+
+  // 2순위: 다른 메인의 서브. 페이지마다 다른 곳에서 시작해 겹침을 줄인다.
+  const seed = hash(`related|${location}|${main}`);
+  const mains = MAIN_KEYWORDS;
+  for (let round = 0; round < 2 && picked.length < count; round += 1) {
+    for (let i = 0; i < mains.length && picked.length < count; i += 1) {
+      const other = mains[(seed + i) % mains.length];
+      if (!other || other === main) continue;
+      const pool = subKeywordsFor(other);
+      // 1회차는 각 메인에서 하나씩, 2회차에 더 가져온다. 한 메인에 쏠리지 않게.
+      const takeCount = round === 0 ? 1 : pool.length;
+      for (let j = 0; j < takeCount && picked.length < count; j += 1) {
+        add(pool[(seed + j) % Math.max(1, pool.length)]);
+      }
+      if (round === 0) add(other); // 메인 키워드 자체도 연관어로 쓸 만하다
+    }
+  }
+
+  return picked;
+}
+
+/**
+ * 지도 검색 링크.
+ *
+ * 좌표를 붙이지 않는다. 우리는 특정 업체가 아니라 지역을 가리키므로 주소
+ * 문자열 검색이면 충분하고, 좌표를 지어내면 오히려 틀린 위치를 가리킨다.
+ * 페이지마다 다른 외부 링크가 생겨 지역성 신호가 붙는다.
+ */
+export function mapLinks(location: string, main: string) {
+  const norm = normalizeLocation(location);
+  const query = `${norm} ${main}`;
+  return {
+    naver: `https://map.naver.com/v5/search/${encodeURIComponent(query)}`,
+    google: `https://www.google.com/maps/search/${encodeURIComponent(query)}`,
+    query,
+  };
+}
+
 function cta(location: string, main: string) {
   const seed = hash(`${location}|${main}`);
   const verbIdx = seed % CTA_VERBS.length;
@@ -325,18 +484,30 @@ export function buildTitle(location: string, main: string, variant: TitleVariant
     const tail = TITLE_TAILS[seed % TITLE_TAILS.length] ?? TITLE_TAILS[0];
     const hook = TITLE_HOOKS[Math.floor(seed / 5) % TITLE_HOOKS.length] ?? TITLE_HOOKS[0];
 
+    // 서브를 둘 다 넣는다. '입주청소' 로 검색하든 '입주청소비용' 으로 검색하든
+    // '신축입주청소' 로 검색하든 같은 페이지가 걸리게 하는 것이 목적이다.
+    const sub2 = secondKeyword(location, main, sub);
+    const short = lastLocationToken(norm);
+
     const patterns = [
-      `${norm} ${main} ${tail} ${count}곳 | ${sub} ${hook}`,
-      `${norm} ${main} ${sub} ${tail} | ${hook} ${count}곳`,
-      `${norm} ${main} 잘하는곳 ${count}곳 ${tail} · ${sub} ${hook}`,
-      `${norm} ${main} ${verb} ${count}곳 | ${sub} ${tail}`,
+      `${norm} ${main} ${sub} ${tail} ${count}곳 | ${sub2} ${hook}`,
+      `${norm} ${main} ${tail} ${count}곳 · ${sub} ${sub2} ${hook}`,
+      `${norm} ${main} 잘하는곳 ${count}곳 | ${sub} ${sub2} ${tail}`,
+      `${norm} ${main} ${verb} ${count}곳 · ${short} ${sub} ${sub2} ${hook}`,
     ];
     const picked = patterns[Math.floor(seed / 11) % patterns.length] ?? patterns[0];
 
-    // 지역명이 유난히 긴 곳(예: 세종특별자치시 …)은 뒤를 한 단계 줄인다.
-    if (picked.length <= TITLE_MAX) return picked;
-    const shortened = `${norm} ${main} ${tail} ${count}곳 | ${hook}`;
-    return shortened.length <= TITLE_MAX ? shortened : `${norm} ${main} ${tail} ${count}곳`;
+    // 지역명이 긴 곳(세종특별자치시 …)은 길이 순서대로 한 단계씩 줄인다.
+    // 마지막 것은 어떤 지역이 와도 상한을 넘지 않는다.
+    for (const candidate of [
+      picked,
+      `${norm} ${main} ${sub} ${tail} ${count}곳 | ${hook}`,
+      `${norm} ${main} ${sub} ${tail} ${count}곳`,
+      `${norm} ${main} ${sub} ${tail}`,
+    ]) {
+      if (candidate.length <= TITLE_MAX) return candidate;
+    }
+    return `${norm} ${main} ${sub}`;
   }
 
   const base = `${shortLocation(norm)} ${main}`;
@@ -421,8 +592,8 @@ export function buildBodyCopy(location: string, main: string, nearby: readonly s
     /** 서비스 지역 안내 문단 */
     areaNote: fill(pick([
       `{location} 지역을 포함하여 ${nearList} 등 인근 동네까지 전담 검증팀이 직접 방문합니다.`,
-      `{location}은 물론 ${nearOne} 방면까지 같은 팀이 담당합니다. 경계 지역이라도 방문이 가능한지 확인해 드립니다.`,
-      `{location}과 ${nearTwo} 일대를 함께 커버합니다. 이사 전후로 두 지역을 오가는 경우에도 한 번에 처리됩니다.`,
+      `${josa(norm, '은/는')} 물론 ${nearOne} 방면까지 같은 팀이 담당합니다. 경계 지역이라도 방문이 가능한지 확인해 드립니다.`,
+      `${josa(norm, '과/와')} ${nearTwo} 일대를 함께 커버합니다. 이사 전후로 두 지역을 오가는 경우에도 한 번에 처리됩니다.`,
       `{location} 중심으로 ${nearList} 범위까지 배정합니다. 위치를 알려주시면 가장 가까운 팀으로 연결해 드립니다.`,
     ], 13)),
 
@@ -433,9 +604,9 @@ export function buildBodyCopy(location: string, main: string, nearby: readonly s
     /** FAQ 위에 놓을 한 줄 */
     faqNote: fill(pick([
       `{location} {main} 문의에서 가장 많이 나온 질문을 모았습니다.`,
-      `{main}와 {sub} 관련해 자주 받는 질문입니다.`,
-      `{location} 지역 접수 전에 확인하시면 좋은 내용입니다.`,
-      `{main} 견적 비교 전에 많이 물어보시는 항목입니다.`,
+      `{main}${hasFinalConsonant(main) ? '과' : '와'} {sub} 관련해 자주 받는 질문입니다.`,
+      `{location} 지역 접수 전에 확인하시면 좋은 내용입니다. {sub} 관련 문의도 함께 담았습니다.`,
+      `{main} 견적 비교 전에 많이 물어보시는 항목입니다. {sub2} 조건도 확인해 보세요.`,
     ], 17)),
 
     /** 내부 링크 섹션 위 한 줄 */
@@ -443,8 +614,76 @@ export function buildBodyCopy(location: string, main: string, nearby: readonly s
       `${nearOne} 등 인근 지역과 다른 청소 항목도 함께 확인해 보세요.`,
       `{location} 주변 지역 및 {sub} 관련 페이지입니다.`,
       `가까운 지역의 {main} 정보도 같이 보실 수 있습니다.`,
-      `${nearTwo} 방면 및 다른 서비스 항목 안내입니다.`,
+      `${nearTwo} 방면 및 {sub2} 항목 안내입니다.`,
     ], 19)),
+
+    // ── 아래는 h1/h2 용 소제목 ────────────────────────────────────
+    // 검색엔진은 제목 태그의 단어에 더 무게를 둔다. 지역·메인·서브를
+    // 소제목마다 다르게 섞어, 어떤 조합으로 검색해도 걸리게 한다.
+
+    /** h1 */
+    heroHeading: fill(pick([
+      `{location} {main} 업체`,
+      `{location} {main} · {sub}`,
+      `{location} {sub} {main} 업체`,
+      `{location} {main} 전문업체`,
+    ], 23)),
+
+    /** 비교 섹션 h2 */
+    compareHeading: fill(pick([
+      `{location} {main}, 어느 업체가 나에게 맞을까요?`,
+      `{location} {sub} 업체 비교, 어디가 나을까요?`,
+      `{main}·{sub} 업체를 나란히 비교해 보세요`,
+      `{location} {main} 업체 {sub} 조건 비교`,
+    ], 29)),
+
+    /** 견적 폼 섹션 h2 */
+    formHeading: fill(pick([
+      `30초면 끝! {location} {main} 무료 비교 견적 신청`,
+      `{location} {sub} 무료 견적 30초 신청`,
+      `{main} {sub} 견적, 지금 한 번에 받아보세요`,
+      `{location} {main} 견적 비교 신청 (무료)`,
+    ], 31)),
+
+    /** 후기 섹션 h2 */
+    reviewHeading: fill(pick([
+      `{location} 먼저 이용해본 고객들의 이야기`,
+      `{location} {main} 이용 후기`,
+      `{main}·{sub} 비교하고 진행한 분들의 후기`,
+      `{location} {sub} 이용 고객 후기`,
+    ], 37)),
+
+    /** 진행 절차 섹션 h2 */
+    processHeading: fill(pick([
+      `상담부터 완료까지, 5단계로 진행됩니다`,
+      `{main} 신청부터 마무리까지 5단계`,
+      `{location} {main} 진행 절차 5단계`,
+      `{sub}까지 한 번에, 5단계 진행 안내`,
+    ], 41)),
+
+    /** 갤러리 섹션 h2 */
+    galleryHeading: fill(pick([
+      `이런 공간을 이렇게 청소합니다`,
+      `{main} 작업 범위 미리 보기`,
+      `{location} {main} 시공 사례`,
+      `{sub} 포함 작업 예시`,
+    ], 43)),
+
+    /** FAQ 섹션 h2 */
+    faqHeading: fill(pick([
+      `자주 묻는 질문`,
+      `{location} {main} 자주 묻는 질문`,
+      `{main}·{sub} 관련 자주 묻는 질문`,
+      `{location} 접수 전 자주 묻는 질문`,
+    ], 47)),
+
+    /** 지역/링크 섹션 h2 */
+    areaHeading: fill(pick([
+      `{location} 및 인근 지역 서비스 안내`,
+      `{location} {main} 서비스 가능 지역`,
+      `{location} 주변 지역 {sub} 안내`,
+      `{location} 인근 방문 가능 지역`,
+    ], 53)),
   };
 }
 
@@ -512,6 +751,38 @@ function fillTokens(location: string, main: string) {
     .replaceAll('{main}', main)
     .replaceAll('{sub2}', sub2)
     .replaceAll('{sub}', sub);
+}
+
+/**
+ * 한글 조사 선택.
+ *
+ * "중예리은 물론" 처럼 받침을 무시하면 바로 티가 난다. 30만 페이지에 깔리는
+ * 문장이라 지역명 끝글자를 보고 골라야 한다.
+ *
+ * 한글 음절은 유니코드에서 (초성×21 + 중성)×28 + 종성 순으로 배열돼 있다.
+ * 그래서 (코드 - 0xAC00) % 28 이 0 이 아니면 받침이 있다.
+ * 숫자로 끝나는 지명(대성동1가)도 있어서 숫자 발음의 받침까지 본다.
+ */
+const DIGIT_HAS_FINAL: Record<string, boolean> = {
+  // 일(ㄹ) 삼(ㅁ) 육(ㄱ) 칠(ㄹ) 팔(ㄹ) 십(ㅂ) 은 받침 있음, 나머지는 없음
+  '0': true, '1': true, '2': false, '3': true, '4': false,
+  '5': false, '6': true, '7': true, '8': true, '9': false,
+};
+
+export function hasFinalConsonant(word: string): boolean {
+  const last = word.trim().slice(-1);
+  if (!last) return false;
+  if (/[0-9]/.test(last)) return DIGIT_HAS_FINAL[last] ?? false;
+
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return false; // 한글 음절이 아니면 없는 것으로
+  return (code - 0xac00) % 28 !== 0;
+}
+
+/** `josa('중예리', '은/는')` -> '중예리는' */
+export function josa(word: string, pair: string): string {
+  const [withFinal, withoutFinal] = pair.split('/');
+  return word + (hasFinalConsonant(word) ? withFinal : withoutFinal);
 }
 
 /**

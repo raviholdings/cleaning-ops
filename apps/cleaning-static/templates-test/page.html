@@ -50,9 +50,9 @@
     <!-- ===== HERO ===== -->
     <section class="hero">
       <div class="wrap hero-inner">
-        <span class="badge">{{location}} {{mainKeyword}} 비교 플랫폼</span>
+        <span class="badge">{{location}} {{mainKeyword}} · {{subKeywords.0}} 비교 플랫폼</span>
         <h1>
-          {{location}} {{mainKeyword}}<br /><em>3곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
+          {{copy.heroHeading}}<br /><em>3곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
         </h1>
         <p>{{copy.lede}}</p>
         <div class="hero-stats">
@@ -60,6 +60,7 @@
           <div><strong>32,000+</strong>누적 견적 매칭 건수</div>
           <div><strong>30분</strong>평균 상담 회신 시간</div>
         </div>
+        <div class="kw-row">{{#related}}<span>{{word}}</span>{{/related}}</div>
         <div class="cpa-row">
           <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener"
             >✨ 새집느낌<small>홈케어 전문 청소</small></a
@@ -79,7 +80,7 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow">Compare</span>
-          <h2>{{location}} {{mainKeyword}}, 어느 업체가 나에게 맞을까요?</h2>
+          <h2>{{copy.compareHeading}}</h2>
           <p>{{copy.compareNote}}</p>
         </div>
         <div class="vendor-grid">
@@ -161,7 +162,7 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow" style="color: #8fb4ff">Free Quote</span>
-          <h2>30초면 끝! {{location}} {{mainKeyword}} 무료 비교 견적 신청</h2>
+          <h2>{{copy.formHeading}}</h2>
           <p>아래 폼을 작성하면 제휴 업체와 바로 연결됩니다.</p>
         </div>
 
@@ -174,7 +175,7 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow">Process</span>
-          <h2>상담부터 완료까지, 5단계로 진행됩니다</h2>
+          <h2>{{copy.processHeading}}</h2>
           <p>모든 단계에서 범위와 비용을 먼저 안내한 뒤 작업합니다.</p>
         </div>
         <div class="steps">
@@ -212,11 +213,11 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow">Gallery</span>
-          <h2>이런 공간을 이렇게 청소합니다</h2>
+          <h2>{{copy.galleryHeading}}</h2>
         </div>
         <div class="gallery-grid">
           <img
-            src="https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&amp;fit=crop&amp;w=500&amp;q=80"
+            src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&amp;fit=crop&amp;w=500&amp;q=80"
             alt="욕실 청소 전후"
           />
           <img
@@ -224,11 +225,11 @@
             alt="이사 후 빈 방 청소"
           />
           <img
-            src="https://images.unsplash.com/photo-1596263576915-cb46b0568cc2?auto=format&amp;fit=crop&amp;w=500&amp;q=80"
+            src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&amp;fit=crop&amp;w=500&amp;q=80"
             alt="깨끗한 거실 공간"
           />
           <img
-            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&amp;fit=crop&amp;w=500&amp;q=80"
+            src="https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&amp;fit=crop&amp;w=500&amp;q=80"
             alt="청소 도구와 장비"
           />
         </div>
@@ -240,7 +241,7 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow">Review</span>
-          <h2>{{location}} 먼저 이용해본 고객들의 이야기</h2>
+          <h2>{{copy.reviewHeading}}</h2>
         </div>
         <div class="testi-grid">
           {{#reviews}}<div class="testi">
@@ -257,7 +258,7 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow">FAQ</span>
-          <h2>자주 묻는 질문</h2>
+          <h2>{{copy.faqHeading}}</h2>
           <p>{{copy.faqNote}}</p>
         </div>
         <div class="faq-list">
@@ -280,11 +281,25 @@
       <div class="wrap">
         <div class="section-head">
           <span class="eyebrow">Area</span>
-          <h2>{{location}} 및 인근 지역 서비스 안내</h2>
+          <h2>{{copy.areaHeading}}</h2>
           <p>{{copy.areaNote}}</p>
           <p>{{copy.linksNote}}</p>
         </div>
+        <div class="map-row">
+          <a href="{{map.naver}}" target="_blank" rel="nofollow noopener">🗺️ 네이버 지도에서 {{location}} 보기</a>
+          <a href="{{map.google}}" target="_blank" rel="nofollow noopener">📍 구글 지도에서 {{location}} 보기</a>
+        </div>
+
         <nav class="links">{{#links}}<a href="{{href}}">{{label}}</a>{{/links}}</nav>
+
+        <!--
+          ② 앞뒤 페이지. 흩어진 링크만 있으면 크롤러가 못 닿는 페이지가 생긴다.
+          사슬로 이어 두면 한 URL 만 발견해도 100장을 전부 따라간다.
+        -->
+        <nav class="pager">
+          <a class="prev" href="{{prev.href}}"><small>← 이전</small>{{prev.label}}</a>
+          <a class="next" href="{{next.href}}"><small>다음 →</small>{{next.label}}</a>
+        </nav>
       </div>
     </section>
 

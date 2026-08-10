@@ -686,3 +686,90 @@
     font-size: 12px;
   }
 }
+
+/* ------------------------------------------------------------------
+   연관 검색어 칩 · 지도 버튼 · 앞뒤 페이지.
+   test.html 에 없던 요소라 여기서 새로 정의한다. 색은 위에서 정의한
+   변수만 쓰므로 팔레트가 어긋나지 않는다.
+   ------------------------------------------------------------------ */
+.kw-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 18px;
+}
+.kw-row span {
+  display: inline-block;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: #eef3ff;
+  color: var(--blue-dark);
+  border: 1px solid #dbe6ff;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.map-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.map-row a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.map-row a:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.pager {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 22px;
+}
+.pager a {
+  flex: 1;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.pager a:hover {
+  border-color: var(--blue);
+}
+.pager a small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.pager .next {
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .pager {
+    flex-direction: column;
+  }
+  .pager .next {
+    text-align: left;
+  }
+}

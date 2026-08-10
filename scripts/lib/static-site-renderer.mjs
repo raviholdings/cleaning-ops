@@ -30,9 +30,9 @@ const importLib = (file) => import(pathToFileURL(join(appLib, file)).href);
 const { catalogEntry, pagePath } = await importLib('pageCatalog.ts');
 const { CLEANING_SCOPE } = await importLib('content.ts');
 const {
-  buildBodyCopy, buildDescription, buildIndexMeta, buildTitle, ctaLabel, normalizeLocation,
+  buildBodyCopy, buildDescription, buildIndexMeta, buildTitle, ctaLabel, mapLinks, normalizeLocation,
   pickFaqs, pickSubKeywords, pickReviews, pickNearbyLocations,
-  pickPromises, pickVendorTips, pickServiceCategories, pickProcessSteps,
+  pickPromises, pickVendorTips, pickServiceCategories, pickProcessSteps, relatedKeywords,
 } = await importLib('pageMeta.ts');
 
 /** rollout-locations.json 은 DB 의 naver_page_locations 와 같은 순서여야 한다. */
@@ -144,19 +144,27 @@ export function buildPageData({ locations, siteIndex, pageCount, requestId, site
   const promises = pickPromises(raw, main);
   const categories = pickServiceCategories(raw, main);
 
+  /** 이 사이트의 다른 페이지 하나를 링크로 만든다. */
+  const linkTo = (id) => {
+    const other = catalogEntry({ locations, siteIndex, requestId: id, pageCount });
+    return {
+      href: pagePath(id),
+      label: `${normalizeLocation(other.location)} ${other.mainKeyword} 업체 비교`,
+    };
+  };
+
+  // 앞뒤 페이지. 크롤러가 한 URL 을 발견하면 사슬을 따라 100장을 전부 돈다.
+  // 흩어진 링크 10개만 있으면 발견 경로가 끊기는 페이지가 생긴다.
+  const prevId = requestId === 1 ? pageCount : requestId - 1;
+  const nextId = requestId === pageCount ? 1 : requestId + 1;
+
   // 같은 사이트 안의 다른 페이지 10장으로 내부 링크를 건다.
   // 보폭 7은 Astro 판과 같아야 링크 구조가 바뀌지 않는다.
   const links = Array.from({ length: 15 }, (_, i) => i + 1)
     .map((offset) => ((requestId - 1 + offset * 7) % pageCount) + 1)
     .filter((id) => id !== requestId)
     .slice(0, 10)
-    .map((id) => {
-      const other = catalogEntry({ locations, siteIndex, requestId: id, pageCount });
-      return {
-        href: pagePath(id),
-        label: `${normalizeLocation(other.location)} ${other.mainKeyword} 업체 비교`,
-      };
-    });
+    .map(linkTo);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -213,8 +221,15 @@ export function buildPageData({ locations, siteIndex, pageCount, requestId, site
     location: full,
     mainKeyword: main,
     subKeywords: pickSubKeywords(raw, main),
+    // 이 페이지가 노리는 연관 검색어. 한 URL 이 여러 롱테일에 걸리게 한다.
+    related: relatedKeywords(raw, main, 8).map((word) => ({ word })),
     // 주변 지역명·서브키워드를 섞은 본문 문장들. 템플릿이 자리마다 꽂아 쓴다.
     copy: buildBodyCopy(raw, main, nearby),
+    // 지도 검색 링크. 페이지마다 다른 외부 링크가 지역성 신호가 된다.
+    map: mapLinks(raw, main),
+    // 앞뒤 페이지. 크롤러 순회용.
+    prev: linkTo(prevId),
+    next: linkTo(nextId),
 
     // --- 반복 블록 ---
     promises,
