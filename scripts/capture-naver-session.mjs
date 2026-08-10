@@ -77,8 +77,17 @@ try {
 
 async function loadAccounts() {
   if (options.account) {
-    const result = await client.query(accountQuery('where account_id = $1'), [options.account]);
-    if (!result.rowCount) throw new Error(`계정을 찾을 수 없습니다: ${options.account}`);
+    // 쉼표로 여러 개를 받는다. 세션이 죽은 계정만 골라 다시 잡는 일이 잦은데,
+    // 순번 범위(--accounts)로 주면 멀쩡한 계정까지 --force 로 덮어쓰게 된다.
+    // 살아 있는 세션을 굳이 다시 잡으면 네이버가 추가 인증을 걸 위험만 는다.
+    const ids = String(options.account).split(',').map((s) => s.trim()).filter(Boolean);
+    const result = await client.query(
+      accountQuery('where account_id = any($1::text[]) order by account_order'),
+      [ids],
+    );
+    const found = new Set(result.rows.map((r) => r.account_id));
+    const missing = ids.filter((id) => !found.has(id));
+    if (missing.length) throw new Error(`계정을 찾을 수 없습니다: ${missing.join(', ')}`);
     return result.rows;
   }
   const range = String(options.accounts || '').match(/^(\d+)-(\d+)$/);

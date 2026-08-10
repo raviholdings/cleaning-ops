@@ -63,10 +63,27 @@ try {
       summary.push(await registerForAccount(account));
     } catch (error) {
       console.error(`  ✗ 계정 실패: ${error.message}`);
-      summary.push({ accountId: account.account_id, ok: false, error: error.message });
+      summary.push({
+        accountId: account.account_id,
+        ok: false,
+        error: error.message,
+        ...(error.needsRecapture ? { needsRecapture: true } : {}),
+      });
     }
   }
   console.log(`\n${JSON.stringify({ phase: 'summary', summary }, null, 2)}`);
+
+  // 재캡처가 필요한 계정을 마지막에 한 줄로 모아준다.
+  // 30개 계정 로그를 눈으로 훑어 계정 ID 를 골라내는 건 실수하기 쉽다.
+  const needRecapture = summary.filter((s) => s.needsRecapture).map((s) => s.accountId);
+  if (needRecapture.length) {
+    console.log(`\n===== 세션 재캡처가 필요한 계정 ${needRecapture.length}개 =====`);
+    for (const id of needRecapture) {
+      console.log(`  node scripts/capture-naver-session.mjs --account ${id} --no-auto-click --force`);
+    }
+    console.log('\n재캡처 뒤 같은 등록 명령을 다시 돌리면 남은 것만 이어서 합니다.');
+  }
+
   if (summary.some((s) => !s.ok)) process.exitCode = 1;
 } finally {
   await client.end();
@@ -148,7 +165,10 @@ async function registerForAccount(account) {
     // 원인도 화면을 안 남겨서 알 수 없었다. 한 번만 보고 판단한다.
     const board = await inspectBoard(page);
     if (!board.ok) {
-      throw new Error(`사이트 등록 화면을 열 수 없습니다 — ${board.reason}\n    화면: ${board.snippet}`);
+      const error = new Error(`사이트 등록 화면을 열 수 없습니다 — ${board.reason}\n    화면: ${board.snippet}`);
+      // 마지막 요약에서 재캡처 명령을 뽑아주기 위해 플래그를 실어 보낸다.
+      error.needsRecapture = Boolean(board.needsRecapture);
+      throw error;
     }
     console.log(`  등록 화면 확인 ✅ (등록된 사이트 ${board.siteCount ?? '?'}개)`);
 
@@ -203,27 +223,47 @@ async function registerForAccount(account) {
  * 적어두면 다음 사람이 엉뚱한 데를 판다.
  */
 async function inspectBoard(page) {
-  try {
-    await page.goto(BOARD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  } catch (error) {
-    return { ok: false, reason: `콘솔 페이지 로딩 실패: ${error.message.split('\n')[0]}`, snippet: '' };
-  }
-  await page.waitForTimeout(1500);
+  // 콘솔은 Vue SPA 라 첫 렌더가 늦을 때가 있다. 한 번 더 열어보고 판단한다.
+  let state = null;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      await page.goto(BOARD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    } catch (error) {
+      if (attempt === 2) {
+        return { ok: false, reason: `콘솔 페이지 로딩 실패: ${error.message.split('\n')[0]}`, snippet: '' };
+      }
+      continue;
+    }
+    // 입력창이 뜨면 바로 통과. 안 뜨면 최대 12초까지 기다렸다가 상태를 읽는다.
+    try {
+      await page.locator('input[type=text]').first().waitFor({ state: 'visible', timeout: 12_000 });
+    } catch { /* 아래에서 화면 상태로 원인을 가린다 */ }
 
-  const state = await page.evaluate(() => ({
-    body: (document.body?.innerText || '').replace(/\s+/g, ' ').trim(),
-    title: document.title,
-    url: location.href,
-    textInputs: document.querySelectorAll('input[type=text]').length,
-    // 등록된 사이트 목록은 표 형태로 그려진다. 개수만 세어 상한 판단에 쓴다.
-    rows: document.querySelectorAll('tbody tr').length,
-  }));
+    state = await page.evaluate(() => ({
+      body: (document.body?.innerText || '').replace(/\s+/g, ' ').trim(),
+      url: location.href,
+      textInputs: document.querySelectorAll('input[type=text]').length,
+      // 등록된 사이트 목록은 표로 그려진다. 개수만 세어 상한 판단에 쓴다.
+      rows: document.querySelectorAll('tbody tr').length,
+    }));
+    if (state.textInputs > 0) break;
+    if (attempt === 1) await page.waitForTimeout(2000);
+  }
 
   const snippet = state.body.slice(0, 160);
 
+  // 계정 메뉴(로그아웃 아이콘)가 보이면 로그인은 된 것이다.
+  // 이게 없고 "로그인" 링크만 있으면 세션이 안 먹은 것이다.
+  const loggedIn = /power_settings_new/.test(state.body);
+  // 콘솔이 아니라 서치어드바이저 첫 화면으로 튕긴 경우.
+  const landingPage = /웹마스터 가이드/.test(state.body) && !/사이트 관리|사이트 등록/.test(state.body);
+
   if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인/.test(state.body)
       || /nid\.naver\.com/.test(state.url)) {
-    return { ok: false, reason: '저장된 세션이 만료됐습니다 (세션 재캡처 필요)', snippet };
+    return { ok: false, reason: '저장된 세션이 만료됐습니다 — 로그인 화면으로 튕김 (재캡처 필요)', snippet, needsRecapture: true };
+  }
+  if (landingPage && !loggedIn) {
+    return { ok: false, reason: '로그아웃 상태입니다 — 콘솔 대신 첫 화면이 떴습니다 (재캡처 필요)', snippet, needsRecapture: true };
   }
   if (/등록 가능한 사이트|사이트 수를 초과|최대 100/.test(state.body)) {
     return { ok: false, reason: '계정이 사이트 등록 상한에 걸렸습니다', snippet };
@@ -231,8 +271,11 @@ async function inspectBoard(page) {
   if (/문제가 발생|접근권한이 없습니다/.test(state.body)) {
     return { ok: false, reason: '네이버가 오류 화면을 돌려줬습니다 (잠시 후 재시도)', snippet };
   }
+  if (landingPage && loggedIn) {
+    return { ok: false, reason: '로그인은 됐는데 콘솔이 안 열립니다 (계정 권한이나 네이버 쪽 문제)', snippet };
+  }
   if (state.textInputs === 0) {
-    return { ok: false, reason: 'URL 입력창이 화면에 없습니다', snippet };
+    return { ok: false, reason: 'URL 입력창이 화면에 없습니다 (원인 불명)', snippet };
   }
 
   return { ok: true, siteCount: state.rows, snippet };
