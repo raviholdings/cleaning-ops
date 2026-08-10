@@ -146,14 +146,18 @@ async function registerForAccount(account) {
     '--account', account.account_id, '--output', statePath,
   ], { stdio: 'pipe' });
 
-  // --headed 로 창을 띄울 수 있다.
+  // 기본은 창을 띄운다. --headless 로만 끈다.
   //
-  // 같은 세션·같은 IP 인데 사람이 브라우저로 열면 콘솔이 나오고 여기서는
-  // 첫 화면으로 튕기는 계정이 있었다(VM2, 2026-08-10). 저장된 쿠키는 정상
-  // 계정과 완전히 동일했다. 남은 차이가 헤드리스뿐이라 껐다 켤 수 있게 뒀다.
-  // 수집요청 스크립트는 기본이 화면 있는 모드이고 같은 계정에서 잘 돈다.
+  // 헤드리스로 돌리면 같은 세션·같은 IP 인데도 콘솔 대신 첫 화면이 뜨는
+  // 계정이 있다(VM2, 2026-08-10). 저장된 쿠키는 정상 계정과 완전히 동일했고,
+  // 창을 띄우니 바로 열렸다. 사이트를 이미 등록해둔 계정은 통과하고 새 계정만
+  // 걸리는 걸로 보아 네이버 쪽 판단이다.
+  //
+  // 조용히 실패하는 손해가 헤드리스로 얻는 이득보다 훨씬 크다. 실제로 계정
+  // 20개가 며칠간 깨진 줄도 모르고 있었다. 수집요청 스크립트도 기본이
+  // 화면 있는 모드이고 같은 계정에서 잘 돈다.
   const browser = await chromium.launch({
-    headless: !options.headed,
+    headless: Boolean(options.headless),
     channel: 'chrome',
     ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
   });
@@ -258,36 +262,35 @@ async function inspectBoard(page) {
 
   const snippet = state.body.slice(0, 160);
 
-  // 계정 메뉴(로그아웃 아이콘)가 보이면 로그인은 된 것이다.
-  // 이게 없고 "로그인" 링크만 있으면 세션이 안 먹은 것이다.
+  // 이 함수가 답해야 하는 건 딱 하나다: "콘솔이 열렸는가".
+  // 입력창이 있으면 열린 것이고, 그 이상은 추측하지 않는다.
+  //
+  // 전에는 여기서 사이트 100개 상한까지 가리려 했는데 오판했다.
+  // 화면 글자에 "사이트 등록 error 최대 100개 사이트를 등록할 수 있습니다" 가
+  // 뜨길래 상한으로 봤지만, 그건 입력창 아래 **고정 안내문**이었다.
+  // error 는 Material 아이콘 이름이 innerText 로 읽힌 것뿐이다.
+  // 사이트가 0개인 멀쩡한 계정이 그것 때문에 통째로 막혔다(2026-08-10).
+  // 상한은 실제로 등록을 시도해봐야 알 수 있다. 여기서 판단하지 않는다.
+  if (state.textInputs > 0) {
+    return { ok: true, siteCount: state.rows, snippet };
+  }
+
+  // 아래는 입력창이 없을 때만 온다.
   const loggedIn = /power_settings_new/.test(state.body);
-  // 콘솔이 아니라 서치어드바이저 첫 화면으로 튕긴 경우.
-  const landingPage = /웹마스터 가이드/.test(state.body) && !/사이트 관리|사이트 등록/.test(state.body);
 
   if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인/.test(state.body)
       || /nid\.naver\.com/.test(state.url)) {
     return { ok: false, reason: '저장된 세션이 만료됐습니다 — 로그인 화면으로 튕김 (재캡처 필요)', snippet, needsRecapture: true };
   }
-  if (landingPage && !loggedIn) {
-    return { ok: false, reason: '로그아웃 상태입니다 — 콘솔 대신 첫 화면이 떴습니다 (재캡처 필요)', snippet, needsRecapture: true };
-  }
-  // "최대 100개 사이트를 등록할 수 있습니다" 만으로 판단하면 안 된다.
-  // 그 문장은 정상 화면에도 안내문으로 떠 있을 수 있다. 실제 상한일 때는
-  // 앞에 error 아이콘이 붙는다("사이트 등록 error 최대 100개 ...").
-  if (/error 최대 100개|사이트 수를 초과|등록 가능한 사이트 수/.test(state.body)) {
-    return { ok: false, reason: `계정이 사이트 등록 상한(100개)에 걸렸습니다 — 다른 계정을 쓰거나 기존 사이트를 지워야 합니다`, snippet };
-  }
   if (/문제가 발생|접근권한이 없습니다/.test(state.body)) {
     return { ok: false, reason: '네이버가 오류 화면을 돌려줬습니다 (잠시 후 재시도)', snippet };
   }
-  if (landingPage && loggedIn) {
-    return { ok: false, reason: '로그인은 됐는데 콘솔이 안 열립니다 (계정 권한이나 네이버 쪽 문제)', snippet };
+  if (/웹마스터 가이드/.test(state.body)) {
+    return loggedIn
+      ? { ok: false, reason: '로그인은 됐는데 콘솔 대신 첫 화면이 떴습니다 — --headed 로 다시 시도해 보세요', snippet }
+      : { ok: false, reason: '로그아웃 상태입니다 — 콘솔 대신 첫 화면이 떴습니다 (재캡처 필요)', snippet, needsRecapture: true };
   }
-  if (state.textInputs === 0) {
-    return { ok: false, reason: 'URL 입력창이 화면에 없습니다 (원인 불명)', snippet };
-  }
-
-  return { ok: true, siteCount: state.rows, snippet };
+  return { ok: false, reason: 'URL 입력창이 화면에 없습니다 (원인 불명)', snippet };
 }
 
 /**
