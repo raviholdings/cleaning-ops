@@ -5,6 +5,10 @@
  *
  *   node scripts/register-naver-searchadvisor-sites.mjs --account lguxp4nlw --limit 5
  *   node scripts/register-naver-searchadvisor-sites.mjs --accounts 1-10
+ *   node scripts/register-naver-searchadvisor-sites.mjs --accounts 1-10 --show   # 창을 보면서
+ *
+ * 브라우저는 실제로 뜨지만 기본값은 화면 밖에 둬서 눈에 안 보인다.
+ * headless 로 돌리면 네이버가 콘솔 대신 첫 화면을 내주는 계정이 있어서다.
  *
  * 계정이 바뀔 때마다 HaiIP 로 그 계정의 검증 IP 로 전환하고, 실제로 그 IP 가
  * 됐는지 curl 로 확인한 뒤에만 진행한다. (PowerShell 의 Invoke-RestMethod 는
@@ -146,19 +150,21 @@ async function registerForAccount(account) {
     '--account', account.account_id, '--output', statePath,
   ], { stdio: 'pipe' });
 
-  // 기본은 창을 띄운다. --headless 로만 끈다.
+  // 진짜 브라우저를 띄우되, 기본은 화면 밖에 둔다.
   //
-  // 헤드리스로 돌리면 같은 세션·같은 IP 인데도 콘솔 대신 첫 화면이 뜨는
-  // 계정이 있다(VM2, 2026-08-10). 저장된 쿠키는 정상 계정과 완전히 동일했고,
-  // 창을 띄우니 바로 열렸다. 사이트를 이미 등록해둔 계정은 통과하고 새 계정만
-  // 걸리는 걸로 보아 네이버 쪽 판단이다.
+  // headless 로 돌리면 같은 세션·같은 IP 인데도 콘솔 대신 첫 화면이 뜨는
+  // 계정이 있다(VM2, 2026-08-10). 저장된 쿠키는 정상 계정과 완전히 동일했고
+  // 창을 띄우니 바로 열렸다. 그래서 headless 로는 되돌리지 않는다.
   //
-  // 조용히 실패하는 손해가 헤드리스로 얻는 이득보다 훨씬 크다. 실제로 계정
-  // 20개가 며칠간 깨진 줄도 모르고 있었다. 수집요청 스크립트도 기본이
-  // 화면 있는 모드이고 같은 계정에서 잘 돈다.
+  // 대신 창 위치를 화면 밖으로 보낸다. 네이버가 보는 건 그대로 일반 브라우저고,
+  // 사람 눈에만 안 보인다. 작업 중에 창이 계속 튀어나오면 다른 일을 못 한다.
+  //   --show      화면에 띄운다 (문제 생겼을 때 눈으로 보려고)
+  //   --headless  진짜 헤드리스. 위 이유로 권하지 않는다.
+  const offscreen = !options.show && !options.headless;
   const browser = await chromium.launch({
     headless: Boolean(options.headless),
     channel: 'chrome',
+    ...(offscreen ? { args: ['--window-position=-2400,-2400', '--window-size=1280,900'] } : {}),
     ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
   });
   let registered = 0;
