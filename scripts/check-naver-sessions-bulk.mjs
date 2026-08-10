@@ -110,6 +110,11 @@ async function checkOne(account) {
       await page.locator('input[type=text]').first().waitFor({ state: 'visible', timeout: 12_000 });
     } catch { /* 아래에서 화면으로 원인을 가린다 */ }
 
+    // 등록된 사이트 목록은 입력창보다 늦게 그려진다. 안 기다리고 읽으면
+    // 100개를 등록해둔 계정도 "0개" 로 나온다(실제로 #6, #10 이 그랬다).
+    // 목록이 뜰 때까지 잠깐 더 본다. 진짜 0개인 계정은 이 시간을 그냥 쓴다.
+    await page.locator('tbody tr').first().waitFor({ state: 'attached', timeout: 6_000 }).catch(() => {});
+
     const state = await page.evaluate(() => ({
       body: (document.body?.innerText || '').replace(/\s+/g, ' ').trim(),
       url: location.href,
