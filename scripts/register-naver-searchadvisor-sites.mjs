@@ -268,26 +268,26 @@ async function inspectBoard(page) {
 
   const snippet = state.body.slice(0, 160);
 
-  // 이 함수가 답해야 하는 건 딱 하나다: "콘솔이 열렸는가".
-  // 입력창이 있으면 열린 것이고, 그 이상은 추측하지 않는다.
-  //
-  // 전에는 여기서 사이트 100개 상한까지 가리려 했는데 오판했다.
-  // 화면 글자에 "사이트 등록 error 최대 100개 사이트를 등록할 수 있습니다" 가
-  // 뜨길래 상한으로 봤지만, 그건 입력창 아래 **고정 안내문**이었다.
-  // error 는 Material 아이콘 이름이 innerText 로 읽힌 것뿐이다.
-  // 사이트가 0개인 멀쩡한 계정이 그것 때문에 통째로 막혔다(2026-08-10).
-  // 상한은 실제로 등록을 시도해봐야 알 수 있다. 여기서 판단하지 않는다.
-  if (state.textInputs > 0) {
-    return { ok: true, siteCount: state.rows, snippet };
-  }
-
-  // 아래는 입력창이 없을 때만 온다.
-  const loggedIn = /power_settings_new/.test(state.body);
-
-  if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인/.test(state.body)
+  // ⚠ 로그인 화면 판정이 입력창 판정보다 **먼저**다.
+  // 네이버 로그인 화면에도 아이디·비밀번호 input[type=text] 가 있어서,
+  // 입력창 개수만 보면 로그인 화면을 "콘솔 열림" 으로 통과시킨다.
+  // 실제로 계정 #6, #17 이 로그인 화면인데 정상으로 나왔다(2026-08-10).
+  if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인|QR 코드 로그인|로그인 상태 유지/.test(state.body)
       || /nid\.naver\.com/.test(state.url)) {
     return { ok: false, reason: '저장된 세션이 만료됐습니다 — 로그인 화면으로 튕김 (재캡처 필요)', snippet, needsRecapture: true };
   }
+
+  // 콘솔 안에서만 보이는 글자 + 입력창이 함께 있어야 진짜 등록 화면이다.
+  //
+  // 사이트 100개 상한은 여기서 판단하지 않는다. 전에 시도했다가
+  // "사이트 등록 error 최대 100개 사이트를 등록할 수 있습니다" 를 상한으로
+  // 오판했는데, 그건 입력창 아래 고정 안내문이었고 error 는 Material 아이콘
+  // 이름이 innerText 로 읽힌 것이었다. 상한은 실제로 등록해봐야 안다.
+  if (state.textInputs > 0 && /사이트 관리|사이트 등록|간단체크/.test(state.body)) {
+    return { ok: true, siteCount: state.rows, snippet };
+  }
+
+  const loggedIn = /power_settings_new/.test(state.body);
   if (/문제가 발생|접근권한이 없습니다/.test(state.body)) {
     return { ok: false, reason: '네이버가 오류 화면을 돌려줬습니다 (잠시 후 재시도)', snippet };
   }

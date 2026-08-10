@@ -123,16 +123,22 @@ async function checkOne(account) {
     }));
 
     const base = { order: account.account_order, accountId: account.account_id };
+    const snippet = state.body.slice(0, 100);
 
-    if (state.textInputs > 0) {
-      console.log(`  ✅ 콘솔 열림 (등록된 사이트 ${state.rows}개)`);
-      return { ...base, ok: true, siteCount: state.rows };
+    // ⚠ 로그인 화면 판정을 입력창 판정보다 **먼저** 해야 한다.
+    // 네이버 로그인 화면에도 아이디·비밀번호 input[type=text] 가 있어서,
+    // 입력창 개수만 보면 로그인 화면을 "콘솔 열림" 으로 통과시킨다.
+    // 실제로 계정 #6, #17 이 로그인 화면인데 정상으로 나왔다(2026-08-10).
+    if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인|QR 코드 로그인|로그인 상태 유지/.test(state.body)
+        || /nid\.naver\.com/.test(state.url)) {
+      console.log('  ❌ 로그인 화면으로 튕김');
+      return { ...base, ok: false, reason: '로그인 화면으로 튕김 (재캡처 필요)', needsRecapture: true };
     }
 
-    const snippet = state.body.slice(0, 100);
-    if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인/.test(state.body) || /nid\.naver\.com/.test(state.url)) {
-      console.log(`  ❌ 로그인 화면으로 튕김`);
-      return { ...base, ok: false, reason: '로그인 화면으로 튕김 (재캡처 필요)', needsRecapture: true };
+    // 콘솔 안에서만 보이는 글자가 있어야 진짜 콘솔이다.
+    if (state.textInputs > 0 && /사이트 관리|사이트 등록|간단체크/.test(state.body)) {
+      console.log(`  ✅ 콘솔 열림 (등록된 사이트 ${state.rows}개)`);
+      return { ...base, ok: true, siteCount: state.rows };
     }
     if (/보호조치|이용 제한|잠금|비정상적인 접근|본인 확인/.test(state.body)) {
       console.log(`  ❌ 보호조치: ${snippet}`);
