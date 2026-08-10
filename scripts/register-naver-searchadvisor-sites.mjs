@@ -146,8 +146,14 @@ async function registerForAccount(account) {
     '--account', account.account_id, '--output', statePath,
   ], { stdio: 'pipe' });
 
+  // --headed 로 창을 띄울 수 있다.
+  //
+  // 같은 세션·같은 IP 인데 사람이 브라우저로 열면 콘솔이 나오고 여기서는
+  // 첫 화면으로 튕기는 계정이 있었다(VM2, 2026-08-10). 저장된 쿠키는 정상
+  // 계정과 완전히 동일했다. 남은 차이가 헤드리스뿐이라 껐다 켤 수 있게 뒀다.
+  // 수집요청 스크립트는 기본이 화면 있는 모드이고 같은 계정에서 잘 돈다.
   const browser = await chromium.launch({
-    headless: true,
+    headless: !options.headed,
     channel: 'chrome',
     ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
   });
