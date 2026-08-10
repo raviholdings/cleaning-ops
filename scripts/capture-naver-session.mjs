@@ -12,7 +12,11 @@
  *   2. HaiIP 로 그 계정의 IP 로 전환 (배정 IP 가 없으면 무작위 변경 후 기록)
  *   3. 공인 IP 가 다른 계정에 쓰이고 있지 않은지 확인
  *   4. 전용 임시 프로필로 Chrome 을 띄우고 아이디/비밀번호를 채워 넣는다
- *   5. ← 캡차·2단계 인증이 뜨면 사람이 처리한다
+ *   5. ← 캡차·2단계 인증·보호조치가 뜨면 사람이 처리한다
+ *        보호조치 화면이 보이면 기다리는 시간을 20분으로 늘리고, 그래도
+ *        못 끝내면 창을 열어둔 채 Enter 를 기다린다. 창이 닫혀버리면
+ *        처음부터 다시 해야 해서 그게 제일 아깝다.
+ *        --protection-timeout-ms 로 조절, --no-pause 로 끌 수 있다.
  *   6. 로그인 완료를 감지하면 storage-state 를 뽑는다
  *   7. NID_AUT/NID_SES 확인 + 서치어드바이저 진입 검증
  *   8. Vault + DB 저장, 임시 파일 삭제
@@ -25,6 +29,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { createInterface } from 'node:readline/promises';
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -204,14 +209,11 @@ async function captureOne(account) {
     console.log('  ▶ 브라우저에서 로그인을 완료해 주세요 (캡차·추가 인증이 뜨면 처리).');
     console.log(`    최대 ${Math.round(LOGIN_TIMEOUT_MS / 1000)}초 기다립니다.`);
 
-    // 두 번째 인자는 페이지 함수에 넘길 값이고, 옵션은 세 번째다. 자리를 바꾸면
-    // timeout 이 무시되고 기본 30초가 적용된다.
+    // 보호조치·본인확인이 걸리면 5분 안에 못 끝낸다. 문자 받고 번호 넣고
+    // 하다 보면 10분도 넘어가는데, 그때 창이 닫혀버리면 처음부터 다시 해야
+    // 한다. 그래서 그런 화면이 보이면 기다리는 시간을 늘린다.
     try {
-      await page.waitForFunction(
-        () => !location.hostname.includes('nid.naver.com'),
-        null,
-        { timeout: LOGIN_TIMEOUT_MS, polling: 2000 },
-      );
+      await waitForLogin(page, account.account_id);
     } catch (error) {
       // 왜 못 넘어갔는지 알아야 다음 계정을 시도할 수 있다. 화면과 문구를 남긴다.
       const diagDir = resolve(projectRoot, 'reports/naver-login');
@@ -227,7 +229,22 @@ async function captureOne(account) {
       console.log(`  진단 제목  : ${info.title || '?'}`);
       console.log(`  화면 문구  : ${info.text || '?'}`);
       console.log(`  스크린샷   : ${shot}`);
-      throw new Error(`로그인이 끝나지 않았습니다 (${info.title || 'unknown'})`);
+
+      // 창을 바로 닫지 않는다. 보호조치를 푸는 중이었다면 여기서 닫히는 게
+      // 제일 아깝다. Enter 를 받을 때까지 열어두고, 그 사이에 로그인이
+      // 끝나면 그대로 진행한다. --no-pause 면 예전처럼 바로 접는다.
+      if (!options.noPause) {
+        console.log('\n  ⏸ 창을 열어둡니다. 보호조치·본인확인을 처리하신 뒤');
+        console.log('     로그인까지 끝내고 이 창에서 Enter 를 눌러주세요. (건너뛰려면 그냥 Enter)');
+        await waitForEnter();
+        if (!page.url().includes('nid.naver.com')) {
+          console.log('  ✅ 로그인이 확인됐습니다. 계속 진행합니다.');
+        } else {
+          throw new Error(`로그인이 끝나지 않았습니다 (${info.title || 'unknown'})`);
+        }
+      } else {
+        throw new Error(`로그인이 끝나지 않았습니다 (${info.title || 'unknown'})`);
+      }
     }
 
     await page.goto(SEARCH_ADVISOR_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
@@ -275,6 +292,58 @@ async function captureOne(account) {
     publicIp,
     cookieCount: storageState.cookies.length,
   };
+}
+
+/** 보호조치·본인확인 화면인지 본다. 이게 뜨면 사람이 오래 붙어야 한다. */
+const CHALLENGE_PATTERN = /보호조치|이용 제한|본인 확인|본인확인|인증번호|새로운 기기|자동입력 방지|일시적으로 제한|비정상적인 접근|2단계 인증/;
+
+/**
+ * 로그인이 끝날 때까지 기다린다.
+ *
+ * 기본은 LOGIN_TIMEOUT_MS(5분)이지만, 보호조치나 본인확인 화면이 보이면
+ * 기한을 늘린다. 문자 받고 번호 넣고 하다 보면 5분은 금방 넘어가는데,
+ * 그때 창이 닫히면 처음부터 다시 해야 한다.
+ *
+ * --protection-timeout-ms 로 조절한다. 기본 20분.
+ */
+async function waitForLogin(page, accountId) {
+  const protectionTimeoutMs = Number(options.protectionTimeoutMs || 1_200_000);
+  let deadline = Date.now() + LOGIN_TIMEOUT_MS;
+  let extended = false;
+  let lastNotice = 0;
+
+  for (;;) {
+    if (!page.url().includes('nid.naver.com')) return;
+
+    const body = await page.evaluate(() => (document.body?.innerText || '').replace(/\s+/g, ' ')).catch(() => '');
+
+    if (!extended && CHALLENGE_PATTERN.test(body)) {
+      extended = true;
+      deadline = Date.now() + protectionTimeoutMs;
+      console.log(`\n  🔐 추가 인증 화면이 보입니다 (${accountId}).`);
+      console.log(`     ${body.slice(0, 100)}`);
+      console.log(`     기다리는 시간을 ${Math.round(protectionTimeoutMs / 60000)}분으로 늘립니다. 천천히 처리하세요.\n`);
+    }
+
+    if (Date.now() > deadline) throw new Error('timeout');
+
+    // 30초마다 남은 시간을 알려준다. 아무 표시도 없으면 멈춘 줄 안다.
+    if (Date.now() - lastNotice > 30_000) {
+      lastNotice = Date.now();
+      console.log(`    대기 중... 남은 ${Math.round((deadline - Date.now()) / 1000)}초`);
+    }
+    await page.waitForTimeout(2000);
+  }
+}
+
+/** 콘솔에서 Enter 한 줄을 기다린다. */
+async function waitForEnter() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    await rl.question('');
+  } finally {
+    rl.close();
+  }
 }
 
 /**
