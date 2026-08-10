@@ -140,6 +140,18 @@ async function registerForAccount(account) {
     const context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
     const page = await context.newPage();
 
+    // 사이트 등록 화면이 실제로 뜨는지 먼저 본다.
+    //
+    // 예전에는 이 확인 없이 바로 100건을 돌렸다. 세션이 죽었거나 계정이 100개
+    // 상한에 걸리면 URL 입력창이 없어서 도메인마다 15초씩 타임아웃이 나고,
+    // "locator.click: Timeout 15000ms exceeded" 만 100줄 찍힌 뒤 25분이 날아갔다.
+    // 원인도 화면을 안 남겨서 알 수 없었다. 한 번만 보고 판단한다.
+    const board = await inspectBoard(page);
+    if (!board.ok) {
+      throw new Error(`사이트 등록 화면을 열 수 없습니다 — ${board.reason}\n    화면: ${board.snippet}`);
+    }
+    console.log(`  등록 화면 확인 ✅ (등록된 사이트 ${board.siteCount ?? '?'}개)`);
+
     for (const [index, domain] of targets.entries()) {
       try {
         const token = await registerOne(page, domain.site_url);
@@ -175,6 +187,55 @@ async function registerForAccount(account) {
   }
 
   return { accountId: account.account_id, ok: failures.length === 0, registered, failed: failures.length, failures: failures.slice(0, 5) };
+}
+
+/**
+ * 사이트 등록 화면 상태를 한 번에 판정한다.
+ *
+ * 클릭이 타임아웃 났을 때 "왜" 를 남기기 위한 것이다. URL 입력창이 없는
+ * 이유는 여러 가지인데, 화면 글자를 보면 대부분 구분된다.
+ *
+ *   - 저장된 세션이 죽음      -> 로그인 화면이나 "로그인에 문제가 발생"
+ *   - 계정이 100개 상한       -> "등록 가능한 사이트 수" 안내
+ *   - 네이버 일시 오류        -> "문제가 발생"
+ *
+ * 어디에도 안 걸리면 화면 앞부분을 그대로 돌려준다. 추측해서 틀린 원인을
+ * 적어두면 다음 사람이 엉뚱한 데를 판다.
+ */
+async function inspectBoard(page) {
+  try {
+    await page.goto(BOARD_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  } catch (error) {
+    return { ok: false, reason: `콘솔 페이지 로딩 실패: ${error.message.split('\n')[0]}`, snippet: '' };
+  }
+  await page.waitForTimeout(1500);
+
+  const state = await page.evaluate(() => ({
+    body: (document.body?.innerText || '').replace(/\s+/g, ' ').trim(),
+    title: document.title,
+    url: location.href,
+    textInputs: document.querySelectorAll('input[type=text]').length,
+    // 등록된 사이트 목록은 표 형태로 그려진다. 개수만 세어 상한 판단에 쓴다.
+    rows: document.querySelectorAll('tbody tr').length,
+  }));
+
+  const snippet = state.body.slice(0, 160);
+
+  if (/로그인에 문제가 발생|아이디 또는 전화번호|NAVER 로그인/.test(state.body)
+      || /nid\.naver\.com/.test(state.url)) {
+    return { ok: false, reason: '저장된 세션이 만료됐습니다 (세션 재캡처 필요)', snippet };
+  }
+  if (/등록 가능한 사이트|사이트 수를 초과|최대 100/.test(state.body)) {
+    return { ok: false, reason: '계정이 사이트 등록 상한에 걸렸습니다', snippet };
+  }
+  if (/문제가 발생|접근권한이 없습니다/.test(state.body)) {
+    return { ok: false, reason: '네이버가 오류 화면을 돌려줬습니다 (잠시 후 재시도)', snippet };
+  }
+  if (state.textInputs === 0) {
+    return { ok: false, reason: 'URL 입력창이 화면에 없습니다', snippet };
+  }
+
+  return { ok: true, siteCount: state.rows, snippet };
 }
 
 /**
