@@ -37,6 +37,15 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
+# 값이 이상하면 여기서 멈춘다. "-To -50" 처럼 음수로 오타를 내면 범위가 비고,
+# 그러면 "대상 계정이 없습니다" 로 조용히 끝나 정상인 줄 알게 된다.
+if ($From -lt 1 -or $To -lt 1) {
+	throw "순번은 1 이상이어야 합니다. 입력값: -From $From -To $To  (예: -From 21 -To 50)"
+}
+if ($From -gt $To) {
+	throw "-From 이 -To 보다 큽니다. 입력값: -From $From -To $To  (예: -From 21 -To 50)"
+}
+
 Write-Host "계정 순번 $From ~ $To 의 계정 ID 를 조회합니다..."
 $ids = (& node (Join-Path $PSScriptRoot 'get-account-ids-by-order.mjs') --from $From --to $To) | Select-Object -Last 1
 if ($LASTEXITCODE -ne 0) { throw "계정 조회 실패 (exit $LASTEXITCODE)" }
