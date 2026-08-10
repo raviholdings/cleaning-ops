@@ -350,8 +350,23 @@ async function verifySearchAdvisor(statePath) {
     if (/^NAVER 로그인|로그인 - /.test(title)) {
       return { ok: false, reason: `로그인 화면 제목입니다: ${title.slice(0, 40)}` };
     }
-    // 콘솔에 들어갔다면 사이트 관리 UI 가 보여야 한다.
-    if (!/사이트 관리|웹마스터 도구|사이트 등록/.test(body)) {
+    // ⚠ "웹마스터 도구" 를 통과 조건에 넣으면 안 된다.
+    // 그 글자는 서치어드바이저 **첫 화면 메뉴**에도 있어서, 콘솔에 못 들어간
+    // 계정도 통과해버린다. 실제로 VM2 계정 여러 개가 이것 때문에 "세션 저장
+    // 완료"로 찍히고, 나중에 사이트 등록에서 전부 실패했다(2026-08-10).
+    //
+    // 콘솔 안에서만 보이는 글자로만 판정한다.
+    if (!/사이트 관리|사이트 등록|간단체크/.test(body)) {
+      // 첫 화면에 걸린 경우를 따로 알려준다. 원인이 세션이 아니라 계정이다.
+      const loggedIn = /power_settings_new/.test(body);
+      if (/웹마스터 가이드/.test(body)) {
+        return {
+          ok: false,
+          reason: loggedIn
+            ? '로그인은 됐지만 콘솔에 못 들어갑니다 — 이 계정으로 서치어드바이저를 한 번도 쓴 적이 없어 최초 이용 동의가 필요할 수 있습니다. 브라우저로 직접 들어가 확인하세요.'
+            : `첫 화면(로그아웃 상태)입니다: ${body.slice(0, 60)}`,
+        };
+      }
       return { ok: false, reason: `서치어드바이저 콘솔 화면이 아닙니다: ${body.slice(0, 60)}` };
     }
     return { ok: true, title: title.slice(0, 40) };
