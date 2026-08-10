@@ -265,8 +265,11 @@ async function inspectBoard(page) {
   if (landingPage && !loggedIn) {
     return { ok: false, reason: '로그아웃 상태입니다 — 콘솔 대신 첫 화면이 떴습니다 (재캡처 필요)', snippet, needsRecapture: true };
   }
-  if (/등록 가능한 사이트|사이트 수를 초과|최대 100/.test(state.body)) {
-    return { ok: false, reason: '계정이 사이트 등록 상한에 걸렸습니다', snippet };
+  // "최대 100개 사이트를 등록할 수 있습니다" 만으로 판단하면 안 된다.
+  // 그 문장은 정상 화면에도 안내문으로 떠 있을 수 있다. 실제 상한일 때는
+  // 앞에 error 아이콘이 붙는다("사이트 등록 error 최대 100개 ...").
+  if (/error 최대 100개|사이트 수를 초과|등록 가능한 사이트 수/.test(state.body)) {
+    return { ok: false, reason: `계정이 사이트 등록 상한(100개)에 걸렸습니다 — 다른 계정을 쓰거나 기존 사이트를 지워야 합니다`, snippet };
   }
   if (/문제가 발생|접근권한이 없습니다/.test(state.body)) {
     return { ok: false, reason: '네이버가 오류 화면을 돌려줬습니다 (잠시 후 재시도)', snippet };
