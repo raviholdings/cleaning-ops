@@ -292,9 +292,20 @@ function fetchViaProxy(urlString, proxy, options = {}) {
 		const url = new URL(urlString);
 		const timeoutMs = options.timeoutMs || 15000;
 		const agent = new HttpConnectHttpsAgent(proxy, timeoutMs);
+		/*
+		 * 압축을 받아온다.
+		 *
+		 * 예전에는 'identity' 로 압축을 꺼놨다. 네이버 검색 결과 HTML 이
+		 * 287KB 인데 gzip 하면 31KB 라 9배 차이가 난다. 프록시를 거치는
+		 * 경로에서만 압축을 끄고 있었으니, 대역폭이 드는 쪽만 손해였다.
+		 * (프록시를 안 쓸 때는 Node 기본 fetch 가 알아서 gzip 을 받는다.)
+		 *
+		 * 응답을 푸는 건 아래 decodeBody 가 content-encoding 을 보고 처리한다.
+		 * 그 코드는 원래 있었고 요청 헤더만 막혀 있었다.
+		 */
 		const headers = {
 			...(options.headers || {}),
-			'accept-encoding': 'identity'
+			'accept-encoding': 'gzip, deflate'
 		};
 		let settled = false;
 		let request = null;
