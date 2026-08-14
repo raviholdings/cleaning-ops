@@ -80,6 +80,58 @@ function Fail {
 if ($From -eq $To) { Fail "-From 과 -To 가 같다: $From" }
 if ($Order -lt 1) { Fail "-Order 는 1 이상이어야 한다: $Order" }
 
+<#
+ 사전 점검 — 반드시 1단계보다 먼저.
+
+ 배포는 SSH 개인키와 aws CLI 를 쓰는데 둘 다 git 으로 안 간다. VM 에서 돌리면
+ 3단계에 가서야 그걸 알게 되고, 그때는 이미 도메인이 옮겨지고 옛 계정이
+ blocked 로 바뀐 뒤다. 되돌리기 번거로운 상태로 멈춘다.
+ (2026-08-14 에 #34->#102, #60->#103 이 실제로 그렇게 걸렸다.)
+
+ 그래서 아무것도 건드리기 전에 확인하고, 안 되면 -SkipDeploy 를 안내한다.
+#>
+if (-not $SkipDeploy -and -not $DryRun) {
+	$missing = @()
+
+	$sshKey = $env:ORIGIN_SSH_KEY
+	if (-not $sshKey) { $sshKey = '/c/Users/LD/Desktop/ravi/_secure/cleaning-ravi-20260731.pem' }
+	# 배포 스크립트는 posix 경로를 쓴다. 존재 확인은 윈도 경로로 바꿔서 한다.
+	$sshKeyWin = $sshKey -replace '^/([a-zA-Z])/', '$1:/'
+	if (-not (Test-Path $sshKeyWin)) { $missing += "SSH 개인키가 없다: $sshKey" }
+
+	if (-not (Get-Command aws -ErrorAction SilentlyContinue)) {
+		$missing += 'aws CLI 가 PATH 에 없다 (SSM 터널에 필요)'
+	}
+
+	if ($missing.Count) {
+		Write-Host ''
+		Write-Host '이 기계에서는 배포(3단계)를 할 수 없다.' -ForegroundColor Red
+		foreach ($m in $missing) { Write-Host "  - $m" -ForegroundColor Red }
+		Write-Host ''
+		Write-Host '도메인을 옮기기 전에 멈췄다. DB 는 아직 그대로다.'
+		Write-Host ''
+		Write-Host '길은 둘이다.'
+		Write-Host '  (1) 배포가 되는 기계(보통 본 PC)에서 이 명령을 그대로 실행한다.'
+		Write-Host '  (2) 여기서 -SkipDeploy 로 돌리고, 3단계만 배포 기계에서 따로 실행한다.'
+		Write-Host "      node scripts/build-and-deploy-sites.mjs --renderer static --templates templates-merged ``"
+		Write-Host "        --extend merged --gzip --no-feeds --from-order $Order --to-order $Order"
+		Write-Host '      그 뒤 소유확인:'
+		Write-Host "      node scripts/verify-naver-searchadvisor-sites.mjs --account $To"
+		exit 1
+	}
+}
+
+<#
+ -SkipDeploy 로 돌릴 때는 4단계를 하면 안 된다.
+ 페이지에 옛 토큰이 남아 있어 소유확인이 100건 전부 실패한다.
+#>
+if ($SkipDeploy -and -not $DryRun) {
+	Write-Host ''
+	Write-Host '-SkipDeploy: 3단계(재배포)와 4단계(소유확인)를 건너뛴다.' -ForegroundColor Yellow
+	Write-Host '  재배포 없이 소유확인을 하면 페이지에 옛 토큰이 남아 있어 전부 실패한다.'
+	Write-Host '  이관과 사이트등록만 하고 멈춘다. 나머지는 배포 기계에서 이어서 할 것.'
+}
+
 Write-Host "정지 계정 이관: $From  ->  $To (#$Order)"
 if ($DryRun) { Write-Host '  [dry-run] 1단계만 미리보기로 돌고 끝난다.' -ForegroundColor Yellow }
 
@@ -105,14 +157,22 @@ if ($LASTEXITCODE -ne 0) { Fail "사이트등록 실패 (exit $LASTEXITCODE)" }
 # 토큰은 페이지의 <meta name="naver-site-verification"> 로 나가야 읽힌다.
 Step '3/5  재배포 (토큰을 메타태그로 내보내기)'
 if ($SkipDeploy) {
-	Write-Host '  -SkipDeploy 라 건너뛴다. 소유확인이 전부 실패하면 이 단계를 안 한 탓이다.' -ForegroundColor Yellow
-} else {
-	& $node 'scripts/build-and-deploy-sites.mjs' `
-		'--renderer' 'static' '--templates' 'templates-merged' '--extend' 'merged' `
-		'--gzip' '--no-feeds' '--chunk-sites' '250' '--chunk-retries' '3' `
-		'--from-order' "$Order" '--to-order' "$Order"
-	if ($LASTEXITCODE -ne 0) { Fail "재배포 실패 (exit $LASTEXITCODE)" }
+	Write-Host ''
+	Write-Host '건너뛴다. 여기서 멈춘다 — 재배포 없이 소유확인을 하면 전부 실패한다.' -ForegroundColor Yellow
+	Write-Host ''
+	Write-Host '배포가 되는 기계에서 이어서 할 것:'
+	Write-Host "  node scripts/build-and-deploy-sites.mjs --renderer static --templates templates-merged ``"
+	Write-Host "    --extend merged --gzip --no-feeds --chunk-sites 250 --chunk-retries 3 ``"
+	Write-Host "    --from-order $Order --to-order $Order"
+	Write-Host "  node scripts/verify-naver-searchadvisor-sites.mjs --account $To"
+	Write-Host "  powershell -NoProfile -ep Bypass -File scripts/run-crawl-range.ps1 -From $Order -To $Order"
+	exit 0
 }
+& $node 'scripts/build-and-deploy-sites.mjs' `
+	'--renderer' 'static' '--templates' 'templates-merged' '--extend' 'merged' `
+	'--gzip' '--no-feeds' '--chunk-sites' '250' '--chunk-retries' '3' `
+	'--from-order' "$Order" '--to-order' "$Order"
+if ($LASTEXITCODE -ne 0) { Fail "재배포 실패 (exit $LASTEXITCODE)" }
 
 # ---------------------------------------------------------------- 4. 소유확인
 Step '4/5  소유확인'
