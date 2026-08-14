@@ -63,7 +63,31 @@ const deploy = !options.noDeploy;
 if (options.renderer !== undefined && !['astro', 'static'].includes(options.renderer)) {
   throw new Error(`--renderer 는 astro 또는 static 이어야 합니다: ${options.renderer}`);
 }
+// --extend merged 를 주면 새 디자인(templates-merged)이 쓰는 places/gallery 를
+// 페이지 데이터에 얹는다. 안 주면 기존 템플릿 동작 그대로다.
+//   node scripts/build-and-deploy-sites.mjs --renderer static --templates templates-merged --extend merged
+if (options.extend !== undefined && options.extend !== 'merged') {
+  throw new Error(`--extend 는 merged 만 지원합니다: ${options.extend}`);
+}
+const useMergedExtension = options.extend === 'merged';
+if (useMergedExtension && !useStaticRenderer) {
+  throw new Error('--extend merged 는 --renderer static 과 함께 써야 합니다.');
+}
 const groupKey = options.groupKey || 'cleaning-ravi';
+
+/*
+ * --gzip     : .html 대신 .html.gz 만 만든다. 서버에 gzip_static·gunzip 설정이
+ *              먼저 들어가 있어야 한다. 없으면 nginx 가 원본을 못 찾아 404 다.
+ * --no-feeds : sitemap.xml / rss.xml / robots.txt 를 다시 만들지 않는다.
+ *              내용이 같은데 다시 쓰면 sitemap 의 <lastmod> 만 배포일로 바뀌어,
+ *              100만 URL 의 수정일이 하루에 몰린다. 서버 파일이 그대로 남는다.
+ */
+const gzipHtml = Boolean(options.gzip);
+const writeFeeds = !options.noFeeds;
+if (gzipHtml && !useStaticRenderer) {
+  throw new Error('--gzip 은 --renderer static 과 함께 써야 합니다.');
+}
+
 const appDir = resolve(projectRoot, 'apps/cleaning-ravi');
 // 스테이지는 반드시 앱 디렉터리 안이어야 한다. Astro 가 빌드 중간 청크를 outDir 에
 // 쏟아놓고 그걸 다시 import 하는데, 앱 밖이면 node_modules 를 못 찾아 실패한다.
@@ -105,6 +129,32 @@ for (const domain of domains) {
   }
 }
 
+/*
+ * 같은 스테이지 폴더를 두 프로세스가 쓰면 안 된다.
+ *
+ * 2026-08-11 에 run-pc-chain.ps1 의 전체 배포와 수동 구간 배포가 겹쳤다.
+ * 한쪽이 폴더를 지우고 다시 빌드하는 동안 다른 쪽 tar 가 그 폴더를 읽어서
+ * "File removed before we read it" 로 깨졌고, 결국 둘 다 못 쓰게 됐다.
+ */
+const lockPath = resolve(stageDir, '..', '.deploy.lock');
+if (existsSync(lockPath)) {
+  const holder = readFileSync(lockPath, 'utf8').trim();
+  const pid = Number(holder.split(/\s+/)[0]);
+  let alive = false;
+  try { process.kill(pid, 0); alive = true; } catch { alive = false; }
+  if (alive) {
+    throw new Error(`다른 배포가 실행 중입니다 (${holder}). 끝난 뒤 다시 실행하세요.`);
+  }
+  console.log(JSON.stringify({ phase: 'lock', note: '죽은 잠금 해제', holder }));
+}
+mkdirSync(resolve(stageDir, '..'), { recursive: true });
+writeFileSync(lockPath, `${process.pid} ${new Date().toISOString()}\n`, 'utf8');
+const releaseLock = () => { try { rmSync(lockPath, { force: true }); } catch { /* 이미 없음 */ } };
+process.on('exit', releaseLock);
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => { releaseLock(); process.exit(130); });
+}
+
 rmSync(stageDir, { recursive: true, force: true });
 mkdirSync(stageDir, { recursive: true });
 
@@ -132,6 +182,40 @@ if (useStaticRenderer) {
   const templates = renderer.loadTemplates(templateDir);
   console.log(JSON.stringify({ phase: 'renderer', kind: 'static', templates: templates.dir, css: templates.cssPath }));
 
+  // 새 디자인이 쓰는 places/gallery 는 렌더러가 모른다. 훅으로 얹는다.
+  let extendPage = null;
+  let extendIndex = null;
+  if (useMergedExtension) {
+    const appLib = resolve(appDir, 'src/lib');
+    const merged = await import(pathToFileURL(resolve(projectRoot, 'scripts/lib/merged-page-data.mjs')).href);
+    const { catalogEntry } = await import(pathToFileURL(resolve(appLib, 'pageCatalog.ts')).href);
+    const { normalizeLocation, pickFaqs, pickReviews, pickNearbyLocations, buildTitle, buildDescription } = await import(pathToFileURL(resolve(appLib, 'pageMeta.ts')).href);
+    const { subKeywordsFor, MAIN_KEYWORDS } = await import(pathToFileURL(resolve(appLib, 'keywords.ts')).href);
+
+    extendPage = (data) => merged.extendPageData(data, { mainKeywords: MAIN_KEYWORDS });
+    extendIndex = (data, ctx) => merged.extendIndexData(data, {
+      catalogEntry,
+      locations: ctx.locations,
+      siteIndex: ctx.siteIndex,
+      pageCount: ctx.pageCount,
+      normalizeLocation,
+      pickFaqs,
+      pickReviews,
+      subKeywordsFor,
+      pickNearbyLocations,
+      mainKeywords: MAIN_KEYWORDS,
+      buildTitle,
+      buildDescription,
+    });
+    console.log(JSON.stringify({
+      phase: 'renderer',
+      extend: 'merged',
+      // 기본은 사이트의 루트 도메인에서 자동으로 뽑는다 (https://assets.<루트>).
+      // PUBLIC_ASSET_BASE_URL 을 주면 전 사이트가 그 값을 쓴다 (테스트용).
+      assetBase: process.env.PUBLIC_ASSET_BASE_URL || '사이트 루트별 assets.<루트> 자동',
+    }));
+  }
+
   buildOne = (domain) => {
     renderer.renderSite({
       templates,
@@ -142,6 +226,10 @@ if (useStaticRenderer) {
       pageCount: domain.page_count,
       // 소유확인 태그. 아직 없으면 빈 값이라 meta 가 안 나간다.
       naverSiteVerification: domain.naver_verification_token || '',
+      extendPage,
+      extendIndex,
+      gzipHtml,
+      writeFeeds,
     });
   };
 } else {
@@ -190,41 +278,123 @@ if (!deploy) {
   process.exit(0);
 }
 
-// 스테이지 전체를 한 번의 tar 스트림으로 보낸다.
 const hostList = domains.map((domain) => domain.host).join('\n');
 const hostFile = resolve(stageDir, '.hosts');
 writeFileSync(hostFile, `${hostList}\n`);
 
 const sshBase = [
   'ssh', '-o', 'StrictHostKeyChecking=no', '-i', SSH_KEY,
+  '-o', 'ServerAliveInterval=30',
   '-o', `ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ${AWS_REGION} --profile ${AWS_PROFILE}`,
   `ec2-user@${INSTANCE}`,
 ].map(shellQuote).join(' ');
 
-const remoteScript = [
-  `mkdir -p ${REMOTE_ROOT}`,
-  `cd ${REMOTE_ROOT}`,
-  `tar -xz --exclude='.hosts'`,
-  `echo "deployed=$(ls | wc -l) size=$(du -sh . | cut -f1)"`,
-].join(' && ');
+/*
+ * 전송을 덩어리로 쪼갠다.
+ *
+ * 10,000 사이트를 tar 하나로 보내면 32GB(gzip 6.5GB)짜리 단일 스트림이 된다.
+ * 2026-08-11 에 그 방식으로 돌리다 SSM 터널이 중간에 깨졌다:
+ *   Bad packet length 354974301. / Connection corrupted / tar: Cannot write: Broken pipe
+ * 21분 걸린 빌드가 통째로 헛돌았고, 서버에는 5,237개만 남아 앞뒤가 섞였다.
+ *
+ * 덩어리로 나누면 깨져도 그 덩어리만 다시 보내면 되고, 성공한 만큼은
+ * 그때그때 deployed_at 에 기록되어 DB 와 실제가 어긋나지 않는다.
+ */
+const chunkSize = Math.max(1, Number(options.chunkSites || 500));
+const chunks = [];
+for (let i = 0; i < domains.length; i += chunkSize) chunks.push(domains.slice(i, i + chunkSize));
+
+/*
+ * SSM 터널이 크기와 무관하게 랜덤으로 끊긴다.
+ *   Bad packet length ... / ssh_dispatch_run_fatal: Connection corrupted
+ * 450MB 짜리 덩어리에서도 났다. 그래서 덩어리마다 몇 번 다시 시도하고,
+ * 그래도 안 되면 그 덩어리만 건너뛰고 계속 간다. 한 덩어리 때문에 구간 전체를
+ * 다시 빌드·전송하는 게 더 비싸다. 실패분은 파일로 남겨 나중에 다시 올린다.
+ */
+const maxAttempts = Math.max(1, Number(options.chunkRetries || 3));
+/** 끊긴 직후 바로 다시 붙으면 또 끊긴다. 동기 대기라 이벤트 루프를 안 쓴다. */
+const sleepMs = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 const transferStart = Date.now();
-execSync(
-  `tar -cz -C ${shellQuote(toPosix(stageDir))} --exclude='.hosts' . | ${sshBase} ${shellQuote(remoteScript)}`,
-  { shell: 'bash', stdio: 'inherit' },
-);
-// 전송이 끝난 지금이 이 사이트들의 배포 시각이다. 레거시 배포 스크립트들
-// (deploy-dabom-shared-ec2.mjs 등)도 같은 자리에서 deployed_at = now() 를 찍는다.
-// 이게 없으면 배포를 해도 DB 상 배포일이 영영 갱신되지 않아 일자별 추이를 못 그린다.
-const deployedCount = await markDeployed(domains.map((domain) => domain.id));
+let deployedTotal = 0;
+const failedChunks = [];
+
+for (const [index, chunk] of chunks.entries()) {
+  // tar 에 넘길 대상 목록. 인자로 나열하면 500개에서 명령줄 길이 한계에 걸린다.
+  const listPath = resolve(stageDir, '.chunk-files');
+  writeFileSync(listPath, `${chunk.map((domain) => `./${domain.host}`).join('\n')}\n`, 'utf8');
+
+  const remoteScript = [
+    `mkdir -p ${REMOTE_ROOT}`,
+    `cd ${REMOTE_ROOT}`,
+    'tar -xz',
+  ].join(' && ');
+
+  // pipefail 이 없으면 tar 가 죽어도 ssh 의 종료코드만 보고 성공으로 친다.
+  // 2026-08-11 에 그것 때문에 전송이 깨졌는데도 1,000건이 배포 완료로 기록됐다.
+  const command = 'set -o pipefail; '
+    + `tar -cz -C ${shellQuote(toPosix(stageDir))} -T ${shellQuote(toPosix(listPath))}`
+    + ` | ${sshBase} ${shellQuote(remoteScript)}`;
+
+  const label = `${index + 1}/${chunks.length}`;
+  console.log(JSON.stringify({ phase: 'transfer', chunk: label, sites: chunk.length }));
+
+  let sent = false;
+  let lastError = '';
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      execSync(command, { shell: 'bash', stdio: 'inherit' });
+      sent = true;
+      break;
+    } catch (error) {
+      lastError = String(error.message).split('\n')[0].slice(0, 160);
+      console.log(JSON.stringify({
+        phase: 'transfer-retry', chunk: label, attempt, of: maxAttempts, error: lastError,
+      }));
+      if (attempt < maxAttempts) sleepMs(20000);
+    }
+  }
+
+  if (!sent) {
+    // 이 덩어리는 포기하고 다음으로 넘어간다. 구간 전체를 멈추지 않는다.
+    failedChunks.push({ label, sites: chunk.length, error: lastError, hosts: chunk.map((d) => d.host) });
+    console.log(JSON.stringify({ phase: 'chunk-skipped', chunk: label, sites: chunk.length }));
+    continue;
+  }
+
+  // 이 덩어리는 확실히 올라갔다. 여기서만 배포 시각을 찍는다.
+  deployedTotal += await markDeployed(chunk.map((domain) => domain.id));
+  console.log(JSON.stringify({ phase: 'transferred', chunk: label, deployedAtUpdated: deployedTotal }));
+}
+
+// 실패한 덩어리의 호스트는 파일로 남긴다. 나중에 이것만 다시 올리면 된다.
+if (failedChunks.length) {
+  const reportDir = resolve(projectRoot, 'reports');
+  mkdirSync(reportDir, { recursive: true });
+  const reportPath = resolve(reportDir, `deploy-failed-${fromOrder}-${toOrder}.txt`);
+  writeFileSync(
+    reportPath,
+    failedChunks.flatMap((c) => [`# 덩어리 ${c.label} (${c.sites}개) ${c.error}`, ...c.hosts]).join('\n') + '\n',
+    'utf8',
+  );
+  console.log(JSON.stringify({ phase: 'failed-hosts-saved', path: reportPath }));
+}
 
 console.log(JSON.stringify({
-  phase: 'deployed',
+  phase: failedChunks.length ? (deployedTotal ? 'deploy-partial' : 'deploy-failed') : 'deployed',
   sites: built,
-  deployedAtUpdated: deployedCount,
+  deployedAtUpdated: deployedTotal,
+  chunks: chunks.length,
+  failedChunks: failedChunks.map((c) => ({ chunk: c.label, sites: c.sites, error: c.error })),
   transferSec: Math.round((Date.now() - transferStart) / 1000),
   totalSec: Math.round((Date.now() - startedAt) / 1000),
 }));
+
+// 한 덩어리도 못 보냈을 때만 실패로 끝낸다. 일부라도 올라갔으면 다음 구간으로 넘어간다.
+if (failedChunks.length && deployedTotal === 0) {
+  console.error(`전 덩어리 전송 실패 (계정 #${fromOrder}~${toOrder}).`);
+  process.exit(1);
+}
 
 async function markDeployed(ids) {
   if (!ids.length) return 0;

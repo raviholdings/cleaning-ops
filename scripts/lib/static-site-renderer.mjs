@@ -14,6 +14,7 @@
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -423,12 +424,18 @@ function robotsTxt({ siteUrl, indexable }) {
  * @param {boolean} [opts.indexable=true]
  * @param {'A'|'B'} [opts.titleVariant='B']
  * @param {string} [opts.buildDate]  YYYY-MM-DD. 없으면 오늘.
+ * @param {(data: object, ctx: object) => void} [opts.extendPage]
+ *   하위 페이지 데이터에 값을 더 얹고 싶을 때. buildPageData 결과를 받아 제자리에서
+ *   고친다. 새 디자인이 쓰는 places/gallery 처럼 이 파일이 몰라도 되는 값을 위한
+ *   자리다. 안 넘기면 아무 일도 안 하므로 기존 템플릿 동작은 그대로다.
+ * @param {(data: object, ctx: object) => void} [opts.extendIndex] 홈에 대해 같은 것.
  * @returns {{files: number, pages: number}}
  */
 export function renderSite(opts) {
   const {
     templates, locations, outDir, siteIndex, pageCount,
     indexable = true, titleVariant = 'B',
+    extendPage = null, extendIndex = null,
   } = opts;
 
   const siteUrl = String(opts.siteUrl).replace(/\/+$/, '');
@@ -453,29 +460,56 @@ export function renderSite(opts) {
     return data;
   };
 
+  /*
+   * gzipHtml 이면 .html 대신 .html.gz 만 쓴다.
+   *
+   * nginx 의 gzip_static 이 .gz 를 먼저 찾아 그대로 내보내고, gzip 을 못 받는
+   * 클라이언트에게는 gunzip 모듈이 풀어서 준다. 페이지가 9배 작아지므로
+   * 디스크뿐 아니라 전송 시간과 크롤링 대역폭이 같이 줄어든다.
+   *
+   * 켜기 전에 서버에 gzip_static·gunzip 설정이 먼저 들어가 있어야 한다.
+   * 설정 없이 .gz 만 올리면 nginx 가 원본을 못 찾아 404 가 난다.
+   */
+  const gzipHtml = Boolean(opts.gzipHtml);
+  const writeHtml = (name, html) => {
+    if (!gzipHtml) { writeFileSync(join(outDir, name), html, 'utf8'); return; }
+    writeFileSync(join(outDir, `${name}.gz`), gzipSync(Buffer.from(html, 'utf8'), { level: 6 }));
+  };
+
   const pages = [];
   for (let requestId = 1; requestId <= pageCount; requestId += 1) {
     const data = withPartials(buildPageData({ locations, siteIndex, pageCount, requestId, site }));
-    writeFileSync(join(outDir, `${requestId}.html`), renderTemplate(templates.page, data), 'utf8');
+    if (extendPage) extendPage(data, { locations, siteIndex, pageCount, requestId, site });
+    writeHtml(`${requestId}.html`, renderTemplate(templates.page, data));
     pages.push(data);
   }
 
-  writeFileSync(
-    join(outDir, 'index.html'),
-    renderTemplate(templates.index, withPartials(buildIndexData({ locations, siteIndex, pageCount, site }))),
-    'utf8',
-  );
+  const indexData = withPartials(buildIndexData({ locations, siteIndex, pageCount, site }));
+  if (extendIndex) extendIndex(indexData, { locations, siteIndex, pageCount, site });
+
+  writeHtml('index.html', renderTemplate(templates.index, indexData));
 
   const buildDate = opts.buildDate || new Date().toISOString().slice(0, 10);
   const now = new Date(`${buildDate}T00:00:00Z`).toUTCString();
 
-  writeFileSync(join(outDir, 'sitemap.xml'), sitemapXml({ siteUrl, pageCount, today: buildDate }), 'utf8');
-  writeFileSync(join(outDir, 'rss.xml'), rssXml({ siteUrl, mainKeyword: site.mainKeyword, pages, now }), 'utf8');
-  writeFileSync(join(outDir, 'robots.txt'), robotsTxt({ siteUrl, indexable }), 'utf8');
+  /*
+   * writeFeeds 를 끄면 sitemap.xml / rss.xml / robots.txt 를 만들지 않는다.
+   *
+   * 내용이 그대로인데 다시 쓰면 sitemap 의 <lastmod> 가 배포일로 갱신되고,
+   * 그러면 100만 개 URL 의 수정일이 하루에 몰려 바뀐다. 네이버가 그걸 어떻게
+   * 볼지 알 수 없어, 본문이 안 바뀌는 배포에서는 건드리지 않는 편이 낫다.
+   * 서버에 이미 올라가 있는 파일이 그대로 남는다.
+   */
+  const writeFeeds = opts.writeFeeds !== false;
+  if (writeFeeds) {
+    writeFileSync(join(outDir, 'sitemap.xml'), sitemapXml({ siteUrl, pageCount, today: buildDate }), 'utf8');
+    writeFileSync(join(outDir, 'rss.xml'), rssXml({ siteUrl, mainKeyword: site.mainKeyword, pages, now }), 'utf8');
+    writeFileSync(join(outDir, 'robots.txt'), robotsTxt({ siteUrl, indexable }), 'utf8');
+  }
 
   if (templates.staticDir) {
     cpSync(templates.staticDir, outDir, { recursive: true });
   }
 
-  return { files: pageCount + 4, pages: pageCount };
+  return { files: pageCount + (writeFeeds ? 4 : 1), pages: pageCount };
 }

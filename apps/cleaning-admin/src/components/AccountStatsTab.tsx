@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { KeyRound, ShieldCheck, AlertTriangle, Search, CheckCircle2, UserCheck, Calendar, Globe, Cpu } from 'lucide-react';
-import { AccountInfo, DomainInfo, AccountSummary } from '../types';
+import { AccountInfo, AccountSummary, AccountDomainCount } from '../types';
 
 interface AccountStatsTabProps {
   accounts: AccountInfo[];
-  domains: DomainInfo[];
+  domainCounts: AccountDomainCount[];
   summary?: AccountSummary | null;
 }
 
-export default function AccountStatsTab({ accounts, domains, summary }: AccountStatsTabProps) {
+export default function AccountStatsTab({ accounts, domainCounts, summary }: AccountStatsTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  // DB 가 계정별로 세어준 값을 쓴다. 예전에는 도메인 10,000행을 다 받아
+  // 브라우저에서 세었는데, 그 전송만으로 화면 여는 데 2초가 걸렸다.
   const accountDomainMap: Record<string, number> = {};
-  domains.forEach(d => {
-    const accId = d.naver_account_id || 'unassigned';
-    accountDomainMap[accId] = (accountDomainMap[accId] || 0) + 1;
+  domainCounts.forEach(row => {
+    accountDomainMap[row.naver_account_id || 'unassigned'] = row.domains;
   });
 
   const totalAccounts = accounts.length;

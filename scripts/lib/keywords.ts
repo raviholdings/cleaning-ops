@@ -47,3 +47,49 @@ export function subKeywordsFor(main: string): string[] {
   const own = KEYWORD_GROUPS[main] ?? [];
   return own.length ? own : (BORROWED_SUBS[main] ?? []);
 }
+
+/**
+ * 네이버 업종 분류 (서비스,산업 > 지원,대행 > 청소 하위 9개 분류)
+ */
+export const CLEANING_NAVER_CATEGORIES = [
+  '서비스,산업 > 지원,대행 > 청소',
+  '서비스,산업 > 지원,대행 > 청소 > 간판',
+  '서비스,산업 > 지원,대행 > 청소 > 건물,빌딩',
+  '서비스,산업 > 지원,대행 > 청소 > 아파트청소',
+  '서비스,산업 > 지원,대행 > 청소 > 닥트클리닝',
+  '서비스,산업 > 지원,대행 > 청소 > 카페트,소파',
+  '서비스,산업 > 지원,대행 > 청소 > 컴퓨터',
+  '서비스,산업 > 지원,대행 > 청소 > 홈크리닝',
+  '서비스,산업 > 지원,대행 > 청소 > 종합대행업체 > 종합대행업체-일반',
+];
+
+/** 메인 키워드별 네이버 업종 분류 매핑 */
+export function naverCategoryFor(main: string): string {
+  if (main.includes('아파트') || main.includes('입주')) {
+    return '서비스,산업 > 지원,대행 > 청소 > 아파트청소';
+  }
+  if (main.includes('집청소') || main.includes('원룸') || main.includes('오피스텔') || main.includes('이사')) {
+    return '서비스,산업 > 지원,대행 > 청소 > 홈크리닝';
+  }
+  if (
+    main.includes('건물') ||
+    main.includes('사무실') ||
+    main.includes('준공') ||
+    main.includes('상가') ||
+    main.includes('공장') ||
+    main.includes('기숙사') ||
+    main.includes('병원') ||
+    main.includes('호텔') ||
+    main.includes('모텔')
+  ) {
+    return '서비스,산업 > 지원,대행 > 청소 > 건물,빌딩';
+  }
+  if (main.includes('용역')) {
+    return '서비스,산업 > 지원,대행 > 청소 > 종합대행업체 > 종합대행업체-일반';
+  }
+  if (main.includes('화장실')) {
+    return '서비스,산업 > 지원,대행 > 청소 > 카페트,소파';
+  }
+  return '서비스,산업 > 지원,대행 > 청소';
+}
+

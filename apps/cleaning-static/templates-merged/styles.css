@@ -1,0 +1,921 @@
+/*
+ * templates-merged 통합 스타일시트.
+ *
+ * loadTemplates() 는 템플릿 폴더에서 styles.css 하나만 읽는다. 그래서 아래 셋을
+ * 이 파일 하나로 합쳐 둔다 (원본 주석 그대로 유지).
+ *   1) 미리보기(preview_example.html) 에서 뽑은 새 디자인
+ *   2) 원본 홈이 쓰는 섹션 (page.css 에서 해당 셀렉터만 추출)
+ *   3) 플레이스 블록이 쓰는 부트스트랩 클래스
+ */
+
+      :root {
+        --navy: #1b2a4a;
+        --blue: #2f6fed;
+        --blue-dark: #1e4fc4;
+        --mint: #12b886;
+        --orange: #ff7a45;
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #293246;
+        --muted: #6b7488;
+        --border: #e6eaf2;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        overflow-x: hidden;
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* ===== Top bar ===== */
+      .topbar {
+        background: var(--navy);
+        color: #cfe0ff;
+        font-size: 13px;
+        padding: 6px 0;
+        text-align: center;
+      }
+
+      /* ===== Header ===== */
+      header {
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+      .logo {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--navy);
+        letter-spacing: -0.5px;
+      }
+      .logo span {
+        color: var(--blue);
+      }
+      .header-cta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .btn-call {
+        background: var(--navy);
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 16px;
+        border-radius: 8px;
+      }
+
+      /* ===== Hero ===== */
+      .hero {
+        background: linear-gradient(135deg, #eaf1ff 0%, #f5f7fb 60%);
+        padding: 56px 0 40px;
+      }
+      .hero-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .badge {
+        display: inline-block;
+        align-self: flex-start;
+        background: rgba(47, 111, 237, 0.1);
+        color: var(--blue-dark);
+        font-weight: 700;
+        font-size: 13px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(47, 111, 237, 0.2);
+      }
+      .hero h1 {
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--navy);
+        line-height: 1.35;
+        letter-spacing: -0.5px;
+      }
+      .hero h1 em {
+        font-style: normal;
+        color: var(--blue);
+      }
+      .hero-stats {
+        display: flex;
+        gap: 24px;
+        margin-top: 8px;
+      }
+      .hero-stats div {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .hero-stats strong {
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--navy);
+      }
+
+      .kw-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .kw-row span {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #eef3ff;
+        color: var(--blue-dark);
+        border: 1px solid #dbe6ff;
+        font-size: 0.84rem;
+        font-weight: 600;
+      }
+
+      .cpa-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .cpa-btn {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 14px 8px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 14px;
+        color: #fff;
+        text-align: center;
+        text-decoration: none;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
+      .cpa-btn small {
+        font-weight: 600;
+        font-size: 11px;
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+      .cpa-btn.c1 { background: linear-gradient(135deg, #2f6fed, #1e4fc4); }
+      .cpa-btn.c2 { background: linear-gradient(135deg, #12b886, #0b8f68); }
+      .cpa-btn.c3 { background: linear-gradient(135deg, #ff7a45, #ea580c); }
+
+      /* ===== Section generic ===== */
+      section {
+        padding: 48px 0;
+      }
+      .section-head {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .eyebrow {
+        color: var(--blue);
+        font-weight: 800;
+        font-size: 13px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-top: 6px;
+        letter-spacing: -0.5px;
+      }
+      .section-head p {
+        color: var(--muted);
+        margin-top: 6px;
+        font-size: 15px;
+      }
+
+      /* ===== Vendor compare cards ===== */
+      .vendor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .vendor-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        position: relative;
+        box-shadow: 0 4px 14px rgba(27, 42, 74, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .vendor-card.best {
+        border: 2px solid var(--blue);
+      }
+      .vendor-flag {
+        position: absolute;
+        top: -12px;
+        left: 20px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      .vendor-top {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .vendor-thumb-wrap {
+        position: relative;
+      }
+      .vendor-thumb-wrap img {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+      .vendor-num {
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        background: var(--navy);
+        color: #fff;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .vendor-top h3 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--navy);
+      }
+      .vendor-stars {
+        color: #f59e0b;
+        font-size: 13px;
+      }
+      .vendor-stars span {
+        color: var(--navy);
+        font-weight: 800;
+      }
+      .vendor-stars em {
+        color: var(--muted);
+        font-style: normal;
+      }
+      .vendor-feat-box {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 13px;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .vendor-cta {
+        display: block;
+        text-align: center;
+        background: var(--navy);
+        color: #fff;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      /* ===== Review ===== */
+      .testi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .testi {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        font-size: 14px;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      }
+      .testi .stars {
+        color: #f59e0b;
+        font-size: 14px;
+      }
+      .testi .who {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: auto;
+      }
+
+      /* ===== FAQ ===== */
+      .faq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 840px;
+        margin: 0 auto;
+      }
+      .faq-list details {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+      }
+      .faq-list summary {
+        font-weight: 700;
+        font-size: 16px;
+        color: var(--navy);
+        cursor: pointer;
+      }
+      .faq-list p {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      /* ===== USER REQUESTED NEW MAP/SHOP BOX ===== */
+      .shopmedia {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        text-align: left;
+      }
+      .shopimg {
+        width: 140px;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 12px;
+        flex-shrink: 0;
+        border: 1px solid #e2e8f0;
+      }
+      .shoptext {
+        flex: 1;
+        font-size: 0.95rem;
+      }
+      .shoptext p {
+        margin-bottom: 4px;
+        color: #334155;
+      }
+      .shoptext strong {
+        color: #0f172a;
+      }
+
+      /* ===== Image Carousel ===== */
+      .image-carousel-wrap {
+        margin-top: 36px;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 14px rgba(27, 42, 74, 0.05);
+      }
+      .image-carousel-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        max-width: 840px;
+        margin: 0 auto;
+      }
+      .image-carousel-main {
+        position: relative;
+        width: 100%;
+        /* 원본이 1080x1350(세로 4:5)이라 380px 로는 위아래가 크게 잘렸다.
+           높이를 키워 잘리는 양을 줄인다. 좁은 화면은 아래 미디어쿼리에서 낮춘다. */
+        height: 620px;
+        background: #0f172a;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .image-carousel-current-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: opacity 0.25s ease;
+      }
+      .image-carousel-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(15, 23, 42, 0.7);
+        color: #fff;
+        border: none;
+        font-size: 28px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        z-index: 10;
+      }
+      .image-carousel-btn:hover {
+        background: rgba(15, 23, 42, 0.95);
+        transform: translateY(-50%) scale(1.08);
+      }
+      .image-carousel-btn.prev {
+        left: 14px;
+      }
+      .image-carousel-btn.next {
+        right: 14px;
+      }
+      .image-carousel-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .image-carousel-index {
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .image-carousel-thumbs {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 8px 4px;
+        max-width: 100%;
+      }
+      .image-carousel-thumb {
+        background: none;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        padding: 0;
+        cursor: pointer;
+        overflow: hidden;
+        width: 72px;
+        height: 72px;
+        flex-shrink: 0;
+        opacity: 0.6;
+        transition: all 0.2s ease;
+      }
+      .image-carousel-thumb:hover {
+        opacity: 0.9;
+      }
+      .image-carousel-thumb.active {
+        border-color: var(--blue);
+        opacity: 1;
+        transform: scale(1.06);
+      }
+      .image-carousel-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .links a {
+        background: #fff;
+        border: 1px solid var(--border);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .pager {
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        margin-top: 22px;
+      }
+      .pager a {
+        flex: 1;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.88rem;
+      }
+      .pager a small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 600;
+      }
+      .pager .next {
+        text-align: right;
+      }
+
+      footer {
+        background: #0f172a;
+        color: #94a3b8;
+        padding: 40px 0;
+        font-size: 13px;
+        margin-top: 40px;
+      }
+      footer strong {
+        color: #f8fafc;
+        font-size: 16px;
+        display: block;
+        margin-bottom: 4px;
+      }
+      footer .disclaimer {
+        margin-top: 16px;
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 768px) {
+        .vendor-grid, .cpa-row {
+          grid-template-columns: 1fr;
+        }
+        .shopmedia {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        .shopimg {
+          width: 100%;
+          max-width: 240px;
+          height: 160px;
+        }
+      }
+
+
+/*
+ * 원본 홈(index.html)이 쓰는 섹션 스타일.
+ *
+ * apps/cleaning-ravi/src/styles/page.css 에서 해당 셀렉터만 뽑아온 것이다.
+ * page.css 전체를 합치면 .hero/.wrap 같은 공통 클래스가 새 디자인 값을 덮어써서
+ * 레이아웃이 깨진다. 그래서 홈에만 있는 섹션 규칙만 옮겼다.
+ */
+
+/* ===== Process ===== */
+.process {
+  background: #fff;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.step {
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 20px 14px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.step .num {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  margin: 0 auto 10px;
+}
+
+.step h4 {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+
+.step p {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ===== Gallery ===== */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.gallery-grid img {
+  border-radius: 12px;
+  height: 130px;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* ===== CPA Form ===== */
+.form-section {
+  background: linear-gradient(135deg, var(--navy), #233a66);
+  color: #fff;
+}
+
+.form-section .section-head h2 {
+  color: #fff;
+}
+
+.form-section .section-head p {
+  color: #c6d3ee;
+}
+
+/* ===== Location ===== */
+.location-box {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+}
+
+.location-box h3 {
+  font-size: 17px;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.lede-sm {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.location-map-stub {
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 13.5px;
+  margin-top: 12px;
+}
+
+/* ===== Sticky bottom CTA (mobile) ===== */
+.sticky-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  display: none;
+  gap: 8px;
+  z-index: 60;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.sticky-cta a {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  border-radius: 9px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+}
+
+@media (max-width: 860px) {
+  .steps {
+      grid-template-columns: repeat(2, 1fr);
+  }
+  .gallery-grid {
+      grid-template-columns: repeat(2, 1fr);
+  }
+  .sticky-cta {
+      display: flex;
+  }
+}
+
+
+/*
+ * 플레이스 블록이 쓰는 Bootstrap 5 클래스만 직접 옮겨온 것.
+ *
+ * 원본 미리보기(preview_example.html)는 jsdelivr CDN 에서 부트스트랩 전체(약 230KB)를
+ * 받아 썼다. 30만 페이지가 매번 외부 CDN 을 때리게 둘 수는 없어서, 실제로 쓰는
+ * 클래스 29개만 뽑아 여기 넣는다. 값은 Bootstrap 5.3.2 기본값 그대로다.
+ *
+ * styles.css 뒤에 붙는다. 유틸리티는 부트스트랩과 같게 !important 를 유지해야
+ * .btn-info 의 color 를 .text-white 가 이길 수 있다.
+ */
+
+/* --- spacing --- */
+.mt-3 { margin-top: 1rem !important; }
+.mt-5 { margin-top: 3rem !important; }
+.pt-3 { padding-top: 1rem !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.px-3 { padding-right: 1rem !important; padding-left: 1rem !important; }
+.py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+
+/* --- display / text --- */
+.d-inline-block { display: inline-block !important; }
+.text-center { text-align: center !important; }
+.fw-bold { font-weight: 700 !important; }
+.text-dark { color: #212529 !important; }
+.text-white { color: #fff !important; }
+.bg-warning { background-color: #ffc107 !important; }
+
+@media (min-width: 576px) {
+  .text-sm-start { text-align: left !important; }
+}
+
+/* h4 는 태그가 아니라 클래스로 쓰인다 (h2 에 얹어 크기만 h4 로) */
+.h4 {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+  font-size: 1.5rem;
+}
+
+/* --- borders --- */
+.border-0 { border: 0 !important; }
+.rounded-top {
+  border-top-left-radius: 0.375rem !important;
+  border-top-right-radius: 0.375rem !important;
+}
+.rounded-bottom {
+  border-bottom-right-radius: 0.375rem !important;
+  border-bottom-left-radius: 0.375rem !important;
+}
+.shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; }
+
+/* --- card --- */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
+  background-color: #fff;
+  background-clip: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.175);
+  border-radius: 0.375rem;
+}
+.card-body {
+  flex: 1 1 auto;
+  padding: 1rem;
+}
+
+/* --- alert --- */
+.alert {
+  position: relative;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+}
+.alert-info {
+  color: #055160;
+  background-color: #cff4fc;
+  border-color: #b6effb;
+}
+
+/* --- button --- */
+.btn {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  text-decoration: none;
+}
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+}
+.btn-info {
+  color: #000;
+  background-color: #0dcaf0;
+  border-color: #0dcaf0;
+}
+.btn-info:hover {
+  background-color: #31d2f2;
+  border-color: #25cff2;
+}
+
+
+/* ===== 홈 전용 ===== */
+/* 히어로 중앙정렬. 하위 페이지 히어로는 좌측 정렬 그대로 둔다. */
+.hero-center .hero-inner {
+  align-items: center;
+  text-align: center;
+}
+.hero-center .badge {
+  align-self: center;
+}
+.hero-center .hero-stats {
+  justify-content: center;
+}
+
+/* 갤러리 슬롯 교체 시 부드럽게 */
+.gallery-grid img {
+  transition: opacity 0.2s ease;
+}
+
+/* 캐러셀: 좁은 화면에서는 높이를 낮춘다. 620px 는 모바일에서 화면을 다 먹는다. */
+@media (max-width: 768px) {
+  .image-carousel-main {
+    height: 420px;
+  }
+}
+
+/* ===== CPA 버튼: 화면 폭에 맞춰 키운다 =====
+   기본값이 모바일 기준이라 데스크톱에서 버튼이 작고 답답했다.
+   좁은 화면은 세로로 쌓고(기존 768px 규칙), 넓어질수록 여백·글자를 키운다. */
+.cpa-row {
+  width: 100%;
+  gap: 14px;
+}
+.cpa-btn {
+  min-height: 64px;
+  padding: 16px 12px;
+}
+@media (min-width: 769px) {
+  .cpa-row {
+    gap: 18px;
+    margin-top: 22px;
+  }
+  .cpa-btn {
+    min-height: 82px;
+    padding: 20px 16px;
+    font-size: 17px;
+    border-radius: 14px;
+  }
+  .cpa-btn small {
+    font-size: 13px;
+    margin-top: 4px;
+  }
+}
+@media (min-width: 1100px) {
+  .cpa-btn {
+    min-height: 92px;
+    font-size: 19px;
+  }
+  .cpa-btn small {
+    font-size: 14px;
+  }
+}

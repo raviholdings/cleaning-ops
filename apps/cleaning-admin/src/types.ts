@@ -34,6 +34,45 @@ export interface OwnershipSummary {
   deployed: number;
 }
 
+/**
+ * 배포 규모 요약. 도메인 수만 보면 실제 규모를 알 수 없어 페이지 기준을 같이 낸다.
+ * 서브도메인 1개 = page_count 장 (현재 100장).
+ *
+ *   활성 = 소유확인까지 끝나 색인 파이프라인에 들어갈 수 있는 것
+ *   예비 = 배포는 됐지만 아직 소유확인 전이라 못 쓰는 것
+ */
+export interface DeploymentSummary {
+  total_domains: number;
+  deployed_domains: number;
+  active_domains: number;
+  reserve_domains: number;
+  total_pages: number;
+  deployed_pages: number;
+  active_pages: number;
+  reserve_pages: number;
+  accounts: number;
+  root_domains: number;
+  last_deployed_at: string | null;
+}
+
+/** 계정 하나에 붙은 도메인 수. 목록을 다 받지 않고 DB 가 세어준다. */
+export interface AccountDomainCount {
+  naver_account_id: string;
+  domains: number;
+  verified: number;
+  deployed: number;
+}
+
+/** 루트도메인(메인도메인) 하나의 내역. */
+export interface RootDomainStat {
+  root: string;
+  subdomains: number;
+  pages: number;
+  deployed: number;
+  active: number;
+  active_pages: number;
+}
+
 export interface CrawlToday {
   submitted: number;
   quota_stop: number;

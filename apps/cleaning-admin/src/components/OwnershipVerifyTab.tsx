@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Search, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { DomainInfo, OwnershipSummary } from '../types';
+import { OwnershipSummary } from '../types';
+import { useDomainList } from '../useDomainList';
+import Pager from './Pager';
 
 interface OwnershipVerifyTabProps {
-  domains: DomainInfo[];
   summary?: OwnershipSummary | null;
 }
 
@@ -15,23 +16,22 @@ interface OwnershipVerifyTabProps {
  *   registered = 인증키는 받았고 소유확인만 남았다
  *   verified   = 소유확인 완료
  */
-export default function OwnershipVerifyTab({ domains, summary }: OwnershipVerifyTabProps) {
+export default function OwnershipVerifyTab({ summary }: OwnershipVerifyTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'registered' | 'pending'>('all');
 
-  // 요약은 DB 집계를 우선 쓴다. 3,000행을 프론트에서 세면 느리고 값이 어긋난다.
-  const total = summary?.total ?? domains.length;
-  const verified = summary?.verified ?? domains.filter((d) => d.naver_registration_status === 'verified').length;
-  const waiting = summary?.waiting ?? domains.filter((d) => d.naver_registration_status === 'registered').length;
-  const notRegistered = summary?.not_registered ?? domains.filter((d) => d.naver_registration_status === 'pending').length;
+  // 요약은 DB 집계를 쓴다. 목록은 /api/domains 가 쪽 단위로 준다.
+  const total = summary?.total ?? 0;
+  const verified = summary?.verified ?? 0;
+  const waiting = summary?.waiting ?? 0;
+  const notRegistered = summary?.not_registered ?? 0;
   const pct = total > 0 ? ((verified / total) * 100).toFixed(1) : '0';
 
-  const filtered = domains.filter((d) => {
-    const matchStatus = statusFilter === 'all' || d.naver_registration_status === statusFilter;
-    const matchSearch = searchQuery === ''
-      || (d.domain_name || '').toLowerCase().includes(searchQuery.toLowerCase())
-      || (d.naver_account_id || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchStatus && matchSearch;
+  const {
+    rows: filtered, total: listTotal, page, setPage, totalPages, loading,
+  } = useDomainList({
+    q: searchQuery,
+    status: statusFilter === 'all' ? '' : statusFilter,
   });
 
   const cards = [
@@ -117,7 +117,7 @@ export default function OwnershipVerifyTab({ domains, summary }: OwnershipVerify
 
       <div className="glass-panel" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
-          {filtered.length.toLocaleString()}건 표시 (최대 200건)
+          조건에 맞는 {listTotal.toLocaleString()}건 중 {filtered.length.toLocaleString()}건 표시
         </div>
         <div style={{ overflowX: 'auto', maxHeight: '520px', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
@@ -155,6 +155,7 @@ export default function OwnershipVerifyTab({ domains, summary }: OwnershipVerify
             </tbody>
           </table>
         </div>
+        <Pager page={page} totalPages={totalPages} total={listTotal} loading={loading} onChange={setPage} />
       </div>
     </div>
   );

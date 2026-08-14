@@ -1,29 +1,30 @@
 import React, { useState } from 'react';
 import { Globe, Search, MapPin, KeyRound, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
-import { DomainInfo } from '../types';
+import { OwnershipSummary } from '../types';
+import { useDomainList } from '../useDomainList';
+import Pager from './Pager';
 
 interface DomainRegistryTabProps {
-  domains: DomainInfo[];
+  summary?: OwnershipSummary | null;
 }
 
-export default function DomainRegistryTab({ domains }: DomainRegistryTabProps) {
+export default function DomainRegistryTab({ summary }: DomainRegistryTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [areaFilter, setAreaFilter] = useState('all');
 
-  const totalDomains = domains.length;
-  const targetTotal = 1000;
-  const registrationProgress = Math.round((totalDomains / targetTotal) * 100);
+  const totalDomains = summary?.total ?? 0;
+  const targetTotal = 10000;
+  const registrationProgress = totalDomains > 0
+    ? Math.min(100, Math.round((totalDomains / targetTotal) * 100))
+    : 0;
 
-  const uniqueAreas = Array.from(new Set(domains.map(d => d.area_name).filter(Boolean))) as string[];
+  // area_name 은 아직 전 행이 비어 있다. 페이지 카탈로그를 동기화하면
+  // 그때 지역을 채운다. 지금은 선택지가 없으므로 목록도 비워 둔다.
+  const uniqueAreas: string[] = [];
 
-  const filteredDomains = domains.filter(d => {
-    const matchesArea = areaFilter === 'all' || d.area_name === areaFilter;
-    const matchesSearch = searchQuery === '' ||
-      d.domain_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (d.area_name && d.area_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.naver_account_id && d.naver_account_id.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesArea && matchesSearch;
-  });
+  const {
+    rows: filteredDomains, total: listTotal, page, setPage, totalPages, loading,
+  } = useDomainList({ q: searchQuery });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -62,7 +63,7 @@ export default function DomainRegistryTab({ domains }: DomainRegistryTabProps) {
           <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>프로젝트 그룹 키</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#818cf8', marginTop: '6px' }}>
-              {domains[0]?.project_key || 'cleaning-ravi'}
+              cleaning-ravi
             </div>
           </div>
         </div>
@@ -157,13 +158,14 @@ export default function DomainRegistryTab({ domains }: DomainRegistryTabProps) {
               {filteredDomains.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    등록된 도메인이 없거나 조건에 맞는 결과가 없습니다.
+                    {loading ? '불러오는 중…' : '등록된 도메인이 없거나 조건에 맞는 결과가 없습니다.'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+        <Pager page={page} totalPages={totalPages} total={listTotal} loading={loading} onChange={setPage} />
       </div>
 
     </div>

@@ -35,3 +35,21 @@ reports/haiip-windows-ip-changes.jsonl
 reports/naver-login/
 reports/verify-debug.png
 verify_debug.png
+
+# 개발현황은 public.dev_tasks 로 옮겼다. 이 파일은 이전 백업일 뿐이라
+# 추적하면 VM 이 git pull 할 때 막히기만 한다.
+data/dev_tasks.json
+
+# 작업 중 만든 미리보기 HTML 과 스크린샷. 결과물이 아니라 확인용이다.
+/preview_*.html
+/preview_*.png
+/built_*.png
+/final_*.png
+/take_preview_screenshot.mjs
+
+# 실행 리포트는 기계마다 다르게 쌓인다. 공유할 이유가 없다.
+/reports/
+
+# 청소 이미지 500장(31MB)은 로컬 전용이다. 배포는 git 을 거치지 않고
+# R2 에 올려 assets.<루트> 로 서빙한다. 커밋하면 저장소만 무거워진다.
+/apps/cleaning-ravi/public/cleaning/

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{{title}}</title>
+    <meta name="description" content="{{description}}" />
+    <link rel="canonical" href="{{canonical}}" />
+    <meta name="robots" content="{{robots}}" />
+
+    {{#naverSiteVerification}}<meta name="naver-site-verification" content="{{naverSiteVerification}}" />{{/naverSiteVerification}}
+    {{#googleSiteVerification}}<meta name="google-site-verification" content="{{googleSiteVerification}}" />{{/googleSiteVerification}}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{title}}" />
+    <meta property="og:description" content="{{description}}" />
+    <meta property="og:url" content="{{canonical}}" />
+    <meta property="og:image" content="{{ogImage}}" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="alternate" type="application/rss+xml" title="{{mainKeyword}}" href="/rss.xml" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="stylesheet" href="{{assetBase}}/site/{{assetVersion}}/styles.css" />
+    <script type="application/ld+json">{{{jsonLd}}}</script>
+  </head>
+
+  <body>
+    <div class="topbar">📍 {{location}} 출장 가능 · 무료 방문 견적 · 상담 후 비용 결정</div>
+
+    <header>
+      <div class="wrap">
+        <div class="logo">클린<span>프렌즈</span></div>
+        <div class="header-cta">
+          <a href="#cpa-form" class="btn-call">무료 견적 신청</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero hero-center">
+      <div class="wrap hero-inner">
+        <span class="badge">{{shortLocation}} {{mainKeywordText}} · {{subKeywordText}} 비교 플랫폼</span>
+        <h1>
+          {{location}} {{mainKeywordText}}<br />{{subKeywordText}}<br /><em>{{vendorCount}}곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
+        </h1>
+        <p>{{location}} {{mainKeyword}}·{{subKeywordText}} 완벽 작업! 검증된 {{vendorCount}}개 업체 견적을 한눈에 비교하세요.</p>
+        <div class="hero-stats">
+          <div><strong>4.9 / 5.0</strong>평균 고객 만족도</div>
+          <div><strong>32,000+</strong>누적 견적 매칭 건수</div>
+          <div><strong>30분</strong>평균 상담 회신 시간</div>
+        </div>
+        <div class="kw-row">{{#related}}<span>#{{word}}</span>{{/related}}</div>
+        <div class="cpa-row">
+          <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">✨ 새집느낌<small>홈케어 전문 청소</small></a>
+          <a class="cpa-btn c2" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">🧹 이사방청소<small>비교 후 진행하는 청소</small></a>
+          <a class="cpa-btn c3" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener">🚀 24번가 입주청소<small>가격비교 업계 1위</small></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CPA FORM ===== -->
+    <section class="form-section" id="cpa-form">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Free Quote</span>
+          <h2>30초면 끝! {{shortLocation}} {{mainKeyword}} 무료 비교 견적 신청</h2>
+          <p>아래 폼을 작성하면 제휴 업체와 바로 연결됩니다.</p>
+        </div>
+        {{{estimateForm}}}
+      </div>
+    </section>
+
+    <!-- ===== REVIEW ===== -->
+    <section style="background: #f8fafc;">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Review</span>
+          <h2>{{shortLocation}} 실시간 이용 후기</h2>
+        </div>
+        <div class="testi-grid">{{#reviews}}<div class="testi">
+            <div class="stars">{{stars}}</div>
+            "{{text}}"
+            <div class="who">{{author}} 님 · {{service}}</div>
+          </div>{{/reviews}}
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ & PLACES ===== -->
+    <section id="faq-section" style="background: #fff;">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">FAQ</span>
+          <h2>자주 묻는 질문 (FAQ)</h2>
+          <p>{{shortLocation}} {{mainKeyword}} 및 {{subKeywordText}} 작업에 대해 자주 물으시는 질문입니다.</p>
+        </div>
+
+        <div class="faq-list">{{#faqs}}<details open>
+            <summary>{{q}}</summary>
+            <p>{{a}}</p>
+          </details>{{/faqs}}
+        </div>
+
+        <!-- 크롤링 봇 최적화: 플레이스마다 독립 div > h2 + card div -->
+        <div class="mt-5 pt-3">
+          <div class="alert alert-info border-0 shadow-sm text-center mb-4 fw-bold">
+            👇 {{shortLocation}} {{mainKeyword}} 검색 업체 총 {{placeCount}}곳
+          </div>
+
+          {{#places}}<div class="place-block mb-4">
+            <h2 class="p-3 mb-1 text-center h4 bg-warning text-dark rounded-top mb-0">
+              {{shortLocation}} {{headline}} 검색 업체<br>
+              <b>{{keywordText}}</b>
+            </h2>
+            <div class="card border-0 shadow-sm rounded-bottom" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+              <div class="card-body">
+                <div class="shopmedia">
+                  <div class="shoptext">
+                    <p class="mb-1"><strong>분류:</strong> {{category}}</p>
+                    <p class="mb-1"><strong>지번주소:</strong> {{address}}</p>
+                    <div class="mt-3 text-center text-sm-start">
+                      <a href="{{naverMap}}" class="btn btn-sm btn-info d-inline-block me-2 mb-1 text-white fw-bold px-3 py-2" target="_blank" rel="noopener">네이버지도</a>
+                      <a href="{{googleMap}}" class="btn btn-sm btn-info d-inline-block mb-1 text-white fw-bold px-3 py-2" target="_blank" rel="noopener">구글 지도</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>{{/places}}
+
+          <!-- 이미지 캐러셀 -->
+          <div data-image-carousel="" data-image-path="{{gallery.path}}" data-image-names="{{gallery.names}}" data-image-ext="{{gallery.ext}}" data-image-pool="{{gallery.pool}}" data-item-name="auto" data-jsonld="true">
+          <div class="image-carousel-wrap mt-5">
+            <div class="image-carousel-box">
+              <div class="image-carousel-main">
+                <button type="button" class="image-carousel-btn prev" aria-label="이전 이미지">‹</button>
+                <img class="image-carousel-current-image" src="{{gallery.first.src}}" alt="{{gallery.first.alt}}">
+                <button type="button" class="image-carousel-btn next" aria-label="다음 이미지">›</button>
+              </div>
+              <div class="image-carousel-title">{{gallery.first.title}}</div>
+              <div class="image-carousel-index">1 / {{gallery.count}}</div>
+              <div class="image-carousel-thumbs">{{#gallery.items}}<button type="button" class="image-carousel-thumb{{activeClass}}" aria-label="{{alt}}"><img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async"></button>{{/gallery.items}}</div>
+            </div>
+          </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== RELATED LINKS & PAGER ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Area</span>
+          <h2>{{shortLocation}} 인근 서비스 지역 안내</h2>
+          <p>{{location}} 및 인근 {{nearbyCount}}개 지역 바로가기</p>
+        </div>
+
+        <nav class="links">{{#links}}<a href="{{href}}">{{label}}</a>{{/links}}</nav>
+
+        <nav class="pager">
+          <a class="prev" href="{{prev.href}}"><small>← 이전</small>{{prev.label}}</a>
+          <a class="next" href="{{next.href}}"><small>다음 →</small>{{next.label}}</a>
+        </nav>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        {{location}} {{mainKeyword}} 관련 업체 위치 안내 페이지입니다.
+      </div>
+    </footer>
+    <script src="{{assetBase}}/site/{{assetVersion}}/app.js" defer></script>
+
+  </body>
+</html>

@@ -569,7 +569,71 @@ async function ensureAccountIp(account) {
     current = publicIp();
     if (current === target) { console.log(`  IP 확인: ${current} ✅`); return; }
   }
-  throw new Error(`IP 전환 실패: 목표 ${target}, 현재 ${current}`);
+
+  /*
+   * 목표 IP 를 못 잡았다. 예전에는 여기서 그냥 던졌는데, 그러면 영영 안 풀린다.
+   *
+   * HaiIP 는 유동이라 예전에 쓰던 IP 가 다시 안 나올 수 있다. 그런데 DB 에는
+   * 그 옛 IP 가 남아 있어서, 다시 실행해도 같은 IP 를 요구하고 또 실패한다.
+   * 실제로 2026-08-13 에 15개 계정이 이 자리에서 막혔다.
+   *
+   * 수집요청 러너(run-windows-naver-crawl-resume.ps1)는 같은 상황에서
+   * 아무 IP 나 받아 진행하고, 끝나면 그 IP 로 세션을 다시 저장한다.
+   * 여기서도 같게 한다. 조건은 하나 — 그 IP 가 다른 계정에 묶여 있으면 안 된다.
+   * 계정 여러 개가 한 IP 를 쓰면 네이버가 묶어서 볼 수 있기 때문이다.
+   */
+  const conflicts = sessionIpConflicts(current, account.account_id);
+  if (conflicts.length) {
+    throw new Error(
+      `IP 전환 실패: 목표 ${target}, 현재 ${current} — 현재 IP 는 다른 계정(${conflicts.join(', ')})이 쓰고 있어 그대로 쓸 수 없습니다.`,
+    );
+  }
+
+  console.log(`  ⚠️ 목표 IP(${target})를 못 잡았습니다. 현재 IP(${current})는 다른 계정이 안 쓰므로 그대로 진행하고 기준 IP 를 갱신합니다.`);
+  rebindSessionIp(account.account_id, current);
+  account.validated_ip = current;
+}
+
+/** 이 IP 를 이미 쓰고 있는 다른 계정 목록. 없으면 빈 배열. */
+function sessionIpConflicts(ip, accountId) {
+  try {
+    const out = execFileSync(process.execPath, [
+      resolve(projectRoot, 'scripts/get-naver-searchadvisor-account-session-ip.mjs'),
+      '--ip', ip, '--exclude-account', accountId,
+    ], { encoding: 'utf8', cwd: projectRoot });
+    const parsed = JSON.parse(out);
+    return (parsed.accounts || []).map((row) => String(row.accountId)).filter(Boolean);
+  } catch (error) {
+    // 조회가 안 되면 안전한 쪽으로 — 충돌이 있다고 보고 진행하지 않는다.
+    console.log(`  IP 충돌 조회 실패: ${error.message.slice(0, 80)}`);
+    return ['(조회 실패)'];
+  }
+}
+
+/**
+ * 로그인 없이 기준 IP 만 새로 기록한다.
+ *
+ * 저장된 세션(쿠키)을 꺼내 그대로 다시 넣으면서 validated-ip 만 바꾼다.
+ * 네이버에 다시 로그인하지 않으므로 보호조치를 부를 위험이 없다.
+ */
+function rebindSessionIp(accountId, ip) {
+  const statePath = resolve(tmpRoot, `${accountId}.rebind.json`);
+  mkdirSync(tmpRoot, { recursive: true });
+  try {
+    execFileSync(process.execPath, [
+      resolve(projectRoot, 'scripts/export-naver-searchadvisor-session.mjs'),
+      '--account', accountId, '--output', statePath,
+    ], { stdio: 'pipe', cwd: projectRoot });
+    execFileSync(process.execPath, [
+      resolve(projectRoot, 'scripts/upsert-naver-searchadvisor-session.mjs'),
+      '--account', accountId, '--storage-state', statePath,
+      '--status', 'valid', '--validated-ip', ip,
+      '--note', `verify rebind ${new Date().toISOString()}`,
+    ], { stdio: 'pipe', cwd: projectRoot });
+    console.log(`  기준 IP 갱신: ${ip}`);
+  } finally {
+    if (existsSync(statePath)) rmSync(statePath, { force: true });
+  }
 }
 
 function publicIp() {

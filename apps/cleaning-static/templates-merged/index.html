@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{{title}}</title>
+    <meta name="description" content="{{description}}" />
+    <link rel="canonical" href="{{canonical}}" />
+    <meta name="robots" content="{{robots}}" />
+
+    {{#naverSiteVerification}}<meta name="naver-site-verification" content="{{naverSiteVerification}}" />{{/naverSiteVerification}}
+    {{#googleSiteVerification}}<meta name="google-site-verification" content="{{googleSiteVerification}}" />{{/googleSiteVerification}}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{title}}" />
+    <meta property="og:description" content="{{description}}" />
+    <meta property="og:url" content="{{canonical}}" />
+    <meta property="og:image" content="{{ogImage}}" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="alternate" type="application/rss+xml" title="{{mainKeyword}}" href="/rss.xml" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="stylesheet" href="{{assetBase}}/site/{{assetVersion}}/styles.css" />
+    <script type="application/ld+json">{{{jsonLd}}}</script>
+  </head>
+
+  <body>
+    <div class="topbar">📍 전국 출장 가능 · 무료 방문 견적 · 상담 후 비용 결정</div>
+
+    <header>
+      <div class="wrap">
+        <div class="logo">클린<span>프렌즈</span></div>
+        <div class="header-cta">
+          <a href="#cpa-form" class="btn-call">무료 견적 신청</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero hero-center">
+      <div class="wrap hero-inner">
+        <span class="badge">{{location}} {{mainKeywordText}} 비교 플랫폼</span>
+        <h1>
+          {{location}} {{mainKeywordText}}<br />{{subKeywordText}}<br /><em>3곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
+        </h1>
+        <p>
+          혼자 알아보면 시간도 오래 걸리고 가격 비교도 어렵습니다. 클린프렌즈가 {{location}} 검증된 업체 3곳의 견적을 한 번에 모아 비교해드립니다.
+        </p>
+        <div class="hero-stats">
+          <div><strong>4.8 / 5.0</strong>평균 고객 만족도</div>
+          <div><strong>32,000+</strong>누적 견적 매칭 건수</div>
+          <div><strong>30분</strong>평균 상담 회신 시간</div>
+        </div>
+        <div class="cpa-row">
+          <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">✨ 새집느낌<small>홈케어 전문 청소</small></a>
+          <a class="cpa-btn c2" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">🧹 이사방청소<small>비교 후 진행하는 청소</small></a>
+          <a class="cpa-btn c3" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener">🚀 24번가 입주청소<small>가격비교 업계 1위</small></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMPARE ===== -->
+    <section id="compare">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Compare</span>
+          <h2>{{mainKeyword}}, 어느 업체가 나에게 맞을까요?</h2>
+          <p>고객님의 조건에 맞는 우수 업체 3곳을 찾았습니다. 후기와 특징을 비교해보고 견적을 신청하세요.</p>
+        </div>
+        <div class="vendor-grid">
+          <div class="vendor-card best">
+            <span class="vendor-flag">🔥 BEST 1위 추천</span>
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">1</span>
+                <img src="{{vendorImages.0.src}}" alt="{{vendorImages.0.alt}}" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>새집느낌</h3>
+                <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(1,890+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 홈케어 한 가지만 연구해온 전문 청소업체</div>
+              <div>✓ 친환경 세정제·피톤치드 살균 소독 포함</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+          </div>
+
+          <div class="vendor-card">
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">2</span>
+                <img src="{{vendorImages.1.src}}" alt="{{vendorImages.1.alt}}" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>이사방청소</h3>
+                <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(1,100+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 여러 업체를 비교한 뒤 진행하는 검증형 매칭 서비스</div>
+              <div>✓ 전국 신속 출동, 당일 견적 비교 가능</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+          </div>
+
+          <div class="vendor-card">
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">3</span>
+                <img src="{{vendorImages.2.src}}" alt="{{vendorImages.2.alt}}" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>24번가 입주청소</h3>
+                <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(1,890+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 전국 입주·이사청소 가격비교 업계 압도적 1등</div>
+              <div>✓ 24시간 언제든 온라인 접수, 합리적인 가성비</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CPA FORM ===== -->
+    <section class="form-section" id="cpa-form">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow" style="color: #8fb4ff">Free Quote</span>
+          <h2>30초면 끝! 무료 비교 견적 신청</h2>
+          <p>아래 폼을 작성하면 제휴 업체와 바로 연결됩니다.</p>
+        </div>
+
+        {{{estimateForm}}}
+      </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section class="process">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Process</span>
+          <h2>상담부터 완료까지, 5단계로 진행됩니다</h2>
+          <p>모든 단계에서 범위와 비용을 먼저 안내한 뒤 작업합니다.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h4>상담·견적</h4>
+            <p>평수와 원하는 서비스를 확인하고 견적을 안내합니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h4>업체 비교</h4>
+            <p>조건에 맞는 업체 1~3곳을 매칭해 비교해드립니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h4>일정 확정</h4>
+            <p>이사·입주 일정에 맞춰 방문 날짜를 확정합니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">4</div>
+            <h4>현장 청소</h4>
+            <p>전문 장비로 안내된 범위 기준 작업을 진행합니다.</p>
+          </div>
+          <div class="step">
+            <div class="num">5</div>
+            <h4>검수·완료</h4>
+            <p>함께 확인 후 미흡한 부분은 즉시 보완합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GALLERY ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Gallery</span>
+          <h2>이런 공간을 이렇게 청소합니다</h2>
+        </div>
+        <div class="gallery-grid" data-gallery-rotate="{{showcasePool}}">{{#showcase}}<img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async" />{{/showcase}}</div>
+      </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS / REVIEWS ===== -->
+    <section id="reviews">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Review</span>
+          <h2>먼저 이용해본 고객들의 이야기</h2>
+        </div>
+        <div class="testi-grid">
+          {{#reviews}}<div class="testi">
+            <div class="stars">{{stars}}</div>
+            "{{text}}"
+            <div class="who">{{author}} 님 · {{service}}</div>
+          </div>{{/reviews}}
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">FAQ</span>
+          <h2>자주 묻는 질문</h2>
+        </div>
+        <div class="faq-list">
+          {{#faqs}}<details>
+            <summary>{{q}}</summary>
+            <p>{{a}}</p>
+          </details>{{/faqs}}
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PLACES & GALLERY (하위 페이지와 같은 블록) ===== -->
+    <section style="background: #fff;">
+      <div class="wrap">
+        <div class="mt-5 pt-3">
+          <div class="alert alert-info border-0 shadow-sm text-center mb-4 fw-bold">
+            👇 {{mainKeyword}} 검색 업체 총 {{placeCount}}곳
+          </div>
+
+          {{#places}}<div class="place-block mb-4">
+            <h2 class="p-3 mb-1 text-center h4 bg-warning text-dark rounded-top mb-0">
+              {{shortLocation}} {{headline}} 검색 업체<br>
+              <b>{{keywordText}}</b>
+            </h2>
+            <div class="card border-0 shadow-sm rounded-bottom" style="background: #ffffff; border: 1px solid #e2e8f0 !important;">
+              <div class="card-body">
+                <div class="shopmedia">
+                  <div class="shoptext">
+                    <p class="mb-1"><strong>분류:</strong> {{category}}</p>
+                    <p class="mb-1"><strong>지번주소:</strong> {{address}}</p>
+                    <div class="mt-3 text-center text-sm-start">
+                      <a href="{{naverMap}}" class="btn btn-sm btn-info d-inline-block me-2 mb-1 text-white fw-bold px-3 py-2" target="_blank" rel="noopener">네이버지도</a>
+                      <a href="{{googleMap}}" class="btn btn-sm btn-info d-inline-block mb-1 text-white fw-bold px-3 py-2" target="_blank" rel="noopener">구글 지도</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>{{/places}}
+
+          <div data-image-carousel="" data-image-path="{{gallery.path}}" data-image-names="{{gallery.names}}" data-image-ext="{{gallery.ext}}" data-image-pool="{{gallery.pool}}" data-item-name="auto" data-jsonld="true">
+          <div class="image-carousel-wrap mt-5">
+            <div class="image-carousel-box">
+              <div class="image-carousel-main">
+                <button type="button" class="image-carousel-btn prev" aria-label="이전 이미지">‹</button>
+                <img class="image-carousel-current-image" src="{{gallery.first.src}}" alt="{{gallery.first.alt}}">
+                <button type="button" class="image-carousel-btn next" aria-label="다음 이미지">›</button>
+              </div>
+              <div class="image-carousel-title">{{gallery.first.title}}</div>
+              <div class="image-carousel-index">1 / {{gallery.count}}</div>
+              <div class="image-carousel-thumbs">{{#gallery.items}}<button type="button" class="image-carousel-thumb{{activeClass}}" aria-label="{{alt}}"><img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async"></button>{{/gallery.items}}</div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CATALOG ===== -->
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Catalog</span>
+          <h2>전국 서비스 카탈로그</h2>
+        </div>
+        <nav class="links">{{#links}}<a href="{{href}}">{{label}}</a>{{/links}}</nav>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        {{location}} {{mainKeyword}} 관련 업체 위치 안내 페이지입니다.
+      </div>
+    </footer>
+
+    <div class="sticky-cta">
+      <a href="https://replyalba.com/pt/BtMoZvIUJs" style="background: var(--blue)" target="_blank" rel="noopener">새집느낌</a>
+      <a href="https://replyalba.com/pt/DD7ERrwYox" style="background: var(--mint)" target="_blank" rel="noopener">이사방청소</a>
+      <a href="https://replyalba.com/pt/MwNJSXOiNt" style="background: var(--orange)" target="_blank" rel="noopener">24번가 입주청소</a>
+    </div>
+    <script src="{{assetBase}}/site/{{assetVersion}}/app.js" defer></script>
+
+
+  </body>
+</html>

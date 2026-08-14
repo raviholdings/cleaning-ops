@@ -10,7 +10,7 @@ import {
   Send,
   ChevronRight
 } from 'lucide-react';
-import { DevTask, AccountInfo, DomainInfo, CrawlDailyStat, CrawlLog, LeadSubmission, AccountSummary, OwnershipSummary } from './types';
+import { DevTask, AccountInfo, CrawlDailyStat, CrawlLog, LeadSubmission, AccountSummary, OwnershipSummary, DeploymentSummary, RootDomainStat, AccountDomainCount } from './types';
 import DevRoadmapTab from './components/DevRoadmapTab';
 import AccountStatsTab from './components/AccountStatsTab';
 import DomainRegistryTab from './components/DomainRegistryTab';
@@ -18,7 +18,9 @@ import DeploymentStatusTab from './components/DeploymentStatusTab';
 import OwnershipVerifyTab from './components/OwnershipVerifyTab';
 import CrawlRequestTab from './components/CrawlRequestTab';
 
-export default function App() {
+import type { SessionUser } from './components/AuthGate';
+
+export default function App({ user }: { user: SessionUser }) {
   const [activeTab, setActiveTab] = useState<
     'dev_roadmap' | 'account' | 'domain' | 'deployment' | 'ownership' | 'crawl'
   >('dev_roadmap');
@@ -30,7 +32,7 @@ export default function App() {
 
   // Monitoring Stats State (R)
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
-  const [domains, setDomains] = useState<DomainInfo[]>([]);
+  const [domainCounts, setDomainCounts] = useState<AccountDomainCount[]>([]);
   const [crawlDailyStats, setCrawlDailyStats] = useState<CrawlDailyStat[]>([]);
   const [recentCrawlLogs, setRecentCrawlLogs] = useState<CrawlLog[]>([]);
   const [todayCrawl, setTodayCrawl] = useState<CrawlDailyStat | null>(null);
@@ -41,6 +43,8 @@ export default function App() {
   // DB 에서 집계해 내려주는 요약. 3,000행을 프론트에서 세면 느리고 값이 어긋난다.
   const [accountSummary, setAccountSummary] = useState<AccountSummary | null>(null);
   const [ownershipSummary, setOwnershipSummary] = useState<OwnershipSummary | null>(null);
+  const [deploymentSummary, setDeploymentSummary] = useState<DeploymentSummary | null>(null);
+  const [rootDomains, setRootDomains] = useState<RootDomainStat[]>([]);
 
   // Fetch Dev Tasks from Backend CRUD API
   const fetchDevTasks = async () => {
@@ -66,7 +70,14 @@ export default function App() {
         const data = await res.json();
 
         if (data.accounts) setAccounts(data.accounts);
-        if (data.domains) setDomains(data.domains);
+        if (data.accountDomainCounts) setDomainCounts(data.accountDomainCounts);
+
+        // DB 가 세어준 집계를 쓴다. 프론트에서 만 행을 다시 세면 느리고,
+        // 목록이 잘려 내려오면 숫자가 실제와 어긋난다.
+        if (data.accountSummary) setAccountSummary(data.accountSummary);
+        if (data.ownershipSummary) setOwnershipSummary(data.ownershipSummary);
+        if (data.deploymentSummary) setDeploymentSummary(data.deploymentSummary);
+        if (data.rootDomains) setRootDomains(data.rootDomains);
 
         if (data.crawlDaily) {
           const byDate = new Map<string, CrawlDailyStat>();
@@ -167,9 +178,9 @@ export default function App() {
   const navItems = [
     { key: 'dev_roadmap', label: '🚀 개발팀 전체 진행과정', badge: `${devTasks.length}건`, icon: Kanban, isCrucial: true },
     { key: 'account', label: '🔑 1. 계정 확인', badge: `${accountSummary?.total ?? accounts.length}개`, icon: KeyRound },
-    { key: 'domain', label: '🌐 2. 도메인 등록', badge: `${ownershipSummary?.total ?? domains.length}개`, icon: Globe },
-    { key: 'deployment', label: '🚀 3. 배포 현황', badge: `${ownershipSummary?.deployed ?? domains.filter(d => d.deployed_at).length}개`, icon: Rocket },
-    { key: 'ownership', label: '🛡️ 4. 소유 확인', badge: `${ownershipSummary?.verified ?? domains.filter(d => d.naver_registration_status === 'verified').length}개`, icon: ShieldCheck },
+    { key: 'domain', label: '🌐 2. 도메인 등록', badge: `${(ownershipSummary?.total ?? 0).toLocaleString()}개`, icon: Globe },
+    { key: 'deployment', label: '🚀 3. 배포 현황', badge: `${(deploymentSummary?.deployed_domains ?? ownershipSummary?.deployed ?? 0).toLocaleString()}개`, icon: Rocket },
+    { key: 'ownership', label: '🛡️ 4. 소유 확인', badge: `${(ownershipSummary?.verified ?? 0).toLocaleString()}개`, icon: ShieldCheck },
     // 수집요청 뱃지는 '오늘 제출'이다. 누적을 보여주면 일일 한도와 비교가 안 된다.
     { key: 'crawl', label: '📨 5. 수집 요청 현황', badge: `오늘 ${(todayCrawl?.submitted || 0).toLocaleString()}건`, icon: Send }
   ];
@@ -216,6 +227,32 @@ export default function App() {
                 통합 관리자 대시보드
               </span>
             </div>
+          </div>
+
+          {/* 로그인 정보 */}
+          <div style={{
+            marginBottom: '18px', padding: '10px 12px', borderRadius: '10px',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600, wordBreak: 'break-all' }}>
+              {user.name || user.username}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {user.role === 'owner' ? '소유자' : '멤버'}
+            </div>
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                window.location.reload();
+              }}
+              style={{
+                marginTop: '8px', width: '100%', padding: '6px', borderRadius: '7px',
+                border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)',
+                color: '#cbd5e1', fontSize: '0.75rem', cursor: 'pointer',
+              }}
+            >
+              로그아웃
+            </button>
           </div>
 
           {/* Left Vertical Menu */}
@@ -306,19 +343,19 @@ export default function App() {
         )}
 
         {activeTab === 'account' && (
-          <AccountStatsTab accounts={accounts} domains={domains} summary={accountSummary} />
+          <AccountStatsTab accounts={accounts} domainCounts={domainCounts} summary={accountSummary} />
         )}
 
         {activeTab === 'domain' && (
-          <DomainRegistryTab domains={domains} />
+          <DomainRegistryTab summary={ownershipSummary} />
         )}
 
         {activeTab === 'deployment' && (
-          <DeploymentStatusTab domains={domains} />
+          <DeploymentStatusTab summary={deploymentSummary} rootDomains={rootDomains} />
         )}
 
         {activeTab === 'ownership' && (
-          <OwnershipVerifyTab domains={domains} summary={ownershipSummary} />
+          <OwnershipVerifyTab summary={ownershipSummary} />
         )}
 
         {activeTab === 'crawl' && (
