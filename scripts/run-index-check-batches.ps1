@@ -38,7 +38,9 @@ param(
 	[int]$RestMinutes = 20,
 	[int]$Rounds = 12,
 	[string]$RunId = 'cleaning-ravi-index-rolling',
-	[int]$Concurrency = 20
+	[int]$Concurrency = 20,
+	# 이 run-id 로 이미 끝낸 도메인 수. 이어서 돌릴 때 목표치를 여기서부터 키운다.
+	[int]$ResumeFrom = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,10 +51,25 @@ $node = $env:NODE_EXE
 if (-not $node -or -not (Test-Path $node)) { $node = 'node' }
 
 $env:NAVER_INDEX_GROUP_KEY = 'cleaning-ravi'
-$env:NAVER_INDEX_CHECK_LIMIT = "$BatchSize"
 $env:NAVER_INDEX_CHECK_CONCURRENCY = "$Concurrency"
 $env:NAVER_INDEX_CHECK_RESUME = '1'
 $env:NAVER_INDEX_RETRY_ERRORS = '1'
+
+<#
+ NAVER_INDEX_CHECK_LIMIT 은 회차당 증가분이 아니라 누적 목표치다.
+
+ loadTargets 가 목표치만큼 도메인을 먼저 자르고, 거기서 이미 끝난 것을 뺀다.
+ 그래서 매 회차에 같은 값을 주면 두 번째 회차부터는 뺄 것이 없어 아무 일도
+ 안 하고 끝난다. 실제로 그렇게 걸었다가 1회차가 36초 만에 끝나고 그 뒤로
+ 제자리를 돌았다.
+
+ 회차마다 BatchSize 씩 목표를 키워야 200개씩 새로 본다.
+
+ 이미 다른 run-id 로 조사한 도메인과는 겹칠 수 있다. 완료 판정이 run-id
+ 단위라서다. 처음 몇 회차가 그만큼 빨리 끝나는 것으로 드러난다.
+#>
+$startFrom = 0
+if ($ResumeFrom -gt 0) { $startFrom = $ResumeFrom }
 
 Write-Host "색인 조사 (회차당 $BatchSize개 · 휴식 ${RestMinutes}분 · $Rounds회)"
 Write-Host "run-id: $RunId"
@@ -60,8 +77,11 @@ Write-Host ''
 
 $blocked = 0
 for ($i = 1; $i -le $Rounds; $i += 1) {
+	$goal = $startFrom + ($i * $BatchSize)
+	$env:NAVER_INDEX_CHECK_LIMIT = "$goal"
+
 	$stamp = (Get-Date).ToString('HH:mm:ss')
-	Write-Host "[$stamp] $i/$Rounds 회차 시작"
+	Write-Host "[$stamp] $i/$Rounds 회차 시작 (누적 목표 $goal 개)"
 
 	$out = & $node 'scripts/check-naver-indexed-posts.mjs' `
 		'--group' 'cleaning-ravi' '--run-id' $RunId '--trigger' 'manual' 2>&1
