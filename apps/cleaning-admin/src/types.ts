@@ -135,3 +135,41 @@ export interface LeadSubmission {
   customer_phone: string;
   service_type: string;
 }
+
+/*
+ * 색인 현황.
+ *
+ * checked 는 "조사에 성공한 도메인 수"지 전체가 아니다. 네이버가 짧은 시간에
+ * 몰린 요청을 막아서 한 번에 전량을 못 돈다. total_domains 와 같이 봐야 한다.
+ */
+export interface IndexSummary {
+  total_domains: number;
+  checked: number;
+  indexed: number;
+  indexed_posts: number;
+  last_checked: string | null;
+}
+
+export interface IndexBucket {
+  bucket: string;
+  domains: number;
+  indexed: number;
+  avg_posts: number | null;
+}
+
+export interface IndexRoot {
+  root: string;
+  checked: number;
+  indexed: number;
+  posts: number;
+}
+
+export interface IndexRow {
+  domain: string;
+  indexed: boolean;
+  indexed_post_count: number;
+  indexed_url_count: number;
+  checked_at: string | null;
+  naver_account_id: string | null;
+  account_order: number | null;
+}

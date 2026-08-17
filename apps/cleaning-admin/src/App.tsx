@@ -8,8 +8,7 @@ import {
   Rocket, 
   ShieldCheck, 
   Send,
-  ChevronRight
-} from 'lucide-react';
+  ChevronRight, TrendingUp} from 'lucide-react';
 import { DevTask, AccountInfo, CrawlDailyStat, CrawlLog, LeadSubmission, AccountSummary, OwnershipSummary, DeploymentSummary, RootDomainStat, AccountDomainCount } from './types';
 import DevRoadmapTab from './components/DevRoadmapTab';
 import AccountStatsTab from './components/AccountStatsTab';
@@ -17,12 +16,13 @@ import DomainRegistryTab from './components/DomainRegistryTab';
 import DeploymentStatusTab from './components/DeploymentStatusTab';
 import OwnershipVerifyTab from './components/OwnershipVerifyTab';
 import CrawlRequestTab from './components/CrawlRequestTab';
+import IndexStatusTab from './components/IndexStatusTab';
 
 import type { SessionUser } from './components/AuthGate';
 
 export default function App({ user }: { user: SessionUser }) {
   const [activeTab, setActiveTab] = useState<
-    'dev_roadmap' | 'account' | 'domain' | 'deployment' | 'ownership' | 'crawl'
+    'dev_roadmap' | 'account' | 'domain' | 'deployment' | 'ownership' | 'crawl' | 'index'
   >('dev_roadmap');
 
   const [loading, setLoading] = useState(true);
@@ -182,7 +182,10 @@ export default function App({ user }: { user: SessionUser }) {
     { key: 'deployment', label: '🚀 3. 배포 현황', badge: `${(deploymentSummary?.deployed_domains ?? ownershipSummary?.deployed ?? 0).toLocaleString()}개`, icon: Rocket },
     { key: 'ownership', label: '🛡️ 4. 소유 확인', badge: `${(ownershipSummary?.verified ?? 0).toLocaleString()}개`, icon: ShieldCheck },
     // 수집요청 뱃지는 '오늘 제출'이다. 누적을 보여주면 일일 한도와 비교가 안 된다.
-    { key: 'crawl', label: '📨 5. 수집 요청 현황', badge: `오늘 ${(todayCrawl?.submitted || 0).toLocaleString()}건`, icon: Send }
+    { key: 'crawl', label: '📨 5. 수집 요청 현황', badge: `오늘 ${(todayCrawl?.submitted || 0).toLocaleString()}건`, icon: Send },
+    // 색인 뱃지는 조사된 것 중 색인된 수다. 조사 자체가 아직 전량이 아니라
+    // 여기에 1만 개 기준 비율을 적으면 실제보다 낮아 보인다.
+    { key: 'index', label: '📈 6. 색인 현황', badge: '검색 노출', icon: TrendingUp }
   ];
 
   return (
@@ -367,6 +370,9 @@ export default function App({ user }: { user: SessionUser }) {
             recentLogs={recentCrawlLogs}
           />
         )}
+
+        {/* 색인 탭은 /api/stats 를 안 쓴다. 자기 데이터를 따로 부른다. */}
+        {activeTab === 'index' && <IndexStatusTab />}
       </main>
 
     </div>

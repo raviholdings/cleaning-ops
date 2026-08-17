@@ -92,6 +92,112 @@ function dbApiPlugin() {
       server.middlewares.use('/api/dev-tasks', gate);
       server.middlewares.use('/api/stats', gate);
       server.middlewares.use('/api/domains', gate);
+      server.middlewares.use('/api/index-status', gate);
+
+      /*
+       * 색인 현황.
+       *
+       * naver_index_check_results 는 한 도메인에 여러 행이 쌓인다. 조사를
+       * 여러 번 돌리기 때문이다. 게다가 프록시가 막히면 error 가 찬 행이
+       * 같이 저장된다 (2026-08-14 에 9,497 건, 08-17 에 828 건).
+       *
+       * 그래서 화면에 쓰는 값은 항상 "도메인별 최신 정상 행" 하나로 접는다.
+       * error 행을 세면 색인 안 된 것처럼 보여 통계가 통째로 틀어진다.
+       */
+      const LATEST_INDEX = `
+        select distinct on (domain)
+               domain, indexed, indexed_post_count, indexed_url_count, checked_at
+          from public.naver_index_check_results
+         where error is null or error = ''
+         order by domain, checked_at desc
+      `;
+
+      server.middlewares.use('/api/index-status', async (req: any, res: any) => {
+        try {
+          const url = new URL(req.url || '/', 'http://localhost');
+          const page = Math.max(1, Number(url.searchParams.get('page') || 1));
+          const pageSize = Math.min(200, Math.max(1, Number(url.searchParams.get('pageSize') || 50)));
+          const q = (url.searchParams.get('q') || '').trim();
+          // 기본은 색인된 것만. 운영자가 보고 싶은 건 "된 애들"이다.
+          const filter = url.searchParams.get('filter') || 'indexed';
+
+          const where: string[] = [];
+          const params: unknown[] = [];
+          if (q) { params.push(`%${q}%`); where.push(`l.domain ilike $${params.length}`); }
+          if (filter === 'indexed') where.push('l.indexed');
+          if (filter === 'not_indexed') where.push('not l.indexed');
+          const clause = where.length ? `where ${where.join(' and ')}` : '';
+
+          const [summaryRes, bucketRes, rootRes, rowsRes, countRes] = await Promise.all([
+            // 조사 진행률까지 같이 낸다. 448/503 만 보면 1만 개 중 얼마인지 알 수 없다.
+            pool.query(`
+              with l as (${LATEST_INDEX})
+              select (select count(*)::int from public.naver_project_domains
+                       where group_key = 'cleaning-ravi')            as total_domains,
+                     count(*)::int                                    as checked,
+                     count(*) filter (where l.indexed)::int           as indexed,
+                     coalesce(sum(l.indexed_post_count), 0)::int      as indexed_posts,
+                     max(l.checked_at)                                as last_checked
+                from l
+            `),
+            // 수집요청을 얼마나 넣었느냐에 따라 색인률이 갈리는지 — 이 표가 핵심이다.
+            pool.query(`
+              with l as (${LATEST_INDEX}),
+                   r as (select host, count(*) filter (where status = 'submitted')::int n
+                           from public.naver_searchadvisor_crawl_request_results
+                          group by host)
+              select case when coalesce(r.n, 0) = 0 then '0건'
+                          when r.n < 60  then '1~59건'
+                          when r.n < 110 then '60~109건'
+                          else '110건+' end                           as bucket,
+                     count(*)::int                                    as domains,
+                     count(*) filter (where l.indexed)::int           as indexed,
+                     round(avg(l.indexed_post_count), 1)::float       as avg_posts
+                from l left join r on r.host = l.domain
+               group by 1
+               order by min(coalesce(r.n, 0))
+            `),
+            pool.query(`
+              with l as (${LATEST_INDEX})
+              select split_part(l.domain, '.', 2) || '.' || split_part(l.domain, '.', 3) as root,
+                     count(*)::int                          as checked,
+                     count(*) filter (where l.indexed)::int as indexed,
+                     coalesce(sum(l.indexed_post_count), 0)::int as posts
+                from l
+               group by 1
+               order by 3 desc
+            `),
+            pool.query(`
+              with l as (${LATEST_INDEX})
+              select l.domain, l.indexed, l.indexed_post_count, l.indexed_url_count,
+                     l.checked_at, d.naver_account_id, a.account_order
+                from l
+                join public.naver_project_domains d on d.host = l.domain
+                left join public.naver_searchadvisor_accounts a on a.account_id = d.naver_account_id
+                ${clause}
+               order by l.indexed_post_count desc, l.domain asc
+               limit ${pageSize} offset ${(page - 1) * pageSize}
+            `, params),
+            pool.query(`with l as (${LATEST_INDEX}) select count(*)::int as total from l ${clause}`, params),
+          ]);
+
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            summary: summaryRes.rows[0],
+            buckets: bucketRes.rows,
+            roots: rootRes.rows,
+            rows: rowsRes.rows,
+            total: countRes.rows[0]?.total || 0,
+            page,
+            pageSize,
+          }));
+        } catch (error: any) {
+          console.error('[index-status]', error);
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: String(error?.message || error) }));
+        }
+      });
 
       /*
        * 도메인 목록은 따로 뺀다.
