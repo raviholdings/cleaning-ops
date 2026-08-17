@@ -40,7 +40,9 @@ param(
 	[string]$RunId = 'cleaning-ravi-index-rolling',
 	[int]$Concurrency = 20,
 	# 이 run-id 로 이미 끝낸 도메인 수. 이어서 돌릴 때 목표치를 여기서부터 키운다.
-	[int]$ResumeFrom = 0
+	[int]$ResumeFrom = 0,
+	# 첫 회차 전 대기(분). 직전에 조사를 돌렸다면 프록시가 식을 시간을 준다.
+	[int]$StartDelayMinutes = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,6 +75,21 @@ if ($ResumeFrom -gt 0) { $startFrom = $ResumeFrom }
 
 Write-Host "색인 조사 (회차당 $BatchSize개 · 휴식 ${RestMinutes}분 · $Rounds회)"
 Write-Host "run-id: $RunId"
+
+<#
+ 첫 회차 전에 먼저 쉰다.
+
+ 직전에 다른 조사를 돌렸다면 프록시가 아직 식지 않았다. 그 상태로 시작하면
+ 1회차가 통째로 차단당한다. 실제로 시험 두 번을 연달아 돌린 뒤 곧바로 루프를
+ 걸었더니 40분 안에 요청이 2,000건 몰려 1회차 193개가 전부 403 을 받았다.
+
+ 잃는 건 없다. RETRY_ERRORS 가 켜져 있어 실패한 도메인은 다음 회차에 다시
+ 본다. 그래도 한 회차를 통째로 버리는 건 그만큼 늦어지는 것이다.
+#>
+if ($StartDelayMinutes -gt 0) {
+	Write-Host "시작 전 ${StartDelayMinutes}분 대기 (프록시 회복)"
+	Start-Sleep -Seconds ($StartDelayMinutes * 60)
+}
 Write-Host ''
 
 $blocked = 0
@@ -83,9 +100,28 @@ for ($i = 1; $i -le $Rounds; $i += 1) {
 	$stamp = (Get-Date).ToString('HH:mm:ss')
 	Write-Host "[$stamp] $i/$Rounds 회차 시작 (누적 목표 $goal 개)"
 
+	<#
+	 여기서 $ErrorActionPreference 를 잠깐 내린다.
+
+	 PowerShell 5.1 은 네이티브 실행 파일의 stderr 를 2>&1 로 합치면 각 줄을
+	 ErrorRecord 로 감싼다. 그 상태에서 'Stop' 이면 경고 한 줄에 스크립트가
+	 통째로 죽는다. 실제로 "marked bad proxy=p095" 라는 정상 경고(100개 중
+	 1개가 막혀 교체된 것) 하나에 1회차에서 멈췄다.
+
+	 stderr 를 안 합치면 'naver blocked' 를 셀 수 없으므로, 합치되 종료
+	 판정은 $LASTEXITCODE 로만 한다.
+	#>
+	$prevEap = $ErrorActionPreference
+	$ErrorActionPreference = 'Continue'
 	$out = & $node 'scripts/check-naver-indexed-posts.mjs' `
 		'--group' 'cleaning-ravi' '--run-id' $RunId '--trigger' 'manual' 2>&1
+	$code = $LASTEXITCODE
+	$ErrorActionPreference = $prevEap
 	$text = ($out | Out-String)
+
+	if ($code -ne 0) {
+		Write-Host "  node 가 exit $code 로 끝났다. 다음 회차에서 이어서 시도한다." -ForegroundColor Yellow
+	}
 
 	# 차단이 나오면 이번 회차는 이미 손해다. 더 세게 쉬어서 회복을 기다린다.
 	$hits = ([regex]::Matches($text, 'naver blocked')).Count
