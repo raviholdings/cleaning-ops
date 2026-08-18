@@ -931,3 +931,19 @@
   }
 }
 
+
+/*
+ * CPA 버튼 위 유도 문구.
+ *
+ * section-head h2(26px, 가운데 정렬) 를 그대로 쓰면 히어로 안에서 h1 과
+ * 크기가 비슷해 둘이 싸운다. 여기서는 h1 보다 확실히 작게, 버튼과 붙여 둔다.
+ */
+.hero .cpa-lead {
+  font-size: clamp(15px, 3.4vw, 18px);
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.5;
+  margin-top: 4px;
+  letter-spacing: -0.3px;
+  word-break: keep-all;
+}

@@ -69,6 +69,14 @@
         </div>
         <!-- 연관 검색어 해시태그. 하위 페이지에만 있던 것을 홈에도 넣는다. -->
         <div class="kw-row">{{#related}}<span>#{{word}}</span>{{/related}}</div>
+        <!--
+          CPA 버튼 바로 위 유도 문구. h2 로 두는 이유는 둘이다.
+            1. h1 다음가는 제목이라 지역·키워드가 한 번 더 잡힌다
+            2. 버튼과 문구가 한 덩어리로 읽힌다
+          지역·키워드를 넣어 페이지마다 달라지게 한다. 고정 문구면 131만 장에
+          같은 문장이 반복돼 네이버가 보일러플레이트로 본다.
+        -->
+        <h2 class="cpa-lead">아래 {{vendorCount}}곳 중 원하는 업체를 눌러 {{shortLocation}} {{mainKeyword}} 견적을 받아보세요</h2>
         <div class="cpa-row">
           <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">✨ 새집느낌<small>홈케어 전문 청소</small></a>
           <a class="cpa-btn c2" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">🧹 이사방청소<small>비교 후 진행하는 청소</small></a>
