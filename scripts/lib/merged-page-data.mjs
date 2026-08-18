@@ -633,6 +633,20 @@ export function extendIndexData(data, ctx) {
   data.shortLocation = lastToken(seedLocation);
 
   /*
+   * 연관 검색어. 홈에도 해시태그 줄을 넣으면서 필요해졌다.
+   *
+   * buildPageData 는 related 를 만들어 주지만 buildIndexData 는 안 만든다.
+   * 그래서 홈에서는 kw-row 가 빈 div 로 나갔다. 렌더러가 넘겨준 함수로
+   * 하위와 같은 규칙으로 만든다.
+   */
+  if (!Array.isArray(data.related) || !data.related.length) {
+    data.related = typeof ctx.relatedKeywords === 'function'
+      ? ctx.relatedKeywords(data.location || '', main, 8).map((word) => ({ word }))
+      : [];
+  }
+
+
+  /*
    * 홈 title 도 하위 페이지와 같은 "지역명 + 메인 + 서브" 패턴으로 맞춘다.
    * buildIndexMeta 가 만든 기본 title 은 지역이 거의 안 들어간다.
    * title 을 바꾸면 og:title 과 JSON-LD 의 name 도 같이 움직여야 해서 함께 고친다.

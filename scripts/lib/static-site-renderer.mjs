@@ -485,7 +485,9 @@ export function renderSite(opts) {
   }
 
   const indexData = withPartials(buildIndexData({ locations, siteIndex, pageCount, site }));
-  if (extendIndex) extendIndex(indexData, { locations, siteIndex, pageCount, site });
+  // relatedKeywords 를 같이 넘긴다. buildIndexData 는 related 를 안 만드는데
+  // 홈에도 해시태그 줄이 필요해졌다. 하위(buildPageData)는 자체적으로 만든다.
+  if (extendIndex) extendIndex(indexData, { locations, siteIndex, pageCount, site, relatedKeywords });
 
   writeHtml('index.html', renderTemplate(templates.index, indexData));
 

@@ -189,7 +189,7 @@ if (useStaticRenderer) {
     const appLib = resolve(appDir, 'src/lib');
     const merged = await import(pathToFileURL(resolve(projectRoot, 'scripts/lib/merged-page-data.mjs')).href);
     const { catalogEntry } = await import(pathToFileURL(resolve(appLib, 'pageCatalog.ts')).href);
-    const { normalizeLocation, pickFaqs, pickReviews, pickNearbyLocations, buildTitle, buildDescription } = await import(pathToFileURL(resolve(appLib, 'pageMeta.ts')).href);
+    const { normalizeLocation, pickFaqs, pickReviews, pickNearbyLocations, buildTitle, buildDescription, relatedKeywords } = await import(pathToFileURL(resolve(appLib, 'pageMeta.ts')).href);
     const { subKeywordsFor, MAIN_KEYWORDS } = await import(pathToFileURL(resolve(appLib, 'keywords.ts')).href);
 
     extendPage = (data) => merged.extendPageData(data, { mainKeywords: MAIN_KEYWORDS });
@@ -206,6 +206,8 @@ if (useStaticRenderer) {
       mainKeywords: MAIN_KEYWORDS,
       buildTitle,
       buildDescription,
+      // 홈 해시태그(kw-row)용. buildIndexData 는 related 를 안 만든다.
+      relatedKeywords,
     });
     console.log(JSON.stringify({
       phase: 'renderer',
