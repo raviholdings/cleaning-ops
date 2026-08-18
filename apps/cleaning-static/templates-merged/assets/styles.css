@@ -175,35 +175,6 @@
         font-weight: 600;
       }
 
-      .cpa-row {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin-top: 16px;
-      }
-      .cpa-btn {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 14px 8px;
-        border-radius: 12px;
-        font-weight: 800;
-        font-size: 14px;
-        color: #fff;
-        text-align: center;
-        text-decoration: none;
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-      }
-      .cpa-btn small {
-        font-weight: 600;
-        font-size: 11px;
-        opacity: 0.9;
-        margin-top: 2px;
-      }
-      .cpa-btn.c1 { background: linear-gradient(135deg, #2f6fed, #1e4fc4); }
-      .cpa-btn.c2 { background: linear-gradient(135deg, #12b886, #0b8f68); }
-      .cpa-btn.c3 { background: linear-gradient(135deg, #ff7a45, #ea580c); }
 
       /* ===== Section generic ===== */
       section {
