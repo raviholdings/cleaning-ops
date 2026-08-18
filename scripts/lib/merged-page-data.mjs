@@ -340,9 +340,16 @@ export function extendPageData(data, opts = {}) {
   data.vendorCount = 3;
   // 메인 2개 + 서브 2개. h1·배지가 이 두 문자열을 쓴다.
   data.mainKeyword2 = secondMain(main, opts.mainKeywords, seed);
-  data.mainKeywordText = [main, data.mainKeyword2].filter(Boolean).join(' · ');
+  /*
+   * 키워드는 공백으로 잇는다.
+   *
+   * 예전에는 ' · ' 로 이었다. h1 과 배지에 그대로 찍히는데, 가운뎃점이
+   * 들어가면 한 덩어리 제목이 아니라 나열처럼 읽힌다. 운영자 지시로 뺐다.
+   * (title 쪽 구분자는 composeTitle 이 따로 관리한다.)
+   */
+  data.mainKeywordText = [main, data.mainKeyword2].filter(Boolean).join(' ');
   const subs = (data.subKeywords || []).slice(0, 2);
-  data.subKeywordText = subs.join(' · ') || main;
+  data.subKeywordText = subs.join(' ') || main;
   data.placeCount = PLACE_COUNT;
 
   // title 도 h1 과 같은 "지역명 + 메인 2 + 서브 2" 로 맞춘다.
@@ -396,6 +403,43 @@ export function extendPageData(data, opts = {}) {
   }));
 
   data.gallery = buildGallery(galleryImages, short, main, base);
+
+  /*
+   * 시공 사진 4장. 홈에만 있던 갤러리 그리드를 하위에도 넣으면서 필요해졌다.
+   * alt 가 공간을 지칭하므로 해당 공간에서 뽑는다. 홈과 같은 규칙이다.
+   *
+   * 순환용 showcasePool 은 안 만든다. 4.2초마다 사진이 바뀌던 효과를 걷어내
+   * 쓰는 데가 없어졌다.
+   */
+  data.showcase = [
+    ['욕실', '욕실 청소 전후'],
+    ['원룸', '이사 후 빈 방 청소'],
+    ['거실', '깨끗한 거실 공간'],
+    ['전문도구', '청소 도구와 장비'],
+  ].map(([room, alt], index) => ({
+    src: imageSrc(pickInRoom(seed, room, 100 + index * 13).name, base),
+    alt,
+  }));
+
+  /*
+   * 업체 썸네일. 홈에만 있던 비교 그리드를 하위 문서에도 넣으면서 필요해졌다.
+   * 홈과 같은 R2 /compare/ 이미지를 쓴다 (320x320).
+   */
+  data.vendorImages = ['새집느낌', '이사방청소', '24번가 입주청소'].map((name, index) => ({
+    src: `${base}/compare/compare${index + 1}.webp`,
+    alt: `${name} 청소 업체`,
+  }));
+
+  /*
+   * og:image 를 이 페이지의 첫 갤러리 사진으로 바꾼다.
+   *
+   * 예전에는 10,000 개 사이트가 전부 /img/hero-1120.webp 하나를 가리켰다.
+   * 같은 대표 이미지가 131만 장에 붙어 있으면 문서를 구별하는 신호가 못 된다.
+   * 페이지마다 다른 사진을 가리키게 한다.
+   */
+  if (data.gallery?.first?.src) data.ogImage = data.gallery.first.src;
+
+  data.jsonLd = addImageJsonLd(data.jsonLd, data.gallery, data.canonical, short);
 
   return data;
 }
@@ -452,9 +496,9 @@ export function extendIndexData(data, ctx) {
   data.placeCount = PLACE_COUNT;
   // 홈 h1 도 "지역명 + 메인 2 + 서브 2" 로 간다. buildIndexData 는 서브를 안 주므로 여기서 만든다.
   data.subKeywords = typeof ctx.subKeywordsFor === 'function' ? ctx.subKeywordsFor(main).slice(0, 2) : [];
-  data.subKeywordText = data.subKeywords.join(' · ') || main;
+  data.subKeywordText = data.subKeywords.join(' ') || main;
   data.mainKeyword2 = secondMain(main, ctx.mainKeywords, seed);
-  data.mainKeywordText = [main, data.mainKeyword2].filter(Boolean).join(' · ');
+  data.mainKeywordText = [main, data.mainKeyword2].filter(Boolean).join(' ');
 
   /*
    * 홈은 하위 100장 중 어느 것과도 겹치지 않는 지역을 쓴다.
@@ -610,7 +654,85 @@ export function extendIndexData(data, ctx) {
   // 화면과 구조화 데이터가 어긋나면 검색엔진이 불일치로 본다. 같은 값으로 맞춘다.
   data.jsonLd = syncFaqJsonLd(data.jsonLd, data.faqs);
 
+  if (data.gallery?.first?.src) data.ogImage = data.gallery.first.src;
+  data.jsonLd = addImageJsonLd(data.jsonLd, data.gallery, data.canonical, seedLocation);
+
   return data;
+}
+
+/*
+ * 갤러리 이미지를 구조화 데이터에 선언한다.
+ *
+ * 페이지에는 1080x1350 짜리 청소 사진이 여러 장 깔려 있는데, JSON-LD 는
+ * 그 존재를 한 번도 말하지 않았다. BreadcrumbList·Service·FAQPage 어디에도
+ * image 속성이 없어서, 검색로봇이 구조화 데이터만 보면 이미지가 하나도
+ * 없는 문서다.
+ *
+ * 네이버 문서는 "정상 마크업이어도 노출을 보장하지 않는다"고 못 박는다.
+ * 그래도 지금은 요건 자체를 안 갖춰 후보에도 못 든다. 두 가지를 넣는다.
+ *
+ *   1. Service·WebSite 의 image  — 이 문서의 대표 이미지가 무엇인지
+ *   2. ImageGallery + ItemList   — 여러 장이 한 벌이라는 것
+ *
+ * ItemList 를 쓰는 이유는 캐러셀이 "여러 항목의 나열"로 해석되기 때문이다.
+ * ImageObject 로 폭·높이·설명까지 적어야 로봇이 크기를 알고 후보로 삼는다.
+ */
+function addImageJsonLd(jsonLd, gallery, canonical, locationName) {
+  const items = (gallery?.items || []).filter((item) => item?.src);
+  if (!items.length) return jsonLd;
+
+  try {
+    const parsed = JSON.parse(jsonLd);
+    const graph = Array.isArray(parsed['@graph']) ? parsed['@graph'] : [];
+
+    const imageObject = (item, index) => ({
+      '@type': 'ImageObject',
+      '@id': `${canonical}#image-${index + 1}`,
+      contentUrl: item.src,
+      url: item.src,
+      // 실제 원본 규격. 네이버 최소 요건(150x150)과 비율 3:1 을 모두 만족한다.
+      width: 1080,
+      height: 1350,
+      name: item.title || item.alt,
+      description: item.alt,
+      caption: item.alt,
+      representativeOfPage: index === 0,
+    });
+
+    const images = items.map(imageObject);
+    const urls = items.map((item) => item.src);
+
+    for (const node of graph) {
+      // 대표 이미지는 URL 배열로 준다. 로봇이 첫 장을 대표로 읽는다.
+      if (node['@type'] === 'WebSite' || node['@type'] === 'Service') node.image = urls;
+    }
+
+    graph.push({
+      '@type': 'ImageGallery',
+      '@id': `${canonical}#gallery`,
+      name: `${locationName} 청소 시공 사진`,
+      url: canonical,
+      image: images,
+    });
+
+    graph.push({
+      '@type': 'ItemList',
+      '@id': `${canonical}#imagelist`,
+      name: `${locationName} 청소 시공 사진 ${items.length}장`,
+      numberOfItems: items.length,
+      itemListOrder: 'https://schema.org/ItemListOrderAscending',
+      itemListElement: items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: imageObject(item, index),
+      })),
+    });
+
+    parsed['@graph'] = graph;
+    return JSON.stringify(parsed);
+  } catch {
+    return jsonLd;
+  }
 }
 
 /** title/description 을 바꿨으면 JSON-LD 의 WebSite·Service 쪽도 같이 맞춘다. */

@@ -121,11 +121,22 @@
         border: 1px solid rgba(47, 111, 237, 0.2);
       }
       .hero h1 {
-        font-size: 32px;
+        /*
+         * 화면 폭에 따라 줄인다.
+         *
+         * 32px 고정이었다. h1 에 지역명 + 메인 2개 + 서브 2개가 다 들어가서
+         * 문장이 40자를 넘는데, 그 길이에 32px 이면 모바일에서 첫 화면을
+         * 통째로 h1 이 차지한다. br 을 빼도 글자 크기는 그대로라 안 줄었다.
+         *
+         * 390px 기기에서 22px, 데스크톱에서는 예전과 같은 32px.
+         */
+        font-size: clamp(22px, 5.2vw, 32px);
         font-weight: 900;
         color: var(--navy);
         line-height: 1.35;
         letter-spacing: -0.5px;
+        /* 긴 지역명이 어절 중간에서 안 잘리게. 예: '흑산면 가거도리' */
+        word-break: keep-all;
       }
       .hero h1 em {
         font-style: normal;
@@ -919,3 +930,4 @@
     font-size: 14px;
   }
 }
+

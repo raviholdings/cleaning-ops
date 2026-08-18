@@ -16,7 +16,14 @@
     <meta property="og:title" content="{{title}}" />
     <meta property="og:description" content="{{description}}" />
     <meta property="og:url" content="{{canonical}}" />
-    <meta property="og:image" content="{{ogImage}}" />
+    <!--
+      og:image 를 뺐다.
+
+      대표 이미지 한 장을 지정하면 검색결과에 그 한 장만 붙는다. 우리가
+      노리는 것은 캐러셀(여러 장)이라 대표 한 장을 못박지 않는다.
+      이미지는 JSON-LD 의 ImageGallery / ItemList 로 여러 장을 선언한다.
+      (운영자 지시, 2026-08-18)
+    -->
     <meta property="og:locale" content="ko_KR" />
 
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -45,8 +52,12 @@
     <section class="hero hero-center">
       <div class="wrap hero-inner">
         <span class="badge">{{location}} {{mainKeywordText}} 비교 플랫폼</span>
+        <!--
+          br 을 쓰지 않는다. 줄 위치를 고정하면 모바일에서 한 줄이 화면을 넘겨
+          글자가 과하게 커 보인다. 줄바꿈은 브라우저가 폭에 맞춰 하게 둔다.
+        -->
         <h1>
-          {{location}} {{mainKeywordText}}<br />{{subKeywordText}}<br /><em>3곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
+          {{location}} {{mainKeywordText}} {{subKeywordText}} <em>3곳 무료 비교 견적</em>으로 가장 합리적인 곳을 선택하세요
         </h1>
         <p>
           혼자 알아보면 시간도 오래 걸리고 가격 비교도 어렵습니다. 클린프렌즈가 {{location}} 검증된 업체 3곳의 견적을 한 번에 모아 비교해드립니다.
@@ -56,6 +67,8 @@
           <div><strong>32,000+</strong>누적 견적 매칭 건수</div>
           <div><strong>30분</strong>평균 상담 회신 시간</div>
         </div>
+        <!-- 연관 검색어 해시태그. 하위 페이지에만 있던 것을 홈에도 넣는다. -->
+        <div class="kw-row">{{#related}}<span>#{{word}}</span>{{/related}}</div>
         <div class="cpa-row">
           <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">✨ 새집느낌<small>홈케어 전문 청소</small></a>
           <a class="cpa-btn c2" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">🧹 이사방청소<small>비교 후 진행하는 청소</small></a>
@@ -179,17 +192,6 @@
             <p>함께 확인 후 미흡한 부분은 즉시 보완합니다.</p>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- ===== GALLERY ===== -->
-    <section>
-      <div class="wrap">
-        <div class="section-head">
-          <span class="eyebrow">Gallery</span>
-          <h2>이런 공간을 이렇게 청소합니다</h2>
-        </div>
-        <div class="gallery-grid" data-gallery-rotate="{{showcasePool}}">{{#showcase}}<img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async" />{{/showcase}}</div>
       </div>
     </section>
 

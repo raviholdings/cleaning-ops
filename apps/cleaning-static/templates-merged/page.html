@@ -16,7 +16,14 @@
     <meta property="og:title" content="{{title}}" />
     <meta property="og:description" content="{{description}}" />
     <meta property="og:url" content="{{canonical}}" />
-    <meta property="og:image" content="{{ogImage}}" />
+    <!--
+      og:image 를 뺐다.
+
+      대표 이미지 한 장을 지정하면 검색결과에 그 한 장만 붙는다. 우리가
+      노리는 것은 캐러셀(여러 장)이라 대표 한 장을 못박지 않는다.
+      이미지는 JSON-LD 의 ImageGallery / ItemList 로 여러 장을 선언한다.
+      (운영자 지시, 2026-08-18)
+    -->
     <meta property="og:locale" content="ko_KR" />
 
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -44,11 +51,15 @@
     <!-- ===== HERO ===== -->
     <section class="hero hero-center">
       <div class="wrap hero-inner">
-        <span class="badge">{{shortLocation}} {{mainKeywordText}} · {{subKeywordText}} 비교 플랫폼</span>
+        <span class="badge">{{shortLocation}} {{mainKeywordText}} {{subKeywordText}} 비교 플랫폼</span>
+        <!--
+          br 을 쓰지 않는다. 줄 위치를 고정하면 모바일에서 한 줄이 화면을 넘겨
+          글자가 과하게 커 보인다. 줄바꿈은 브라우저가 폭에 맞춰 하게 둔다.
+        -->
         <h1>
-          {{location}} {{mainKeywordText}}<br />{{subKeywordText}}<br /><em>{{vendorCount}}곳 무료 비교 견적</em>으로<br />가장 합리적인 곳을 선택하세요
+          {{location}} {{mainKeywordText}} {{subKeywordText}} <em>{{vendorCount}}곳 무료 비교 견적</em>으로 가장 합리적인 곳을 선택하세요
         </h1>
-        <p>{{location}} {{mainKeyword}}·{{subKeywordText}} 완벽 작업! 검증된 {{vendorCount}}개 업체 견적을 한눈에 비교하세요.</p>
+        <p>{{location}} {{mainKeyword}} {{subKeywordText}} 완벽 작업! 검증된 {{vendorCount}}개 업체 견적을 한눈에 비교하세요.</p>
         <div class="hero-stats">
           <div><strong>4.9 / 5.0</strong>평균 고객 만족도</div>
           <div><strong>32,000+</strong>누적 견적 매칭 건수</div>
@@ -59,6 +70,78 @@
           <a class="cpa-btn c1" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">✨ 새집느낌<small>홈케어 전문 청소</small></a>
           <a class="cpa-btn c2" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">🧹 이사방청소<small>비교 후 진행하는 청소</small></a>
           <a class="cpa-btn c3" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener">🚀 24번가 입주청소<small>가격비교 업계 1위</small></a>
+        </div>
+      </div>
+    </section>
+
+    <!--
+      업체 비교 그리드. 원래 홈에만 있었는데 하위 문서에도 넣는다.
+      하위 131장이 전체 트래픽의 대부분인데 거기엔 비교 카드가 없어서,
+      들어온 사람이 업체를 고를 자리가 없었다. 홈과 같은 마크업을 쓴다.
+    -->
+    <!-- ===== COMPARE ===== -->
+    <section id="compare">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Compare</span>
+          <h2>{{mainKeyword}}, 어느 업체가 나에게 맞을까요?</h2>
+          <p>고객님의 조건에 맞는 우수 업체 3곳을 찾았습니다. 후기와 특징을 비교해보고 견적을 신청하세요.</p>
+        </div>
+        <div class="vendor-grid">
+          <div class="vendor-card best">
+            <span class="vendor-flag">🔥 BEST 1위 추천</span>
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">1</span>
+                <img src="{{vendorImages.0.src}}" alt="{{vendorImages.0.alt}}" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>새집느낌</h3>
+                <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(1,890+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 홈케어 한 가지만 연구해온 전문 청소업체</div>
+              <div>✓ 친환경 세정제·피톤치드 살균 소독 포함</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/BtMoZvIUJs" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+          </div>
+
+          <div class="vendor-card">
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">2</span>
+                <img src="{{vendorImages.1.src}}" alt="{{vendorImages.1.alt}}" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>이사방청소</h3>
+                <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(1,100+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 여러 업체를 비교한 뒤 진행하는 검증형 매칭 서비스</div>
+              <div>✓ 전국 신속 출동, 당일 견적 비교 가능</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/DD7ERrwYox" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+          </div>
+
+          <div class="vendor-card">
+            <div class="vendor-top">
+              <div class="vendor-thumb-wrap">
+                <span class="vendor-num">3</span>
+                <img src="{{vendorImages.2.src}}" alt="{{vendorImages.2.alt}}" loading="lazy" decoding="async" />
+              </div>
+              <div>
+                <h3>24번가 입주청소</h3>
+                <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(1,890+)</em></div>
+              </div>
+            </div>
+            <div class="vendor-feat-box">
+              <div>✓ 전국 입주·이사청소 가격비교 업계 압도적 1등</div>
+              <div>✓ 24시간 언제든 온라인 접수, 합리적인 가성비</div>
+            </div>
+            <a class="vendor-cta" href="https://replyalba.com/pt/MwNJSXOiNt" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+          </div>
         </div>
       </div>
     </section>
