@@ -276,9 +276,17 @@ function composeTitle(location, mains, subs, seed) {
     .trim();
 }
 
+/*
+ * 이미지가 들어 있는 폴더 이름.
+ *
+ * R2 버킷 안에서 사업별로 나뉜다 (cleaning/ · moving/ · …).
+ * 기본값이 'cleaning' 이라 청소는 종전과 같다.
+ */
+const IMAGE_DIR = String(process.env.PUBLIC_IMAGE_DIR || 'cleaning');
+
 /** 한글이 섞인 파일명이라 경로는 인코딩해서 내보낸다. */
 function imageSrc(name, base) {
-  return `${base}/cleaning/${encodeURIComponent(name)}.${GALLERY.ext}`;
+  return `${base}/${IMAGE_DIR}/${encodeURIComponent(name)}.${GALLERY.ext}`;
 }
 
 /** "세종특별자치시 나성동" -> "나성동". 헤드라인이 길어지는 걸 막는다. */
@@ -453,7 +461,7 @@ function buildGallery(images, short, main, base) {
   }));
 
   return {
-    path: `${base}/cleaning`,
+    path: `${base}/${IMAGE_DIR}`,
     ext: GALLERY.ext,
     pool: POOL_SIZE,
     count: items.length,

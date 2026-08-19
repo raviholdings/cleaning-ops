@@ -1,0 +1,14 @@
+<div class="cpa-form">
+  <iframe name="ifrm_icode" id="ifrCCAl" scrolling="no" frameborder="0" width="100%"
+          src="{{form.src}}" title="무료 이사 견적 신청"></iframe>
+  <script src="{{form.jquery}}"></script>
+  <script src="{{form.iframeResizer}}"></script>
+  <script>
+    if (typeof $ !== 'undefined' && $('#ifrCCAl').length) {
+      $('#ifrCCAl').iFrameResize({
+        autoResize: true, checkOrigin: true, heightCalculationMethod: 'offset',
+        interval: 32, scrolling: false, sizeHeight: true, sizeWidth: false, tolerance: 0,
+      });
+    }
+  </script>
+</div>

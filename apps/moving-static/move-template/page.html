@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="{{canonical}}">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{canonical}}">
+<meta property="og:locale" content="ko_KR">
+{{#naverSiteVerification}}<meta name="naver-site-verification" content="{{naverSiteVerification}}">{{/naverSiteVerification}}
+
+<!--
+  구조화 데이터.
+
+  네이버 가이드를 그대로 따랐다.
+    · BreadcrumbList  name 에 "홈" 같은 일반 단어를 쓰지 말라고 되어 있다.
+                      넓은 범위 -> 구체적 순서로 키워드를 넣는다.
+    · ItemList        image 가 필수. 썸네일이 아니라 원본을 쓰고, 로고는
+                      쓰지 말라고 되어 있어 업체 로고가 아닌 시공 사진을 넣는다.
+                      한 페이지에 ItemList 는 하나만 둔다.
+    · AggregateRating ratingValue 필수 + ratingCount/reviewCount 중 하나 필수.
+-->
+<script type="application/ld+json">{{{jsonLd}}}</script>
+<link rel="stylesheet" href="{{assetBase}}/site/{{assetVersion}}/moving.css">
+</head>
+<body>
+
+<div class="topbar">🚚 전국 이사 업체 비교 · 무료 방문 견적 · 상담 후 비용 결정</div>
+
+<header>
+  <div class="wrap">
+    <div class="logo">이사<span>프렌즈</span></div>
+    <a href="#cpa-form" class="btn-call">무료 견적 신청</a>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="wrap hero-inner">
+    <span class="badge">이사 업체 비교 플랫폼</span>
+    <h1>{{location}} {{mainKeywordText}} {{subKeywordText}} <em>검증된 이사 업체 {{vendorCount}}곳</em>을 무료로 비교하고 선택하세요</h1>
+    <p>포장·반포장·원룸·사무실 이사까지 원하는 유형은 각 업체 신청폼에서 바로 선택할 수 있습니다. 먼저 어떤 업체가 나에게 맞는지 비교해보세요.</p>
+    <div class="hero-stats">
+      <div><strong>4.8 / 5.0</strong>평균 고객 만족도</div>
+      <div><strong>28,000+</strong>누적 견적 매칭 건수</div>
+      <div><strong>30분</strong>평균 상담 회신 시간</div>
+    </div>
+    <div class="kw-row">{{#related}}<span>#{{word}}</span>{{/related}}</div>
+    <a href="#compare" class="hero-cta">업체 비교하러 가기 ↓</a>
+  </div>
+</section>
+
+<!-- ===== COMPARE ===== -->
+<section id="compare">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Compare</span>
+      <h2>이사 업체, 어디가 나에게 맞을까요?</h2>
+      <p>고객님의 조건에 맞는 우수 업체 5곳을 찾았습니다. 후기와 특징을 비교해보고 견적을 신청하세요.</p>
+    </div>
+    <div class="vendor-grid">
+
+      <div class="vendor-card best">
+        <span class="vendor-flag">🔥 BEST 1위 추천</span>
+        <div class="vendor-top">
+          <div class="vendor-thumb-wrap">
+            <span class="vendor-num">1</span>
+            <img src="img/compare1.webp" alt="이사타임 담당자">
+          </div>
+          <div>
+            <h3>이사타임</h3>
+            <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(2,150+)</em></div>
+          </div>
+        </div>
+        <div class="vendor-feat-box">
+          <div>✓ 출발·도착지 입력만으로 실시간 견적 비교</div>
+          <div>✓ 포장·반포장·원룸이사 전 항목 신청 가능</div>
+        </div>
+        <a class="vendor-cta" href="https://replyalba.com/pt/DpJPm14nB5" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+      </div>
+
+      
+
+      
+
+      <div class="vendor-card">
+        <div class="vendor-top">
+          <div class="vendor-thumb-wrap">
+            <span class="vendor-num">2</span>
+            <img src="img/compare2.webp" alt="포장이사 24번가 담당자">
+          </div>
+          <div>
+            <h3>포장이사 24번가</h3>
+            <div class="vendor-stars">★★★★★ <span>4.7</span> <em>(980+)</em></div>
+          </div>
+        </div>
+        <div class="vendor-feat-box">
+          <div>✓ 숙련된 포장 인력과 파손 보상 시스템</div>
+          <div>✓ 사다리차·엘리베이터 이사 모두 대응</div>
+        </div>
+        <a class="vendor-cta" href="https://replyalba.com/pt/ELDSfIhN3C" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+      </div>
+
+      <div class="vendor-card">
+        <div class="vendor-top">
+          <div class="vendor-thumb-wrap">
+            <span class="vendor-num">3</span>
+            <img src="img/compare3.webp" alt="다이사 담당자">
+          </div>
+          <div>
+            <h3>다이사</h3>
+            <div class="vendor-stars">★★★★★ <span>4.7</span> <em>(1,560+)</em></div>
+          </div>
+        </div>
+        <div class="vendor-feat-box">
+          <div>✓ 국내 최다 이사업체 네트워크 보유</div>
+          <div>✓ 원룸부터 사무실까지 규모별 매칭</div>
+        </div>
+        <a class="vendor-cta" href="https://replyalba.com/pt/TvEscQQdOx" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+      </div>
+
+      <div class="vendor-card">
+        <div class="vendor-top">
+          <div class="vendor-thumb-wrap">
+            <span class="vendor-num">4</span>
+            <img src="img/compare4.webp" alt="모두이사 담당자">
+          </div>
+          <div>
+            <h3>모두이사</h3>
+            <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(2,780+)</em></div>
+          </div>
+        </div>
+        <div class="vendor-feat-box">
+          <div>✓ 이사 국내 최대 플랫폼, 업체 1~3곳 가격 비교</div>
+          <div>✓ 이사·청소 24시간 온라인 접수 가능</div>
+        </div>
+        <a class="vendor-cta" href="https://replyalba.com/pt/10OydhStxiu" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+      </div>
+
+      <div class="vendor-card">
+        <div class="vendor-top">
+          <div class="vendor-thumb-wrap">
+            <span class="vendor-num">5</span>
+            <img src="img/compare5.webp" alt="서경석의 이사방 담당자">
+          </div>
+          <div>
+            <h3>서경석의 이사방</h3>
+            <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(870+)</em></div>
+          </div>
+        </div>
+        <div class="vendor-feat-box">
+          <div>✓ 전담 매니저 1:1 이사 컨설팅</div>
+          <div>✓ 포장·보관·폐기물까지 통합 진행</div>
+        </div>
+        <a class="vendor-cta" href="https://replyalba.com/pt/H4VMTQ4Rha" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== CPA FORM (리플알바 아이프레임 삽입 위치) ===== -->
+<section class="form-section" id="cpa-form">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow" style="color:#ffb08a;">Free Quote</span>
+      <h2>30초면 끝! 무료 이사 견적 신청</h2>
+      <p>아래 폼을 작성하면 제휴 업체와 바로 연결됩니다.</p>
+    </div>
+    <div class="cpa-form">
+      <!-- 여기에 리플알바(replyalba) 신청폼 아이프레임 코드를 붙여넣으세요 -->
+      <!-- 예시: <iframe src="https://replyalba.com/intros/_frm/index.php?code=XXXXXXXX" width="100%" height="640" frameborder="0" scrolling="no"></iframe> -->
+      <div class="cpa-form">
+  <iframe name="ifrm_icode" id="ifrCCAl" scrolling="no" frameborder="0" width="100%"
+          src="https://replyalba.com/intros/_frm/index.php?code=H4VMTQ4Rha"></iframe>
+  <script src="https://replyalba.com/js/jquery-1.11.0.min.js"></script>
+  <script src="https://replyalba.com/js/iframeResizer.min.js"></script>
+  <script>
+    $("#ifrCCAl").iFrameResize({autoResize:true,checkOrigin:true,heightCalculationMethod:"offset",
+      interval:32,scrolling:false,sizeHeight:true,sizeWidth:false,tolerance:0});
+  </script>
+</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROCESS ===== -->
+<section class="process">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Process</span>
+      <h2>상담부터 완료까지, 5단계로 진행됩니다</h2>
+      <p>모든 단계에서 범위와 비용을 먼저 안내한 뒤 작업합니다.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h4>상담·견적</h4><p>이사 유형과 짐 규모를 확인하고 견적을 안내합니다.</p></div>
+      <div class="step"><div class="num">2</div><h4>업체 비교</h4><p>조건에 맞는 업체 1~3곳을 매칭해 비교해드립니다.</p></div>
+      <div class="step"><div class="num">3</div><h4>일정 확정</h4><p>희망 이사 날짜에 맞춰 방문 일정을 확정합니다.</p></div>
+      <div class="step"><div class="num">4</div><h4>포장·운반</h4><p>전문 인력이 포장부터 운반, 배치까지 진행합니다.</p></div>
+      <div class="step"><div class="num">5</div><h4>검수·완료</h4><p>함께 확인 후 미흡한 부분은 즉시 보완합니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TESTIMONIALS ===== -->
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Review</span>
+      <h2>먼저 이용해본 고객들의 이야기</h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi">
+        <div class="stars">★★★★★</div>
+        "여러 업체 후기 비교해보고 골랐는데 짐 하나 안 상하고 깔끔하게 옮겨졌어요. 시간도 정확했습니다."
+        <div class="who">김OO 님 · 포장이사</div>
+      </div>
+      <div class="testi">
+        <div class="stars">★★★★★</div>
+        "업체별 후기와 가격을 한눈에 비교할 수 있어서 좋았어요. 원룸이사라 용달로 저렴하게 진행했습니다."
+        <div class="who">박OO 님 · 원룸이사</div>
+      </div>
+      <div class="testi">
+        <div class="stars">★★★★★</div>
+        "사무실 이전을 주말에 진행해주셔서 업무 공백 없이 옮겼습니다. 집기 배치까지 꼼꼼했어요."
+        <div class="who">이OO 님 · 사무실이사</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>자주 묻는 질문</h2>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>포장이사, 반포장이사는 어디서 선택하나요?</summary>
+        <p>비교 후 원하는 업체를 선택하면, 해당 업체의 신청폼에서 포장이사·반포장이사·원룸이사 등 세부 유형을 직접 선택할 수 있습니다.</p>
+      </details>
+      <details>
+        <summary>비교 견적 신청은 정말 무료인가요?</summary>
+        <p>네, 견적 비교 및 상담 신청은 무료입니다. 실제 계약 여부는 상담 후 고객님이 직접 결정하시면 됩니다.</p>
+      </details>
+      <details>
+        <summary>몇 개 업체와 비교할 수 있나요?</summary>
+        <p>지역과 일정에 따라 매칭 가능한 업체 수는 달라질 수 있으며, 최대 1~3곳의 업체 견적을 비교해드립니다.</p>
+      </details>
+      <details>
+        <summary>견적 후 계약을 하지 않아도 되나요?</summary>
+        <p>물론입니다. 비교 견적은 참고용 상담이며, 계약 여부는 전적으로 고객님의 선택입니다.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===== PLACES (백링크) & 이미지 캐러셀 ===== -->
+<section id="places">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Local</span>
+      <h2>{{shortLocation}} {{mainKeyword}} 지역 업체 정보</h2>
+    </div>
+
+    <div class="place-grid">{{#places}}<div class="place-card">
+      <div class="place-rank">{{rank}}</div>
+      <div class="place-main">
+        <h3>{{name}}</h3>
+        <p class="place-cat">{{category}}</p>
+        <p class="place-addr">{{address}}</p>
+        <p class="place-kw">{{keywordText}}</p>
+        <p class="place-desc">{{desc}}</p>
+      </div>
+      <div class="place-links">
+        <a href="{{naverMap}}" target="_blank" rel="noopener">네이버지도</a>
+        <a href="{{googleMap}}" target="_blank" rel="noopener">구글지도</a>
+      </div>
+    </div>{{/places}}</div>
+
+    <div class="image-carousel-wrap">
+      <div class="image-carousel-box">
+        <div class="image-carousel-main">
+          <button type="button" class="image-carousel-btn prev" aria-label="이전 이미지">&lsaquo;</button>
+          <img class="image-carousel-current-image" src="{{gallery.first.src}}" alt="{{gallery.first.alt}}">
+          <button type="button" class="image-carousel-btn next" aria-label="다음 이미지">&rsaquo;</button>
+        </div>
+        <div class="image-carousel-title">{{gallery.first.title}}</div>
+        <div class="image-carousel-index">1 / {{gallery.count}}</div>
+        <div class="image-carousel-thumbs">{{#gallery.items}}<button type="button" class="image-carousel-thumb{{activeClass}}" aria-label="{{alt}}"><img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async"></button>{{/gallery.items}}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===== 인근 지역 백링크 & 이전/다음 ===== -->
+<section id="area">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Area</span>
+      <h2>{{shortLocation}} 인근 서비스 지역 안내</h2>
+      <p>{{location}} 및 인근 {{nearbyCount}}개 지역 바로가기</p>
+    </div>
+    <nav class="area-links">{{#links}}<a href="{{href}}">{{label}}</a>{{/links}}</nav>
+    <nav class="pager">
+      <a class="prev" href="{{prev.href}}"><small>← 이전</small>{{prev.label}}</a>
+      <a class="next" href="{{next.href}}"><small>다음 →</small>{{next.label}}</a>
+    </nav>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <strong>이사프렌즈 이사 비교 서비스</strong>
+    <div>전국 출장 상담 가능 · 무료 견적 문의</div>
+    <div class="disclaimer">
+      본 페이지는 이사 관련 서비스 비교·상담 신청을 위한 랜딩페이지이며, 각 업체 버튼 및 신청 폼은 제휴 파트너사 페이지로 연결됩니다.
+      실제 이사 서비스는 제휴 파트너사를 통해 진행되며, 본 사이트는 견적 비교 및 상담 신청 매칭 역할을 합니다.
+      게재된 이미지는 서비스 이해를 돕기 위한 참고 이미지입니다.
+      <br>CPA 링크 7개소(이사타임/이사방청소/24번가 이사/포장이사 24번가/다이사/모두이사/서경석의 이사방)는 현재 예시(placeholder) URL(REPLACE_LINK_1~7)로 설정되어 있으니, 실제 제휴 트래킹 링크로 교체해서 사용하세요.
+    </div>
+  </div>
+</footer>
+
+<div class="sticky-cta">
+  <a href="#compare">업체 비교하고 무료 견적 받기</a>
+</div>
+
+  <script src="{{assetBase}}/site/{{assetVersion}}/moving.js" defer></script>
+</body>
+</html>

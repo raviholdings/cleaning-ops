@@ -88,7 +88,16 @@ if (gzipHtml && !useStaticRenderer) {
   throw new Error('--gzip 은 --renderer static 과 함께 써야 합니다.');
 }
 
-const appDir = resolve(projectRoot, 'apps/cleaning-ravi');
+/*
+ * 어느 앱의 lib 를 쓸지.
+ *
+ * 여기에는 pageCatalog·pageMeta·keywords 가 들어 있어서, 이 값이 곧
+ * "어느 사업의 페이지를 굽느냐" 가 된다. 청소는 apps/cleaning-ravi,
+ * 이사는 apps/moving-ravi 다.
+ *
+ * 기본값을 종전 값으로 둔다. 청소 명령은 한 글자도 바꿀 필요가 없다.
+ */
+const appDir = resolve(projectRoot, options.app || 'apps/cleaning-ravi');
 // 스테이지는 반드시 앱 디렉터리 안이어야 한다. Astro 가 빌드 중간 청크를 outDir 에
 // 쏟아놓고 그걸 다시 import 하는데, 앱 밖이면 node_modules 를 못 찾아 실패한다.
 const stageDir = resolve(appDir, options.stageDir || 'tmp/site-builds');
