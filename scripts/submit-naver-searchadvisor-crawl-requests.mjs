@@ -1123,7 +1123,12 @@ async function loadTargetSitemapTasks(accountId, target) {
   try {
     urls = await fetchSitemapUrls(sitemapUrl, target.siteUrl);
   } catch (error) {
-    if (options.dbUrlSource === 'sitemap' || requiresSitemapDbQueue()) throw error;
+    if (options.dbUrlSource === 'sitemap' || requiresSitemapDbQueue()) {
+      // 재시도까지 다 실패한 호스트는 이번 회차에서 건너뛴다. 다음 실행이
+      // 다시 본다 (dedup 이 완료분을 걸러 주므로 잃는 것이 없다).
+      console.warn(`[crawl:db] sitemap fetch skipped for ${target.host}: ${error.message}`);
+      return [];
+    }
     console.warn(`[crawl:db] sitemap queue fallback for ${target.host}: ${error.message}`);
     return loadPageCountTasks(accountId, target);
   }
@@ -1206,11 +1211,26 @@ function loadPageCountTasks(accountId, target) {
 }
 
 async function fetchSitemapUrls(sitemapUrl, siteUrl) {
-  const response = await fetch(sitemapUrl, {
-    headers: {
-      accept: 'application/xml,text/xml,*/*;q=0.8',
-    },
-  });
+  /*
+   * HaiIP 로 IP 를 바꾼 직후에는 Cloudflare 접속이 한동안 안 열리기도 한다.
+   * 2026-08-20 VM1 에서 첫 사이트맵 fetch 가 connect timeout 으로 죽어
+   * 계정 실행 전체가 실패했다. 그래서 시도 3회 + 시도당 15초 제한을 둔다.
+   */
+  let response;
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      response = await fetch(sitemapUrl, {
+        headers: { accept: 'application/xml,text/xml,*/*;q=0.8' },
+        signal: AbortSignal.timeout(15000),
+      });
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 3000));
+    }
+  }
+  if (!response) throw lastError;
   if (!response.ok) throw new Error(`sitemap fetch failed ${response.status} ${sitemapUrl}`);
 
   const origin = new URL(siteUrl).origin;
