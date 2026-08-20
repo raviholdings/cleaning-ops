@@ -16,6 +16,38 @@ import { pathToFileURL } from 'node:url';
 const appLib = (root) => join(root, 'apps/moving-ravi/src/lib');
 const importLib = (root, file) => import(pathToFileURL(join(appLib(root), file)).href);
 
+/**
+ * 지역명 정규화. 한자 병기 제거 + 축약 행정구역 복원.
+ *
+ * 지역 풀은 "대전 서구 기성동"과 "대전 서 기성동" 같은 축약 변형을 별개
+ * 항목으로 담고 있다. 청소는 표시 직전에 adminDivisions 복원표로 펴는데,
+ * 이사를 만들 때 이 단계를 빠뜨려 "/이사/서-기성동/…" 같은 주소가 나갔다
+ * (2026-08-20, 50만 장 중 URL 오염 22,326장).
+ *
+ * 청소의 normalizeLocation 은 가운데 토큰만 펴지만, 이사는 지역명이 URL이
+ * 되므로 "서 기성동"(첫 토큰), "부산시 북"(끝 토큰)도 펴야 한다. 복원표에
+ * 있는 토큰은 위치와 무관하게 전부 편다 — 복원표 키는 축약형뿐이라 정식
+ * 명칭을 잘못 건드릴 일이 없다. 펴서 변형이 합쳐져도 한 사이트 안 경로
+ * 충돌은 0건임을 전수 확인했다.
+ */
+let ADMIN_EXPANSIONS = null;
+async function loadAdminExpansions(root) {
+  if (!ADMIN_EXPANSIONS) {
+    const mod = await import(pathToFileURL(join(root, 'apps/cleaning-ravi/src/lib/adminDivisions.ts')).href);
+    ADMIN_EXPANSIONS = mod.ADMIN_DIVISION_EXPANSIONS;
+  }
+  return ADMIN_EXPANSIONS;
+}
+function normalizeMovingLocation(raw, expansions) {
+  return String(raw)
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((token) => expansions[token] ?? token)
+    .join(' ');
+}
+
 /** 업체 5곳. 순서·링크·이미지는 운영자가 확정한 값이다. */
 export const VENDORS = [
   { name: '이사타임', link: 'https://replyalba.com/pt/DpJPm14nB5', image: 'compare1.webp',
@@ -155,8 +187,9 @@ export async function buildMovingPageData(opts) {
   const entry = lib.catalog.catalogEntry({ locations, siteIndex, requestId });
 
   // 표시용 지역명. 줄임말을 펴고 한자 병기를 걷는다.
+  const expansions = await loadAdminExpansions(root);
   const rawLocation = entry.location;
-  const location = String(rawLocation).replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+  const location = normalizeMovingLocation(rawLocation, expansions);
   const main = entry.mainKeyword;
   const short = lib.meta.lastToken(location);
   const subs = lib.keywords.subKeywordsFor(main);
@@ -243,7 +276,7 @@ export async function buildMovingPageData(opts) {
     .slice(0, 10);
   const linkTo = (id) => {
     const e = lib.catalog.catalogEntry({ locations, siteIndex, requestId: id });
-    const loc = String(e.location).replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+    const loc = normalizeMovingLocation(e.location, expansions);
     return {
       href: lib.path.movingPagePath(loc, e.mainKeyword),
       label: `${lib.meta.lastToken(loc)} ${e.mainKeyword}`,
