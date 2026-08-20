@@ -84,7 +84,9 @@ try {
         where not exists (
           select 1 from public.lead_submissions
            where host = $2 and site_url = $3 and service_type = $4 and created_at = $6::timestamptz)`,
-      [groupKey, row.host, row.path, `beacon:${row.event}`, '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)', row.at],
+      // 이사 페이지 이벤트는 경로로 구분해 moving-ravi 로 태그한다.
+      [row.path.startsWith('/이사/') ? 'moving-ravi' : groupKey,
+        row.host, row.path, `beacon:${row.event}`, '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)', row.at],
     );
     inserted += res.rowCount;
   }
@@ -137,7 +139,27 @@ function parse(text) {
     const [at, host, event, path] = parts;
     if (!/^\d{4}-\d{2}-\d{2}T/.test(at)) continue;
     if (event !== 'view' && event !== 'advance') continue;
-    out.push({ at, host, event, path: decodeURIComponent(path || '/') });
+    out.push({ at, host, event, path: decodeSafe(path || '/') });
+  }
+  return out;
+}
+
+/**
+ * $arg_p 는 encodeURIComponent(pathname) 인데, 한글 경로는 브라우저의
+ * pathname 자체가 이미 퍼센트 인코딩이라 로그에는 두 겹으로 쌓인다.
+ * 두 번 풀어야 "/이사/…" 원형이 된다. 청소(/37.html)는 한 번에 원형이라
+ * 두 번째 풀기가 아무것도 바꾸지 않는다.
+ */
+function decodeSafe(value) {
+  let out = value;
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const next = decodeURIComponent(out);
+      if (next === out) break;
+      out = next;
+    } catch {
+      break;
+    }
   }
   return out;
 }
