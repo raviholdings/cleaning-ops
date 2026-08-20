@@ -62,6 +62,9 @@ Write-Host "대상 계정 $count 개: $ids"
 $env:NAVER_WINDOWS_CRAWL_RUNNER_PC = 'siwol-win'
 $env:NAVER_CRAWL_RUNNER_PC = 'siwol-win'
 $env:NAVER_CRAWL_INCLUDE_ACCOUNTS = $ids
+# 청소 전용 러너다. 이사(moving-ravi)는 run-moving-crawl-range.ps1 이 따로 맡는다.
+$env:NAVER_CRAWL_INCLUDE_GROUPS = 'cleaning-ravi'
+$env:NAVER_CRAWL_EXCLUDE_GROUPS = ''
 # 범위로 고르므로 제외 목록은 비운다. 이전 실행에서 남아 있으면 엉뚱하게 걸러진다.
 $env:NAVER_CRAWL_EXCLUDE_ACCOUNTS = ''
 

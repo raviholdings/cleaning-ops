@@ -153,6 +153,8 @@ const options = {
   queueOrder: normalizeQueueOrder(process.env.NAVER_CRAWL_QUEUE_ORDER || 'host'),
   dbQueueOrder: normalizeDbQueueOrder(process.env.NAVER_CRAWL_DB_QUEUE_ORDER || 'host'),
   dbUrlSource: normalizeDbUrlSource(process.env.NAVER_CRAWL_DB_URL_SOURCE || process.env.NAVER_CRAWL_DB_QUEUE_URL_SOURCE || 'auto'),
+  // 사이트맵 경로. 청소는 /sitemap.xml, 이사는 /이사/sitemap.xml (인코딩 형태로 넘겨도 된다).
+  sitemapPath: process.env.NAVER_CRAWL_SITEMAP_PATH || '/sitemap.xml',
   catalogOnlyPending: process.env.NAVER_CRAWL_CATALOG_ONLY_PENDING !== '0',
   exposureStatuses,
   configuredExposurePriority,
@@ -1116,7 +1118,7 @@ async function loadSitemapDbQueueSource({ accountId, targets }) {
 }
 
 async function loadTargetSitemapTasks(accountId, target) {
-  const sitemapUrl = joinOriginPath(target.siteUrl, '/sitemap.xml');
+  const sitemapUrl = joinOriginPath(target.siteUrl, options.sitemapPath);
   let urls;
   try {
     urls = await fetchSitemapUrls(sitemapUrl, target.siteUrl);
