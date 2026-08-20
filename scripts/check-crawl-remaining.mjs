@@ -24,7 +24,12 @@ const env = Object.fromEntries(readFileSync(resolve(projectRoot, '.env'), 'utf8'
 const connectionString = process.env.DATABASE_URL || env.DATABASE_URL || env.DIRECT_URL;
 if (!connectionString) throw new Error('DATABASE_URL 이 필요합니다.');
 
-const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false }, statement_timeout: 300000 });
+/*
+ * 결과 테이블 130만 행의 distinct 집계라, 세 기계가 동시에 제출 중이거나
+ * 색인 루프가 도는 시간대엔 느려져 타임아웃이 날 수 있다 (2026-08-20 실제로
+ * 57014 발생). 러너들이 쉬는 때 돌리면 몇 초면 끝난다.
+ */
+const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false }, statement_timeout: 600000 });
 await client.connect();
 
 try {
