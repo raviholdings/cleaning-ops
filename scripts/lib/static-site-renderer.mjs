@@ -55,7 +55,7 @@ export const SITE_DEFAULTS = {
    * 항상 기본값이었다. 같은 결과가 나오도록 기본값을 그대로 박아 둔다.
    */
   mainKeyword: '입주청소',
-  formSrc: 'https://replyalba.com/intros/_frm/index.php?code=wKSpzJlHMP',
+  formSrc: 'https://replyalba.com/intros/_frm/index.php?code=BtMoZvIUJs',
   jqueryUrl: 'https://replyalba.com/js/jquery-1.11.0.min.js',
   iframeResizerUrl: 'https://replyalba.com/js/iframeResizer.min.js',
 };
