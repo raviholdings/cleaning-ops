@@ -26,6 +26,7 @@
     · AggregateRating ratingValue 필수 + ratingCount/reviewCount 중 하나 필수.
 -->
 <script type="application/ld+json">{{{jsonLd}}}</script>
+<link rel="icon" href="{{assetBase}}/site/{{assetVersion}}/favicon.ico" sizes="any">
 <link rel="stylesheet" href="{{assetBase}}/site/{{assetVersion}}/moving.css">
 </head>
 <body>
@@ -64,101 +65,24 @@
       <p>고객님의 조건에 맞는 우수 업체 5곳을 찾았습니다. 후기와 특징을 비교해보고 견적을 신청하세요.</p>
     </div>
     <div class="vendor-grid">
-
-      <div class="vendor-card best">
-        <span class="vendor-flag">🔥 BEST 1위 추천</span>
+      {{#vendors}}<div class="vendor-card{{bestClass}}">
+        {{#isBest}}<span class="vendor-flag">🔥 BEST 1위 추천</span>{{/isBest}}
         <div class="vendor-top">
           <div class="vendor-thumb-wrap">
-            <span class="vendor-num">1</span>
-            <img src="img/compare1.webp" alt="이사타임 담당자">
+            <span class="vendor-num">{{num}}</span>
+            <img src="{{image}}" alt="{{name}}" loading="lazy" decoding="async">
           </div>
           <div>
-            <h3>이사타임</h3>
-            <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(2,150+)</em></div>
+            <h3>{{name}}</h3>
+            <div class="vendor-stars">{{stars}} <span>{{rating}}</span> <em>({{reviews}})</em></div>
           </div>
         </div>
         <div class="vendor-feat-box">
-          <div>✓ 출발·도착지 입력만으로 실시간 견적 비교</div>
-          <div>✓ 포장·반포장·원룸이사 전 항목 신청 가능</div>
+          <div>✓ {{feat1}}</div>
+          <div>✓ {{feat2}}</div>
         </div>
-        <a class="vendor-cta" href="https://replyalba.com/pt/DpJPm14nB5" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
-      </div>
-
-      
-
-      
-
-      <div class="vendor-card">
-        <div class="vendor-top">
-          <div class="vendor-thumb-wrap">
-            <span class="vendor-num">2</span>
-            <img src="img/compare2.webp" alt="포장이사 24번가 담당자">
-          </div>
-          <div>
-            <h3>포장이사 24번가</h3>
-            <div class="vendor-stars">★★★★★ <span>4.7</span> <em>(980+)</em></div>
-          </div>
-        </div>
-        <div class="vendor-feat-box">
-          <div>✓ 숙련된 포장 인력과 파손 보상 시스템</div>
-          <div>✓ 사다리차·엘리베이터 이사 모두 대응</div>
-        </div>
-        <a class="vendor-cta" href="https://replyalba.com/pt/ELDSfIhN3C" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
-      </div>
-
-      <div class="vendor-card">
-        <div class="vendor-top">
-          <div class="vendor-thumb-wrap">
-            <span class="vendor-num">3</span>
-            <img src="img/compare3.webp" alt="다이사 담당자">
-          </div>
-          <div>
-            <h3>다이사</h3>
-            <div class="vendor-stars">★★★★★ <span>4.7</span> <em>(1,560+)</em></div>
-          </div>
-        </div>
-        <div class="vendor-feat-box">
-          <div>✓ 국내 최다 이사업체 네트워크 보유</div>
-          <div>✓ 원룸부터 사무실까지 규모별 매칭</div>
-        </div>
-        <a class="vendor-cta" href="https://replyalba.com/pt/TvEscQQdOx" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
-      </div>
-
-      <div class="vendor-card">
-        <div class="vendor-top">
-          <div class="vendor-thumb-wrap">
-            <span class="vendor-num">4</span>
-            <img src="img/compare4.webp" alt="모두이사 담당자">
-          </div>
-          <div>
-            <h3>모두이사</h3>
-            <div class="vendor-stars">★★★★★ <span>4.8</span> <em>(2,780+)</em></div>
-          </div>
-        </div>
-        <div class="vendor-feat-box">
-          <div>✓ 이사 국내 최대 플랫폼, 업체 1~3곳 가격 비교</div>
-          <div>✓ 이사·청소 24시간 온라인 접수 가능</div>
-        </div>
-        <a class="vendor-cta" href="https://replyalba.com/pt/10OydhStxiu" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
-      </div>
-
-      <div class="vendor-card">
-        <div class="vendor-top">
-          <div class="vendor-thumb-wrap">
-            <span class="vendor-num">5</span>
-            <img src="img/compare5.webp" alt="서경석의 이사방 담당자">
-          </div>
-          <div>
-            <h3>서경석의 이사방</h3>
-            <div class="vendor-stars">★★★★★ <span>4.9</span> <em>(870+)</em></div>
-          </div>
-        </div>
-        <div class="vendor-feat-box">
-          <div>✓ 전담 매니저 1:1 이사 컨설팅</div>
-          <div>✓ 포장·보관·폐기물까지 통합 진행</div>
-        </div>
-        <a class="vendor-cta" href="https://replyalba.com/pt/H4VMTQ4Rha" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
-      </div>
+        <a class="vendor-cta" href="{{link}}" target="_blank" rel="noopener">해당 업체 무료 견적 받기</a>
+      </div>{{/vendors}}
 
     </div>
   </div>
@@ -172,20 +96,7 @@
       <h2>30초면 끝! 무료 이사 견적 신청</h2>
       <p>아래 폼을 작성하면 제휴 업체와 바로 연결됩니다.</p>
     </div>
-    <div class="cpa-form">
-      <!-- 여기에 리플알바(replyalba) 신청폼 아이프레임 코드를 붙여넣으세요 -->
-      <!-- 예시: <iframe src="https://replyalba.com/intros/_frm/index.php?code=XXXXXXXX" width="100%" height="640" frameborder="0" scrolling="no"></iframe> -->
-      <div class="cpa-form">
-  <iframe name="ifrm_icode" id="ifrCCAl" scrolling="no" frameborder="0" width="100%"
-          src="https://replyalba.com/intros/_frm/index.php?code=H4VMTQ4Rha"></iframe>
-  <script src="https://replyalba.com/js/jquery-1.11.0.min.js"></script>
-  <script src="https://replyalba.com/js/iframeResizer.min.js"></script>
-  <script>
-    $("#ifrCCAl").iFrameResize({autoResize:true,checkOrigin:true,heightCalculationMethod:"offset",
-      interval:32,scrolling:false,sizeHeight:true,sizeWidth:false,tolerance:0});
-  </script>
-</div>
-    </div>
+    {{{estimateForm}}}
   </div>
 </section>
 
@@ -215,21 +126,11 @@
       <h2>먼저 이용해본 고객들의 이야기</h2>
     </div>
     <div class="testi-grid">
-      <div class="testi">
-        <div class="stars">★★★★★</div>
-        "여러 업체 후기 비교해보고 골랐는데 짐 하나 안 상하고 깔끔하게 옮겨졌어요. 시간도 정확했습니다."
-        <div class="who">김OO 님 · 포장이사</div>
-      </div>
-      <div class="testi">
-        <div class="stars">★★★★★</div>
-        "업체별 후기와 가격을 한눈에 비교할 수 있어서 좋았어요. 원룸이사라 용달로 저렴하게 진행했습니다."
-        <div class="who">박OO 님 · 원룸이사</div>
-      </div>
-      <div class="testi">
-        <div class="stars">★★★★★</div>
-        "사무실 이전을 주말에 진행해주셔서 업무 공백 없이 옮겼습니다. 집기 배치까지 꼼꼼했어요."
-        <div class="who">이OO 님 · 사무실이사</div>
-      </div>
+      {{#reviews}}<div class="testi">
+        <div class="stars">{{stars}}</div>
+        "{{text}}"
+        <div class="who">{{author}} 님 · {{service}}</div>
+      </div>{{/reviews}}
     </div>
   </div>
 </section>
@@ -242,22 +143,10 @@
       <h2>자주 묻는 질문</h2>
     </div>
     <div class="faq-list">
-      <details>
-        <summary>포장이사, 반포장이사는 어디서 선택하나요?</summary>
-        <p>비교 후 원하는 업체를 선택하면, 해당 업체의 신청폼에서 포장이사·반포장이사·원룸이사 등 세부 유형을 직접 선택할 수 있습니다.</p>
-      </details>
-      <details>
-        <summary>비교 견적 신청은 정말 무료인가요?</summary>
-        <p>네, 견적 비교 및 상담 신청은 무료입니다. 실제 계약 여부는 상담 후 고객님이 직접 결정하시면 됩니다.</p>
-      </details>
-      <details>
-        <summary>몇 개 업체와 비교할 수 있나요?</summary>
-        <p>지역과 일정에 따라 매칭 가능한 업체 수는 달라질 수 있으며, 최대 1~3곳의 업체 견적을 비교해드립니다.</p>
-      </details>
-      <details>
-        <summary>견적 후 계약을 하지 않아도 되나요?</summary>
-        <p>물론입니다. 비교 견적은 참고용 상담이며, 계약 여부는 전적으로 고객님의 선택입니다.</p>
-      </details>
+      {{#faqs}}<details class="faq-item">
+        <summary>{{q}}</summary>
+        <p>{{a}}</p>
+      </details>{{/faqs}}
     </div>
   </div>
 </section>
@@ -320,14 +209,9 @@
 
 <footer>
   <div class="wrap">
-    <strong>이사프렌즈 이사 비교 서비스</strong>
+    <strong>이사프렌즈</strong>
+    <div>{{location}} {{mainKeyword}} 관련 업체 위치 안내 페이지입니다.</div>
     <div>전국 출장 상담 가능 · 무료 견적 문의</div>
-    <div class="disclaimer">
-      본 페이지는 이사 관련 서비스 비교·상담 신청을 위한 랜딩페이지이며, 각 업체 버튼 및 신청 폼은 제휴 파트너사 페이지로 연결됩니다.
-      실제 이사 서비스는 제휴 파트너사를 통해 진행되며, 본 사이트는 견적 비교 및 상담 신청 매칭 역할을 합니다.
-      게재된 이미지는 서비스 이해를 돕기 위한 참고 이미지입니다.
-      <br>CPA 링크 7개소(이사타임/이사방청소/24번가 이사/포장이사 24번가/다이사/모두이사/서경석의 이사방)는 현재 예시(placeholder) URL(REPLACE_LINK_1~7)로 설정되어 있으니, 실제 제휴 트래킹 링크로 교체해서 사용하세요.
-    </div>
   </div>
 </footer>
 

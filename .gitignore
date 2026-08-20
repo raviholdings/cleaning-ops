@@ -53,3 +53,4 @@ data/dev_tasks.json
 # 청소 이미지 500장(31MB)은 로컬 전용이다. 배포는 git 을 거치지 않고
 # R2 에 올려 assets.<루트> 로 서빙한다. 커밋하면 저장소만 무거워진다.
 /apps/cleaning-ravi/public/cleaning/
+.claude/settings.local.json

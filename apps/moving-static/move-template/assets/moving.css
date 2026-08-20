@@ -72,9 +72,15 @@
   .vendor-grid{
     display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;
   }
+  /*
+   * 이미지를 카드 위쪽에 크게 깐다.
+   *
+   * 이 이미지가 곧 캐러셀(ItemList)의 image 다. 작게 보여주면 원본을 쓸
+   * 이유가 없다. 카드 자체의 padding 을 없애고 이미지 아래 내용에만 준다.
+   */
   .vendor-card{
     background:var(--card);border:1px solid var(--border);border-radius:16px;
-    padding:22px;position:relative;
+    padding:0 0 20px;overflow:hidden;position:relative;
     box-shadow:0 4px 14px rgba(27,42,74,0.05);
     display:flex;flex-direction:column;gap:16px;
   }
@@ -83,9 +89,18 @@
     position:absolute;top:-1px;right:16px;background:var(--orange);color:#fff;font-size:11px;
     font-weight:800;padding:6px 12px;border-radius:0 0 8px 8px;
   }
-  .vendor-top{display:flex;align-items:center;gap:12px;}
+  /*
+ * 업체 이미지를 카드 위쪽 배너로 크게 쓴다.
+ *
+ * 이 이미지가 곧 캐러셀(ItemList)의 image 다. 네이버는 "썸네일이 아니라
+ * 원본을 쓰라"고 하는데, 화면에서 56px 로만 보여주면 원본을 쓸 이유가 없다.
+ * 가로 전체로 깔고 16:9 로 잘라 쓴다.
+ */
+.vendor-top{display:flex;flex-direction:column;align-items:stretch;gap:0;}
+.vendor-top > div:last-child{padding:16px 20px 0;}
   .vendor-thumb-wrap{position:relative;flex-shrink:0;}
-  .vendor-thumb-wrap img{width:56px;height:56px;border-radius:12px;object-fit:cover;}
+  .vendor-thumb-wrap{position:relative;}
+.vendor-thumb-wrap img{width:100%;height:auto;aspect-ratio:4/3;border-radius:0;object-fit:cover;display:block;}
   .vendor-num{
     position:absolute;top:-8px;left:-8px;width:22px;height:22px;border-radius:50%;
     background:var(--orange);color:#fff;font-size:12px;font-weight:800;
@@ -95,11 +110,11 @@
   .vendor-stars{font-size:12.5px;color:#f5a623;margin-top:4px;}
   .vendor-stars span{color:var(--navy);font-weight:700;margin-left:4px;}
   .vendor-stars em{color:var(--muted);font-weight:500;font-style:normal;}
-  .vendor-feat-box{
+  .vendor-feat-box{margin:12px 20px 0;
     background:var(--bg);border-radius:10px;padding:14px;font-size:13px;color:var(--text);
     display:flex;flex-direction:column;gap:8px;
   }
-  .vendor-cta{
+  .vendor-cta{margin:14px 20px 0;
     display:block;text-align:center;padding:13px;border-radius:10px;
     font-weight:800;font-size:14.5px;color:#fff;background:var(--orange);
   }
@@ -109,7 +124,13 @@
   .form-section{background:linear-gradient(135deg,var(--navy),#233a66);color:#fff;}
   .form-section .section-head h2{color:#fff;}
   .form-section .section-head p{color:#c6d3ee;}
-  .cpa-form{max-width:900px;margin:0 auto;background:#fff;border-radius:18px;padding:32px;color:var(--text);box-shadow:0 24px 50px rgba(0,0,0,0.25);}
+  /*
+ * 접수폼은 제휴사 iframe 이라 안쪽 너비를 우리가 못 줄인다. 모바일에서
+ * 그냥 두면 오른쪽이 잘리고 스크롤도 안 된다. 가로로만 넘길 수 있게 감싼다.
+ * 서식 자체는 건드리지 않는다 — iframe 안은 제휴사 것이다.
+ */
+.cpa-form iframe{min-width:600px;display:block;}
+.cpa-form{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:900px;margin:0 auto;background:#fff;border-radius:18px;padding:32px;color:var(--text);box-shadow:0 24px 50px rgba(0,0,0,0.25);}
   .iframe-slot{
     border:2px dashed var(--border);border-radius:12px;min-height:420px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
@@ -183,8 +204,13 @@
     section{padding:38px 0;}
     .section-head h2{font-size:20px;}
     .section-head p{font-size:13.5px;}
-    .vendor-card{padding:18px;}
-    .cpa-form{padding:22px;}
+    .vendor-card{padding:0 0 16px;}
+    /*
+     * 모바일에서는 여백을 줄인다. iframe 이 600px 을 요구하는데 화면이
+     * 390px 이라, 여백까지 32px 씩 주면 보이는 폭이 그만큼 더 좁아진다.
+     * 잘리는 부분은 가로 스크롤로 넘긴다 (위 .cpa-form 의 overflow-x).
+     */
+    .cpa-form{padding:14px;}
   }
 
   .kw-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:flex-start;max-width:760px;margin-left:auto;margin-right:auto;}

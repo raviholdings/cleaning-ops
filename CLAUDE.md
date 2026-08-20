@@ -1,12 +1,25 @@
 # Claude Code Instructions
 
-Please refer to [AGENTS.md](file:///C:/Users/LD/Desktop/ravi/cleaning-ops/AGENTS.md) for full architecture, environment variables, script mappings, and task roadmap.
+작업별 상세 절차·함정은 `.claude/skills/` 에 있다 (해당 작업 시 자동 로드):
+
+| 스킬 | 내용 |
+|---|---|
+| deploy | 청소·이사 굽기와 EC2 배포 |
+| server | SSM · nginx · 웹루트 |
+| r2 | R2 자산 업로드, immutable 버전 규칙 |
+| crawl | 수집요청, HaiIP · 세션 · dedup 함정 |
+| index-check | 색인 배치, 페이스 · 차단 한계 |
+
+서브에이전트: `deployer`(배포 전용) · `server-ops`(서버 전용) — 실행 범위를
+명시해서 위임하고, 위임 전에 운영자 확인을 받는다.
+
+배경 문서: `docs/` (MOVING-PROJECT-SPEC, GZIP-ASSET-DEPLOY, STATIC-RENDERER,
+INDEX-CHECK-HANDOVER, LEAD-BEACON, HAIIP-VM-SCALEOUT-PROMPT 등).
 
 ## ⛔ 최우선 규칙 — 확인 먼저, 실행은 그 다음
 
 **혼자 판단해서 다음 단계로 넘어가지 말 것.** 한 단계가 끝나면 결과를 보고하고
-운영자 확인을 받은 뒤 진행한다. 자세한 내용은 AGENTS.md "6. Critical Operational
-Rules → 0. ASK BEFORE ACTING" 참고.
+운영자 확인을 받은 뒤 진행한다.
 
 멈추고 물어봐야 하는 경우:
 - 운영자가 준 스크립트·데이터가 실제 스키마와 **안 맞을 때** → 임의로 고치지 말고 보고
@@ -26,4 +39,5 @@ Rules → 0. ASK BEFORE ACTING" 참고.
 - Register domains/accounts: `npm run domains:register`
 - App dev server: `cd apps/cleaning-ravi && npm run dev`
 - App build: `cd apps/cleaning-ravi && npm run build`
+- 이사 사이트 굽기: `node scripts/build-moving-site.mjs --site-index N --host <host> [--pages 3]`
 - Run Naver crawl requests (Windows): `powershell -File ./scripts/run-windows-naver-crawl-resume.ps1`
