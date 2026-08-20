@@ -46,9 +46,10 @@ const logPath = valueOf('--log') || '/var/log/nginx/lead.log';
 
 console.log(`=== 견적 폼 이벤트 수집 (group=${groupKey}, dryRun=${dryRun}) ===`);
 
+let botSkipped = 0;
 const raw = fetchLog();
 const rows = parse(raw);
-console.log(`  로그 ${raw.split('\n').filter(Boolean).length}줄 · 해석 ${rows.length}건`);
+console.log(`  로그 ${raw.split('\n').filter(Boolean).length}줄 · 해석 ${rows.length}건 · 봇 건너뜀 ${botSkipped}건`);
 
 const counts = {};
 for (const row of rows) counts[row.event] = (counts[row.event] || 0) + 1;
@@ -136,9 +137,20 @@ function parse(text) {
   for (const line of text.split('\n')) {
     const parts = line.trim().split('\t');
     if (parts.length < 4) continue;
-    const [at, host, event, path] = parts;
+    const [at, host, event, path, ua] = parts;
     if (!/^\d{4}-\d{2}-\d{2}T/.test(at)) continue;
     if (event !== 'view' && event !== 'advance') continue;
+    /*
+     * 렌더링 봇을 거른다. 네이버 Yeti 가 페이지를 그리면서 비콘을 발사해
+     * view 가 사람 방문처럼 쌓였다 (2026-08-20, 하루 82건 전부 봇 패턴).
+     * UA 는 2026-08-20 부터 로그 5번째 칸에 붙는다. 그 전 줄(UA 없음)은
+     * 구분할 수 없으므로 그대로 통과시킨다.
+     * 'naver' 는 거르면 안 된다 — 네이버 앱 브라우저(사람) UA 에도 들어간다.
+     */
+    if (ua && /yeti|bot|spider|crawl|headless|phantom|slurp|bingpreview/i.test(ua)) {
+      botSkipped += 1;
+      continue;
+    }
     out.push({ at, host, event, path: decodeSafe(path || '/') });
   }
   return out;
