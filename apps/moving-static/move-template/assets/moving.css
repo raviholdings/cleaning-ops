@@ -129,8 +129,9 @@
  * 그냥 두면 오른쪽이 잘리고 스크롤도 안 된다. 가로로만 넘길 수 있게 감싼다.
  * 서식 자체는 건드리지 않는다 — iframe 안은 제휴사 것이다.
  */
-.cpa-form iframe{min-width:600px;display:block;}
-.cpa-form{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:900px;margin:0 auto;background:#fff;border-radius:18px;padding:32px;color:var(--text);box-shadow:0 24px 50px rgba(0,0,0,0.25);}
+/* 청소와 같은 구조 — iframe 폭을 강제하지 않는다. 리플알바 폼이 좁은 화면에 맞춰 줄어든다. */
+.cpa-form iframe{display:block;}
+.cpa-form{max-width:640px;margin:0 auto;background:#fff;border-radius:18px;padding:20px;color:var(--text);box-shadow:0 24px 50px rgba(0,0,0,0.25);}
   .iframe-slot{
     border:2px dashed var(--border);border-radius:12px;min-height:420px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
@@ -205,12 +206,7 @@
     .section-head h2{font-size:20px;}
     .section-head p{font-size:13.5px;}
     .vendor-card{padding:0 0 16px;}
-    /*
-     * 모바일에서는 여백을 줄인다. iframe 이 600px 을 요구하는데 화면이
-     * 390px 이라, 여백까지 32px 씩 주면 보이는 폭이 그만큼 더 좁아진다.
-     * 잘리는 부분은 가로 스크롤로 넘긴다 (위 .cpa-form 의 overflow-x).
-     */
-    .cpa-form{padding:14px;}
+    .cpa-form{padding:12px;}
   }
 
   .kw-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:flex-start;max-width:760px;margin-left:auto;margin-right:auto;}

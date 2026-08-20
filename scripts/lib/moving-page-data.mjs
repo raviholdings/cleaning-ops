@@ -74,7 +74,7 @@ const GALLERY = {
 const POOL_SIZE = 500;
 
 const IMAGE_DIR = String(process.env.PUBLIC_MOVING_IMAGE_DIR || 'moving');
-const ASSET_VERSION = String(process.env.PUBLIC_MOVING_ASSET_VERSION || 'moving-v2');
+const ASSET_VERSION = String(process.env.PUBLIC_MOVING_ASSET_VERSION || 'moving-v3');
 const ASSET_SUBDOMAIN = String(process.env.PUBLIC_ASSET_SUBDOMAIN || 'assets');
 
 /** 사이트 URL -> 그 사이트가 쓸 자산 베이스 (https://assets.<루트>) */
