@@ -29,8 +29,10 @@ if (!connectionString) throw new Error('DATABASE_URL 이 필요합니다.');
  * 색인 루프가 도는 시간대엔 느려져 타임아웃이 날 수 있다 (2026-08-20 실제로
  * 57014 발생). 러너들이 쉬는 때 돌리면 몇 초면 끝난다.
  */
-const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false }, statement_timeout: 600000 });
+const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
 await client.connect();
+// config 의 statement_timeout 은 서버 세션에 반영되지 않는다 (실측) — SET 이어야 한다.
+await client.query(`set statement_timeout = '600s'`);
 
 try {
   const { rows } = await client.query(`
@@ -38,7 +40,9 @@ try {
       select host, count(distinct url)::int done_pages, max(requested_at) as last_at
       from public.naver_searchadvisor_crawl_request_results
       where status in ('submitted','already-present','skipped','skipped-missing','skipped-reserved-path')
-        and url !~ '/이사/'
+        -- 이사 URL 은 퍼센트 인코딩이라 한글 패턴으로는 안 걸러진다. run 조인이 정확하다.
+        and run_id in (select run_id from public.naver_searchadvisor_crawl_request_runs
+                        where target_project = 'cleaning-ravi')
       group by host
     ),
     dom as (
