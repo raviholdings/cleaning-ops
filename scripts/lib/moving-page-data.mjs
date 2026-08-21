@@ -38,13 +38,21 @@ async function loadAdminExpansions(root) {
   }
   return ADMIN_EXPANSIONS;
 }
+/*
+ * 복원표(adminDivisions)에 없는 예외. '대구' 는 도시 이름이 '구' 로 끝나는
+ * 유일한 광역시라 구-제거 변형 생성에 같이 잘려 '대' 가 됐다 (풀에 1,123항목,
+ * 2026-08-21 발견 — "대-원대동" 류 URL 2,167장의 원인). 다른 광역시 축약은
+ * 풀에 존재하지 않음을 전수 확인했다.
+ */
+const EXTRA_EXPANSIONS = { 대: '대구' };
+
 function normalizeMovingLocation(raw, expansions) {
   return String(raw)
     .replace(/\([^)]*\)/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
-    .map((token) => expansions[token] ?? token)
+    .map((token) => EXTRA_EXPANSIONS[token] ?? expansions[token] ?? token)
     .join(' ');
 }
 
