@@ -370,6 +370,26 @@ export function loadLocations(projectRoot) {
   return JSON.parse(readFileSync(path, 'utf8')).locations;
 }
 
+/**
+ * 한 사이트의 이사 사이트맵 <loc> 목록을 로컬에서 생성한다.
+ *
+ * 배포 사이트맵과 같은 파이프라인(catalogEntry -> 복원 -> movingPagePath ->
+ * encodeURI)이라 문자 그대로 일치한다. one-qfast.com 처럼 국내망에서
+ * Cloudflare 엣지 IP 가 막혀 사이트맵 fetch 가 안 되는 호스트의 수집요청
+ * 폴백으로 쓴다 (2026-08-21 — 계정마다 one-qfast 10호스트가 스킵되던 원인).
+ */
+export async function movingSitemapUrlsForSite({ projectRoot, lib, locations, siteIndex, siteUrl, pageCount }) {
+  const expansions = await loadAdminExpansions(projectRoot);
+  const count = Number(pageCount) || lib.catalog.PAGE_COUNT;
+  const urls = [];
+  for (let requestId = 1; requestId <= count; requestId += 1) {
+    const entry = lib.catalog.catalogEntry({ locations, siteIndex, requestId });
+    const location = normalizeMovingLocation(entry.location, expansions);
+    urls.push(`${siteUrl}${encodeURI(lib.path.movingPagePath(location, entry.mainKeyword))}`);
+  }
+  return urls;
+}
+
 export async function loadMovingLib(projectRoot) {
   return {
     catalog: await importLib(projectRoot, 'pageCatalog.ts'),

@@ -232,6 +232,8 @@ const blockedPattern = /자동|보안문자|captcha|CAPTCHA|로봇|자동입력|
 const quotaStopPattern = /(?:오늘|일일|하루)[\s\S]{0,40}(?:모두|전부|소진|초과|마감|없습니다|없음|불가)|(?:더 이상|추가)[\s\S]{0,30}(?:요청|수집)[\s\S]{0,30}(?:불가|할 수 없습니다|가능하지 않습니다)|요청 가능 횟수\s*[:：]?\s*0(?:\D|$)|0\s*\/\s*0/;
 const loginProblemPattern = /로그인에 문제가 발생|로그인이 필요|로그인 후|로그인하세요|로그인해 주세요|login required|sign in/i;
 const doneStatuses = new Set(['submitted', 'already-present', 'skipped', 'skipped-missing', 'skipped-reserved-path']);
+// 이사 사이트맵 생성 폴백 캐시. 선언이 await main() 보다 위에 있어야 한다 (TDZ).
+let movingLibCache = null;
 const apiCodeMessages = new Map([
   [100, 'system error'],
   [101, 'invalid URL'],
@@ -1124,13 +1126,28 @@ async function loadTargetSitemapTasks(accountId, target) {
     urls = await fetchSitemapUrls(sitemapUrl, target.siteUrl);
   } catch (error) {
     if (options.dbUrlSource === 'sitemap' || requiresSitemapDbQueue()) {
-      // 재시도까지 다 실패한 호스트는 이번 회차에서 건너뛴다. 다음 실행이
-      // 다시 본다 (dedup 이 완료분을 걸러 주므로 잃는 것이 없다).
-      console.warn(`[crawl:db] sitemap fetch skipped for ${target.host}: ${error.message}`);
-      return [];
+      /*
+       * fetch 가 막힌 호스트 (one-qfast.com — Cloudflare 엣지 IP 가 국내망에서
+       * TCP 단계부터 차단, 간헐적). 이사는 배포와 같은 생성기로 URL 을 만들 수
+       * 있으므로 로컬 생성으로 폴백한다. 실패하면 이번 회차 스킵 — 다음 실행이
+       * 다시 본다 (dedup 이 완료분을 걸러 주므로 잃는 것이 없다).
+       */
+      if (crawlDb.targetProject === 'moving-ravi') {
+        try {
+          urls = await movingGeneratedSitemapUrls(target);
+          console.warn(`[crawl:db] sitemap fetch failed for ${target.host}; generated ${urls.length} urls from catalog (${error.message})`);
+        } catch (fallbackError) {
+          console.warn(`[crawl:db] sitemap fetch skipped for ${target.host}: ${error.message} / 생성 폴백 실패: ${fallbackError.message}`);
+          return [];
+        }
+      } else {
+        console.warn(`[crawl:db] sitemap fetch skipped for ${target.host}: ${error.message}`);
+        return [];
+      }
+    } else {
+      console.warn(`[crawl:db] sitemap queue fallback for ${target.host}: ${error.message}`);
+      return loadPageCountTasks(accountId, target);
     }
-    console.warn(`[crawl:db] sitemap queue fallback for ${target.host}: ${error.message}`);
-    return loadPageCountTasks(accountId, target);
   }
 
   return urls
@@ -1160,6 +1177,33 @@ async function loadTargetSitemapTasks(accountId, target) {
         experimentGroup: target.experimentGroup,
       };
     });
+}
+
+/** one-qfast 류 fetch 불가 호스트용 — 배포 생성기로 사이트맵 URL 을 만든다. */
+async function movingGeneratedSitemapUrls(target) {
+  if (!movingLibCache) {
+    const mod = await import(pathToFileURL(path.join(rootDir, 'scripts/lib/moving-page-data.mjs')).href);
+    movingLibCache = {
+      mod,
+      lib: await mod.loadMovingLib(rootDir),
+      locations: mod.loadLocations(rootDir),
+    };
+  }
+  const client = await getCrawlSourceDbClient();
+  const { rows } = await client.query(
+    `select (source_payload->>'globalSiteOrder')::int as ord
+       from public.naver_project_domains where host = $1`,
+    [target.host],
+  );
+  const ord = Number(rows[0]?.ord || 0);
+  if (!ord) throw new Error(`${target.host}: globalSiteOrder 없음`);
+  return movingLibCache.mod.movingSitemapUrlsForSite({
+    projectRoot: rootDir,
+    lib: movingLibCache.lib,
+    locations: movingLibCache.locations,
+    siteIndex: ord - 1,
+    siteUrl: String(target.siteUrl || `https://${target.host}`).replace(/\/+$/, ''),
+  });
 }
 
 function loadPageCountTasks(accountId, target) {
