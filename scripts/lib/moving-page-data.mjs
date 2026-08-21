@@ -225,7 +225,11 @@ export async function buildMovingPageData(opts) {
     bestClass: i === 0 ? ' best' : '',
     // micro-template 의 {{#isBest}} 는 값이 있을 때만 블록을 그린다.
     isBest: i === 0 ? [{}] : [],
-    image: `${base}/${IMAGE_DIR}/${v.image}`,
+    // 캐러셀 이미지는 자산 도메인이 아니라 페이지 자신의 도메인에서 서빙한다.
+    // 캐러셀이 안정적으로 나오는 경쟁 페이지가 same-origin 이미지를 쓰는 것을
+    // 실측했고(2026-08-21), 서버의 shared /img/ 공유 경로가 전 호스트에 같은
+    // 5장을 돌려준다 — nginx 수정 없이 파일 5개만 얹었다.
+    image: `${siteUrl}/img/moving/${v.image}`,
     feat1: v.feats[0],
     feat2: v.feats[1],
   }));
@@ -295,6 +299,21 @@ export async function buildMovingPageData(opts) {
   const nextId = requestId === opts.pageCount ? 1 : requestId + 1;
 
   // ── 구조화 데이터 ─────────────────────────────────────────
+  /*
+   * 캐러셀(ItemList)은 @graph 에 넣지 않고 독립 스크립트 블록으로 내보낸다.
+   * 네이버 문서의 모든 예제가 독립 블록이고, 같은 @graph 마크업에서 결과마다
+   * 캐러셀/h2목록이 갈리던 반면 독립 블록을 쓰는 경쟁 페이지는 캐러셀이
+   * 안정적으로 나오는 것을 실측했다 (2026-08-21).
+   * image 필수 · 원본 이미지 · 로고 금지 · url 절대 경로 · 페이지당 1개.
+   */
+  const itemListJson = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: vendors.map((v, i) => ({
+      '@type': 'ListItem', position: String(i + 1),
+      name: v.name, image: v.image, url: v.link })),
+  };
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -312,15 +331,6 @@ export async function buildMovingPageData(opts) {
           item: { '@id': `${siteUrl}${lib.path.movingPagePath(location, main).split('/').slice(0, 3).join('/')}`, name: lib.path.pathLocation(location) } },
         { '@type': 'ListItem', position: 2, item: { '@id': canonical, name: main } },
       ] },
-      /*
-       * 캐러셀. 업체 5곳을 항목으로 넣는다.
-       * image 필수 · 썸네일 말고 원본 · 로고 금지 · url 은 절대 경로 ·
-       * 한 페이지에 ItemList 는 하나. 전부 네이버 가이드 그대로다.
-       */
-      { '@type': 'ItemList', '@id': `${canonical}#carousel`,
-        itemListElement: vendors.map((v, i) => ({
-          '@type': 'ListItem', position: String(i + 1),
-          name: v.name, image: v.image, url: v.link })) },
       { '@type': 'Service', '@id': `${canonical}#service`, serviceType: main,
         name: `${location} ${main}`, description, url: canonical,
         areaServed: { '@type': 'AdministrativeArea', name: location },
@@ -370,6 +380,7 @@ export async function buildMovingPageData(opts) {
     prev: linkTo(prevId),
     next: linkTo(nextId),
     jsonLd: JSON.stringify(jsonLd),
+    itemListJson: JSON.stringify(itemListJson),
   };
 }
 
