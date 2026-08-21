@@ -1258,6 +1258,18 @@ try {
 	}
 
 	Remove-PathQuiet $RunScratchDir
+
+	# 응답 원문 로그를 R2 로 올린다 (지난 날짜 분만. 실패해도 수집요청과 무관 —
+	# 스크립트가 항상 exit 0 이고 경고는 stdout 으로만 낸다).
+	try {
+		$rawLogOutput = & node (Join-Path $PSScriptRoot 'upload-crawl-raw-logs.mjs')
+		foreach ($rawLogLine in @($rawLogOutput)) {
+			if ($rawLogLine) { Write-Log "raw-log: $rawLogLine" }
+		}
+	} catch {
+		Write-Log "raw-log upload skipped: $($_.Exception.Message)"
+	}
+
 	Write-Log 'Windows Naver crawl runner finished.'
 } catch {
 	Write-Log "Windows Naver crawl runner failed: $($_.Exception.GetType().FullName): $($_.Exception.Message)"

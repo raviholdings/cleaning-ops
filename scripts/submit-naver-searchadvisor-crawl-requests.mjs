@@ -3,6 +3,8 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import fs from 'node:fs/promises';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { hostname } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
@@ -227,6 +229,18 @@ const crawlDb = {
 options.localReport = process.env.NAVER_CRAWL_LOCAL_REPORT == null
   ? options.queueSource !== 'db'
   : isEnabled(process.env.NAVER_CRAWL_LOCAL_REPORT);
+
+/*
+ * 응답 원문은 DB 에 넣지 않고 로컬 jsonl 에 쌓는다 (2026-08-21 운영자 결정).
+ * 하루 1파일(KST 날짜)·기계명 포함. R2 업로드는 scripts/upload-crawl-raw-logs.mjs,
+ * 메인 PC 다운로드는 scripts/fetch-crawl-raw-logs.mjs 가 담당한다.
+ * DB 행과의 연결 고리는 (runId, idx) = (run_id, result_index).
+ */
+const rawLog = {
+  enabled: process.env.NAVER_CRAWL_RAW_LOG !== '0',
+  dir: process.env.NAVER_CRAWL_RAW_LOG_DIR || path.join(rootDir, 'logs', 'naver-raw'),
+  machine: (process.env.NAVER_CRAWL_MACHINE || hostname()).toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
+};
 
 const blockedPattern = /자동|보안문자|captcha|CAPTCHA|로봇|자동입력|보안 절차/;
 const quotaStopPattern = /(?:오늘|일일|하루)[\s\S]{0,40}(?:모두|전부|소진|초과|마감|없습니다|없음|불가)|(?:더 이상|추가)[\s\S]{0,30}(?:요청|수집)[\s\S]{0,30}(?:불가|할 수 없습니다|가능하지 않습니다)|요청 가능 횟수\s*[:：]?\s*0(?:\D|$)|0\s*\/\s*0/;
@@ -2378,8 +2392,10 @@ function parseJsonOrNull(text) {
 }
 
 function safeShortJson(value) {
+  // 원문은 이제 DB 가 아니라 로컬 raw 로그로 간다. 로컬 디스크는 싸므로
+  // 잘라내는 한도를 800 → 4000 으로 늘렸다 (2026-08-21).
   try {
-    return JSON.stringify(value).slice(0, 800);
+    return JSON.stringify(value).slice(0, 4000);
   } catch {
     return undefined;
   }
@@ -2763,9 +2779,41 @@ async function recordCrawlRunSafe(status, report, queueDoc = {}, error = null) {
   });
 }
 
+/*
+ * 응답 원문·UI 검사 스냅샷을 로컬 raw 로그에 붙인다. DB 쓰기와 독립이라
+ * 실패해도 삼킨다(수집요청 진행을 막으면 안 된다). 자정을 넘기면 다음
+ * 줄부터 새 날짜 파일에 붙는다.
+ */
+function appendCrawlRawLogSafe(rows, startIndex) {
+  if (!rawLog.enabled || !rows.length) return;
+  try {
+    const now = Date.now();
+    const kstDay = new Date(now + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    mkdirSync(rawLog.dir, { recursive: true });
+    const lines = rows.map((row, offset) => JSON.stringify({
+      runId: crawlDb.runId,
+      idx: startIndex + offset,
+      account: row.account || options.accountId || null,
+      url: row.url || null,
+      status: row.status || null,
+      note: row.note || undefined,
+      mode: row.mode || undefined,
+      apiCode: Number.isInteger(row.apiCode) ? row.apiCode : undefined,
+      apiMessage: row.apiMessage || undefined,
+      raw: row.apiResponse || undefined,
+      quotaUiInspection: row.quotaUiInspection || undefined,
+      at: row.at || new Date(now).toISOString(),
+    })).join('\n');
+    appendFileSync(path.join(rawLog.dir, `${kstDay}.${rawLog.machine}.jsonl`), `${lines}\n`);
+  } catch (error) {
+    console.warn(`[raw-log] append failed: ${error?.message || String(error)}`);
+  }
+}
+
 async function recordCrawlResultsSafe(rows, startIndex) {
   if (!crawlDb.enabled || options.dryRun || options.loginOnly || !rows.length) return;
 
+  appendCrawlRawLogSafe(rows, startIndex);
   await enqueueCrawlDbWrite(async () => {
     const client = await getCrawlDbClient();
     if (!client) {
@@ -2776,7 +2824,8 @@ async function recordCrawlResultsSafe(rows, startIndex) {
     }
     await upsertCrawlRequestResults(client, {
       runId: crawlDb.runId,
-      rows,
+      // 원문은 위 raw 로그로 갔다. DB 에는 추출 컬럼(api_code·api_message)만 남긴다.
+      rows: rows.map((row) => ({ ...row, apiResponse: undefined })),
       startIndex,
     });
   });

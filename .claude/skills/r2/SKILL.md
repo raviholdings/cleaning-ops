@@ -6,6 +6,12 @@ description: Cloudflare R2 자산(이미지·CSS·JS·파비콘) 업로드와 �
 # R2 자산
 
 - 버킷: `cleaning-assets` 하나 — 이사도 여기 쓴다 (moving-assets 분리 안 함, 운영자 확정)
+- 로그 버킷: `ravi-ops-logs` (프라이빗, 2026-08-21 생성) — 수집요청 응답 원문
+  jsonl.gz 가 `crawl-raw/{날짜}.{기계}.jsonl.gz` 로 쌓인다. **cleaning-assets 는
+  assets.* 로 공개 서빙되므로 로그·내부 파일을 절대 거기 두지 말 것.**
+  업로드는 scripts/upload-crawl-raw-logs.mjs (VM 은 aws CLI 가 없어
+  scripts/lib/r2-client.mjs 의 자체 SigV4 를 쓴다), 다운로드는
+  scripts/fetch-crawl-raw-logs.mjs.
 - endpoint: `https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`
 - 자격: .env 의 `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` — **반드시 .trim()** (개행 섞이면 인증 실패)
 - 필수 env: `AWS_DEFAULT_REGION=auto`, `AWS_REQUEST_CHECKSUM_CALCULATION=when_required`
