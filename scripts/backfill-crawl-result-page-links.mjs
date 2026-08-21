@@ -46,6 +46,8 @@ const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!connectionString) throw new Error('DATABASE_URL 이 필요합니다.');
 const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
 await client.connect();
+// 역할 기본 2분은 대량 배치에 부족하다. config 는 서버에 안 닿는다 — SET 으로 (2026-08-21).
+await client.query(`set statement_timeout = '600s'`);
 
 /*
  * 연결 가능한 행을 고르는 조건.
