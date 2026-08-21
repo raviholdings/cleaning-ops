@@ -37,23 +37,38 @@ function fit(candidates: string[], limit: number): string {
 /**
  * 제목. 40자 이내.
  *
- * 브랜드명(" | 이사프렌즈", 8자)은 여유가 있을 때만 붙인다. 긴 지역에서
- * 브랜드를 넣겠다고 지역명을 자르면 본말이 전도된다.
+ * 청소 제목처럼 서브키워드를 섞고 꼬리(견적/비교)를 페이지별로 회전시킨다.
+ * "업체 5곳 비교 | 이사프렌즈" 같은 고정 틀은 50만 장이 전부 한 네트워크로
+ * 보이게 만들어서 뺐다 (2026-08-21 운영자 지시). 브랜드명도 넣지 않는다.
+ *
+ * 어떤 서브를 몇 개 넣을지는 길이가 정한다 — 긴 지역은 서브가 빠지고,
+ * 짧은 지역은 서브 2개까지 들어가 자연스럽게 페이지마다 달라진다.
  */
-export function buildTitle(location: string, main: string, vendorCount: number): string {
+const TITLE_TAILS = ['견적', '비교', '안내', '후기', '가격'];
+
+export function buildTitle(location: string, main: string, subs: string[] = [], seed = 0): string {
   const full = String(location).trim();
   const two = tailTwo(full);
   const one = lastToken(full);
+  const pool = subs.length ? subs : [main];
+  const s1 = pool[seed % pool.length] || '';
+  const s2 = pool[(seed + 1) % pool.length] || '';
+  // 서브키워드가 어미와 같은 말로 끝나면("포장이사견적 견적") 다음 어미로 넘긴다.
+  let tail = '';
+  for (let i = 0; i < TITLE_TAILS.length; i += 1) {
+    tail = TITLE_TAILS[(seed + i) % TITLE_TAILS.length];
+    if (!s1.endsWith(tail) && !s2.endsWith(tail)) break;
+  }
 
   return fit([
-    `${full} ${main} 업체 ${vendorCount}곳 비교 | 이사프렌즈`,
-    `${full} ${main} 업체 ${vendorCount}곳 비교`,
-    `${two} ${main} 업체 ${vendorCount}곳 비교`,
-    `${full} ${main} ${vendorCount}곳 비교`,
-    `${two} ${main} ${vendorCount}곳 비교`,
-    `${one} ${main} 업체 ${vendorCount}곳 비교`,
-    `${one} ${main} ${vendorCount}곳 비교`,
-    `${one} ${main} 비교`,
+    `${full} ${main} ${s1} ${s2} ${tail}`,
+    `${full} ${main} ${s1} ${tail}`,
+    `${two} ${main} ${s1} ${s2} ${tail}`,
+    `${two} ${main} ${s1} ${tail}`,
+    `${full} ${main} ${tail}`,
+    `${two} ${main} ${tail}`,
+    `${one} ${main} ${s1} ${tail}`,
+    `${one} ${main} ${tail}`,
   ], TITLE_LIMIT);
 }
 

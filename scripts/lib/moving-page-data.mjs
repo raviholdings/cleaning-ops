@@ -199,7 +199,7 @@ export async function buildMovingPageData(opts) {
   const canonical = lib.path.movingPageUrl(siteUrl, location, main);
 
   const vendorCount = VENDORS.length;
-  const title = lib.meta.buildTitle(location, main, vendorCount);
+  const title = lib.meta.buildTitle(location, main, subs, seed);
   const description = lib.meta.buildDescription(location, main, vendorCount, subs);
 
   // ── 갤러리 (화면 캐러셀) ─────────────────────────────────
