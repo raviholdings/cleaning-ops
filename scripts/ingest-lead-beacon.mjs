@@ -86,8 +86,10 @@ try {
           select 1 from public.lead_submissions
            where host = $2 and site_url = $3 and service_type = $4 and created_at = $6::timestamptz)`,
       // 이사 페이지 이벤트는 경로로 구분해 moving-ravi 로 태그한다.
+      // UA 를 notes 에 남긴다 — "누가(기기·브라우저)" 를 나중에 볼 수 있게 (2026-08-22).
       [row.path.startsWith('/이사/') ? 'moving-ravi' : groupKey,
-        row.host, row.path, `beacon:${row.event}`, '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)', row.at],
+        row.host, row.path, `beacon:${row.event}`,
+        row.ua ? `제휴사 iframe 폼 이벤트 · ${row.ua.slice(0, 200)}` : '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)', row.at],
     );
     inserted += res.rowCount;
   }
@@ -104,9 +106,23 @@ try {
   await client.end();
 }
 
-/** 서버 로그를 SSM 으로 읽어온다. ssh 키가 없는 기계에서도 돌게. */
+/**
+ * 서버 로그를 SSM 으로 읽어온다. ssh 키가 없는 기계에서도 돌게.
+ *
+ * 함정: SSM Run Command 의 StandardOutputContent 는 24KB 에서 잘린다
+ * (2026-08-22 실측 — 763줄 중 61줄만 왔다). 로그가 그보다 크면 ssh 로 받아서
+ * --log <로컬파일> 로 넣을 것. 경로가 로컬에 존재하면 그 파일을 그대로 읽는다.
+ */
 function fetchLog() {
-  const filter = since ? `grep '^${since}' ${logPath} || true` : `cat ${logPath} 2>/dev/null || true`;
+  if (existsSync(logPath)) {
+    console.log(`  (로컬 파일 사용: ${logPath})`);
+    return readFileSync(logPath, 'utf8');
+  }
+  // zcat -f 는 압축·비압축을 모두 읽는다. logrotate 가 lead.log 도 매일 자르므로
+  // --log '/var/log/nginx/lead.log*' 로 회전분까지 한 번에 넣을 수 있다 (2026-08-22).
+  const filter = since
+    ? `zcat -f ${logPath} 2>/dev/null | grep '^${since}' || true`
+    : `zcat -f ${logPath} 2>/dev/null || true`;
   const commandId = execFileSync('aws', [
     'ssm', 'send-command', '--instance-ids', instance, '--region', region,
     '--document-name', 'AWS-RunShellScript',
@@ -120,15 +136,20 @@ function fetchLog() {
       '--instance-id', instance, '--region', region, '--query', 'Status', '--output', 'text',
     ], { encoding: 'utf8' }).trim();
     if (status !== 'InProgress' && status !== 'Pending') break;
-    execFileSync(process.platform === 'win32' ? 'timeout' : 'sleep',
-      process.platform === 'win32' ? ['/t', '2', '/nobreak'] : ['2'], { stdio: 'ignore' });
+    // Windows 의 timeout.exe 는 stdin 리다이렉트 환경에서 죽는다 (2026-08-22 실측,
+    // 이것 때문에 ingest 가 한 번도 못 돌아 DB 가 비어 있었다). 프로세스 없이 잔다.
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
   }
 
-  return execFileSync('aws', [
+  const out = execFileSync('aws', [
     'ssm', 'get-command-invocation', '--command-id', commandId,
     '--instance-id', instance, '--region', region,
     '--query', 'StandardOutputContent', '--output', 'text',
   ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  if (out.length >= 23500) {
+    console.warn('  ⚠ SSM 출력이 24KB 상한 부근 — 잘렸을 수 있다. ssh 로 받아 --log <로컬파일> 로 다시 돌릴 것.');
+  }
+  return out;
 }
 
 /** `2026-08-18T12:00:00+09:00\thost\tadvance\t/37.html` */
@@ -151,7 +172,7 @@ function parse(text) {
       botSkipped += 1;
       continue;
     }
-    out.push({ at, host, event, path: decodeSafe(path || '/') });
+    out.push({ at, host, event, path: decodeSafe(path || '/'), ua: ua || '' });
   }
   return out;
 }
