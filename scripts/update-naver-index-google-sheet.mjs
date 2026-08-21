@@ -770,6 +770,13 @@ async function updateSheet(rows, token) {
 
 const client = new Client(createClientConfig(connectionString));
 await client.connect();
+/*
+ * DB 역할 기본 statement_timeout 이 2분이다. 결과 테이블이 160만 행을 넘어서며
+ * (이사 제출 유입) 타깃 조회가 2분을 넘기 시작했고, 색인 루프가 회차마다 조용히
+ * exit 1 로 죽었다 (2026-08-21). pg 의 Client config statement_timeout 은 서버
+ * 세션에 반영되지 않는 것을 실측으로 확인 — 반드시 SET 으로 올려야 한다.
+ */
+await client.query(`set statement_timeout = '600s'`);
 
 try {
 	await ensureSchema(client);
