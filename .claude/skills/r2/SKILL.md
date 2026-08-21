@@ -11,6 +11,14 @@ description: Cloudflare R2 자산(이미지·CSS·JS·파비콘) 업로드와 �
 - 필수 env: `AWS_DEFAULT_REGION=auto`, `AWS_REQUEST_CHECKSUM_CALCULATION=when_required`
 - 공개 도메인: `assets.<루트도메인>` ×10 — 모든 루트가 같은 버킷을 본다
 
+## 엣지 캐시 (2026-08-21 적용)
+
+assets.* 10개 존 전부 Cloudflare Cache Rule 로 **엣지 TTL 1년 강제**가 걸려
+있다 (룰 이름 assets-immutable-cache). R2 객체에 Cache-Control 메타가 없어도
+엣지에 1년 저장된다 — 즉 **대시보드 업로드도 같은 경로 덮어쓰기 금지**.
+캐러셀(SERP) 이미지 수집 안정화 목적: 적용 전 장당 0.6~1.2초(DYNAMIC) →
+적용 후 한국망 0.07~0.2초(HIT).
+
 ## 절대 규칙 — immutable 캐시
 
 업로드는 `Cache-Control: max-age=31536000, immutable` 로 나간다.
