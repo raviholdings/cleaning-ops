@@ -23,6 +23,21 @@ description: 청소(cleaning-ravi)·이사(moving-ravi) 정적 사이트 굽기�
 전송: tar -cz | ssh tar -xz → `/srv/group-page-origin/sites/<host>/`
 SSH 키: `ORIGIN_SSH_KEY=/c/Users/LD/Desktop/ravi/_secure/cleaning-ravi-20260731.pem`
 
+## 전송 경로 — 직결 SSH 기본 (2026-08-22 확정)
+
+두 배포 스크립트 모두 **직결 SSH 가 기본**이다. 시작 시 내 공인 IP 를 조회해
+보안그룹(sg-0c97415cf43611194)에 22/tcp 를 그 IP /32 로만 열고, 끝나면(exit 훅)
+전부 닫는다. 로직: `scripts/lib/origin-ssh.mjs`.
+
+- 실측: 직결 80Mbps vs SSM 터널 6.4Mbps → 전량 전송 87분 → 약 7분
+- **SSM 폴백**: 직결이 안 되면(권한·IP 사고) `--ssm` 플래그
+- **배포 중 HaiIP 금지** — IP 가 바뀌면 직결·SSM 둘 다 끊긴다. PC 수집요청과
+  동시 실행하지 말 것 (청크 재시도 3회가 있긴 하다)
+- 배포가 죽어 22 규칙이 남았으면: `node scripts/origin-ssh-door.mjs --close`
+  (--status 로 확인, --open 은 수동 대용량 전송용). 다음 배포의 cleanup 도
+  남은 규칙을 수렴해서 닫는다.
+- 서버 공인 IP 는 매번 API 로 조회한다 (54.116.79.116 을 하드코딩하지 않는다)
+
 ## 철칙
 
 1. **청소 무영향** — `--app` / `PUBLIC_IMAGE_DIR` 기본값을 바꾸지 않는다.

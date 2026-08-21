@@ -26,6 +26,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getHeapStatistics } from 'node:v8';
 import pg from 'pg';
 
+import { prepareOriginSsh } from './lib/origin-ssh.mjs';
+
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadEnv(resolve(projectRoot, '.env'));
 
@@ -293,12 +295,18 @@ const hostList = domains.map((domain) => domain.host).join('\n');
 const hostFile = resolve(stageDir, '.hosts');
 writeFileSync(hostFile, `${hostList}\n`);
 
-const sshBase = [
-  'ssh', '-o', 'StrictHostKeyChecking=no', '-i', SSH_KEY,
-  '-o', 'ServerAliveInterval=30',
-  '-o', `ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ${AWS_REGION} --profile ${AWS_PROFILE}`,
-  `ec2-user@${INSTANCE}`,
-].map(shellQuote).join(' ');
+/*
+ * 전송 경로 — 직결 SSH 가 기본 (2026-08-22 운영자 확정, 이사 배포와 동일).
+ * SSM 터널은 실측 6.4Mbps. 직결은 배포 동안만 보안그룹 22 를 내 IP /32 로
+ * 열었다 닫는다. 문제가 생기면 --ssm 으로 폴백. 배포 중 HaiIP 금지.
+ */
+const origin = await prepareOriginSsh({
+  mode: options.ssm ? 'ssm' : 'direct',
+  config: { instance: INSTANCE, sshKey: SSH_KEY, profile: AWS_PROFILE, region: AWS_REGION },
+});
+process.on('exit', origin.cleanup);
+console.log(JSON.stringify({ phase: 'ssh', mode: origin.mode, originIp: origin.originIp, myIp: origin.myIp, door: origin.doorState }));
+const sshBase = origin.sshCommand;
 
 /*
  * 전송을 덩어리로 쪼갠다.

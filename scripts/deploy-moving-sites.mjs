@@ -28,6 +28,7 @@ import pg from 'pg';
 
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
 import { buildMovingPageData, loadLocations, loadMovingLib } from './lib/moving-page-data.mjs';
+import { prepareOriginSsh } from './lib/origin-ssh.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -173,12 +174,19 @@ async function bakeSite(domain) {
   writeFileSync(`${smPath}.gz`, gzipSync(Buffer.from(sitemap, 'utf8'), { level: 6 }));
 }
 
-const sshBase = [
-  'ssh', '-o', 'StrictHostKeyChecking=no', '-i', SSH_KEY,
-  '-o', 'ServerAliveInterval=30',
-  '-o', `ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ${AWS_REGION} --profile ${AWS_PROFILE}`,
-  `ec2-user@${INSTANCE}`,
-].map(shellQuote).join(' ');
+/*
+ * 전송 경로 — 직결 SSH 가 기본 (2026-08-22 운영자 확정).
+ * SSM 터널은 실측 6.4Mbps 라 전량 배포에 87분이 걸렸다. 직결은 배포 동안만
+ * 보안그룹 22 를 내 IP /32 로 열었다 닫는다. 문제가 생기면 --ssm 으로 폴백.
+ * 배포 중 HaiIP 로 IP 를 바꾸면 끊긴다 — PC 수집요청과 동시 실행 금지.
+ */
+const origin = await prepareOriginSsh({
+  mode: options.ssm ? 'ssm' : 'direct',
+  config: { instance: INSTANCE, sshKey: SSH_KEY, profile: AWS_PROFILE, region: AWS_REGION },
+});
+process.on('exit', origin.cleanup);
+console.log(JSON.stringify({ phase: 'ssh', mode: origin.mode, originIp: origin.originIp, myIp: origin.myIp, door: origin.doorState }));
+const sshBase = origin.sshCommand;
 
 const chunks = [];
 for (let i = 0; i < targets.length; i += chunkSize) chunks.push(targets.slice(i, i + chunkSize));
