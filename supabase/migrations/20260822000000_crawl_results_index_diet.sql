@@ -9,6 +9,21 @@
 drop index if exists public.idx_naver_searchadvisor_crawl_results_done_account_url;
 drop index if exists public.idx_naver_searchadvisor_crawl_results_status;
 
+-- project_page_latest (177MB): 기초 스키마가 정의하지만 실 DB 에는 없던 것.
+-- 부분 인덱스 idx_crawl_results_page_link(51MB) 가 같은 선두 컬럼을 갖고,
+-- 재구축·백필·FK 전부 그걸로 충분했다 (2026-08-21 실증). 원장 재적용이
+-- 부활시키지 않도록 여기서 확정적으로 지운다.
+drop index if exists public.idx_naver_crawl_results_project_page_latest;
+
+-- url·host 는 등호 검색뿐이라 B-tree → hash 로 교체 (234+148MB → 61+61MB).
+-- dedup(url = any)·오늘 한도(host = any) 쿼리가 그대로 hash 를 탄다.
+create index if not exists idx_crawl_results_url_hash
+  on public.naver_searchadvisor_crawl_request_results using hash (url);
+create index if not exists idx_crawl_results_host_hash
+  on public.naver_searchadvisor_crawl_request_results using hash (host);
+drop index if exists public.idx_naver_searchadvisor_crawl_results_url;
+drop index if exists public.idx_naver_searchadvisor_crawl_results_host;
+
 create index if not exists idx_crawl_results_quota_stop
   on public.naver_searchadvisor_crawl_request_results (requested_at)
   where status = 'quota-stop';
