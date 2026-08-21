@@ -38,11 +38,16 @@ loadEnv(resolve(projectRoot, '.env'));
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
+// --ssh: SSM Run Command(24KB 상한) 대신 ssh(SSM 터널)로 회전 로그까지 통째로 읽는다.
+// ssh 키가 있는 메인 PC 의 기본 경로. 스케줄 작업(scripts/run-lead-ingest-task.cmd)이 쓴다.
+const useSsh = args.includes('--ssh');
 const since = valueOf('--since') || '';
 const groupKey = valueOf('--group') || 'cleaning-ravi';
 const instance = process.env.ORIGIN_SSM_INSTANCE_ID || 'i-039361b55ae33808b';
 const region = process.env.AWS_DEFAULT_REGION || 'ap-northeast-2';
-const logPath = valueOf('--log') || '/var/log/nginx/lead.log';
+const profile = process.env.AWS_PROFILE || 'cleaning-ops';
+const sshKey = process.env.ORIGIN_SSH_KEY || 'C:/Users/LD/Desktop/ravi/_secure/cleaning-ravi-20260731.pem';
+const logPath = valueOf('--log') || (useSsh ? '/var/log/nginx/lead.log*' : '/var/log/nginx/lead.log');
 
 console.log(`=== 견적 폼 이벤트 수집 (group=${groupKey}, dryRun=${dryRun}) ===`);
 
@@ -117,6 +122,15 @@ function fetchLog() {
   if (existsSync(logPath)) {
     console.log(`  (로컬 파일 사용: ${logPath})`);
     return readFileSync(logPath, 'utf8');
+  }
+  if (useSsh) {
+    console.log(`  (ssh 로 수집: ${logPath})`);
+    return execFileSync('ssh', [
+      '-o', 'StrictHostKeyChecking=no', '-i', sshKey,
+      '-o', `ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ${region} --profile ${profile}`,
+      `ec2-user@${instance}`,
+      `sudo sh -c 'zcat -f ${logPath} 2>/dev/null'`,
+    ], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
   }
   // zcat -f 는 압축·비압축을 모두 읽는다. logrotate 가 lead.log 도 매일 자르므로
   // --log '/var/log/nginx/lead.log*' 로 회전분까지 한 번에 넣을 수 있다 (2026-08-22).
