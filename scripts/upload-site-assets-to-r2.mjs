@@ -31,7 +31,10 @@ const env = loadEnv(resolve(projectRoot, '.env'));
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const version = valueOf('--version') || process.env.PUBLIC_ASSET_VERSION || 'v1';
+// 기본값을 두지 않는다 — 실수로 기존 버전 폴더(immutable, 엣지 1년 캐시)를
+// 덮어쓰는 사고를 막는다. 반드시 --version vN 으로 명시할 것 (2026-08-22).
+const version = valueOf('--version') || process.env.PUBLIC_ASSET_VERSION;
+if (!version) throw new Error('--version vN 을 명시하세요 (기존 버전 덮어쓰기 방지).');
 
 const bucket = need('R2_BUCKET_NAME');
 const accountId = need('CLOUDFLARE_ACCOUNT_ID');

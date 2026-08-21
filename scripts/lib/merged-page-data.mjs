@@ -128,7 +128,12 @@ const ASSET_SUBDOMAIN = String(process.env.PUBLIC_ASSET_SUBDOMAIN || 'assets');
  * 옛 파일이 남아 새 페이지와 섞인다. 버전 폴더로 올리고 템플릿이 그 경로를
  * 가리키게 하면, 다음 배포에서 v2 로 바꾸는 것만으로 전부 갈아탄다.
  */
-const ASSET_VERSION = String(process.env.PUBLIC_ASSET_VERSION || 'v1');
+/*
+ * 기본값을 최신 버전으로 유지할 것. 기본이 v1 이던 시절, CPA 교체 재배포가
+ * env 없이 돌면서 전 사이트가 비콘 없는 v1 자산으로 롤백됐다 (2026-08-20 사고
+ * — 청소 유입 신호가 통째로 끊겼다). 새 자산을 올리면 여기 기본값도 같이 올린다.
+ */
+const ASSET_VERSION = String(process.env.PUBLIC_ASSET_VERSION || 'v4');
 
 /**
  * 사이트 URL -> 그 사이트가 쓸 자산 베이스.

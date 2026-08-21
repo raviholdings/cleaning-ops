@@ -55,7 +55,13 @@ export const SITE_DEFAULTS = {
    * 항상 기본값이었다. 같은 결과가 나오도록 기본값을 그대로 박아 둔다.
    */
   mainKeyword: '입주청소',
-  formSrc: 'https://replyalba.com/intros/_frm/index.php?code=BtMoZvIUJs',
+  /*
+   * 접수폼 iframe 은 제휴사 URL 을 직접 박지 않는다 (2026-08-22).
+   * 자기 도메인 /go/quote 가 nginx 302 로 제휴사 폼을 가리킨다.
+   * CPA 코드 교체 = 서버 규칙 1줄 수정, 재배포 0장 (전에는 131만 장 재굽기였다).
+   * 실제 목적지: replyalba.com/intros/_frm/index.php?code=… (nginx cleaning-sites.conf)
+   */
+  formSrc: '/go/quote',
   jqueryUrl: 'https://replyalba.com/js/jquery-1.11.0.min.js',
   iframeResizerUrl: 'https://replyalba.com/js/iframeResizer.min.js',
 };
