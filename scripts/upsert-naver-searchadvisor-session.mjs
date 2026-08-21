@@ -39,6 +39,8 @@ if (normalizedStatus === 'valid' && (!cookieNames.has('NID_AUT') || !cookieNames
 
 const client = new Client(createClientConfig(connectionString));
 await client.connect();
+	// 역할 기본 2분은 DB 혼잡 시 부족하다. config 는 서버에 안 닿는다 — SET 으로 (2026-08-21).
+	await client.query(`set statement_timeout = '600s'`);
 
 try {
 	await ensureSchema(client);
