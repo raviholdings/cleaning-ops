@@ -6,20 +6,12 @@ export interface DomainQuery {
   status?: string;
   account?: string;
   deployed?: 'yes' | 'no' | '';
+  groupKey?: string;
   pageSize?: number;
 }
 
-/**
- * 도메인 목록을 서버에서 페이지 단위로 가져온다.
- *
- * 예전에는 /api/stats 가 10,000행을 통째로 내려주고 각 탭이 브라우저에서
- * 걸러 썼다. 1.9MB 를 매번 받느라 화면 여는 데 2초가 그것으로 갔고,
- * 도메인이 늘어나면 그대로 비례해 느려지는 구조였다.
- *
- * 검색어는 타이핑할 때마다 요청하지 않도록 300ms 늦춘다.
- */
 export function useDomainList(query: DomainQuery) {
-  const { q = '', status = '', account = '', deployed = '', pageSize = 50 } = query;
+  const { q = '', status = '', account = '', deployed = '', groupKey = '', pageSize = 50 } = query;
 
   const [rows, setRows] = useState<DomainInfo[]>([]);
   const [total, setTotal] = useState(0);
@@ -27,12 +19,9 @@ export function useDomainList(query: DomainQuery) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 응답이 순서를 바꿔 도착하면 옛 결과가 새 결과를 덮어쓴다. 마지막 요청만 반영한다.
   const requestId = useRef(0);
 
-  // 조건이 바뀌면 1페이지로 돌아간다. 3페이지를 보다가 검색하면
-  // 결과가 한 페이지뿐인데 3페이지를 달라고 해서 빈 화면이 된다.
-  useEffect(() => { setPage(1); }, [q, status, account, deployed, pageSize]);
+  useEffect(() => { setPage(1); }, [q, status, account, deployed, groupKey, pageSize]);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     const id = ++requestId.current;
@@ -44,6 +33,7 @@ export function useDomainList(query: DomainQuery) {
       if (status) params.set('status', status);
       if (account) params.set('account', account);
       if (deployed) params.set('deployed', deployed);
+      if (groupKey && groupKey !== 'all') params.set('groupKey', groupKey);
 
       const res = await fetch(`/api/domains?${params.toString()}`, { signal });
       if (!res.ok) throw new Error(`목록을 불러오지 못했습니다 (HTTP ${res.status})`);
@@ -57,7 +47,7 @@ export function useDomainList(query: DomainQuery) {
     } finally {
       if (id === requestId.current) setLoading(false);
     }
-  }, [page, pageSize, q, status, account, deployed]);
+  }, [page, pageSize, q, status, account, deployed, groupKey]);
 
   useEffect(() => {
     const controller = new AbortController();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Zap, 
   RefreshCw, 
@@ -8,8 +8,9 @@ import {
   Rocket, 
   ShieldCheck, 
   Send,
-  ChevronRight, TrendingUp} from 'lucide-react';
-import { DevTask, AccountInfo, CrawlDailyStat, CrawlLog, LeadSubmission, AccountSummary, OwnershipSummary, DeploymentSummary, RootDomainStat, AccountDomainCount } from './types';
+  TrendingUp 
+} from 'lucide-react';
+import { DevTask, AccountInfo, CrawlTodayStat, CandidateProjectStat, LeadSubmission, AccountSummary, OwnershipSummary, DeploymentSummary, RootDomainStat, AccountDomainCount } from './types';
 import DevRoadmapTab from './components/DevRoadmapTab';
 import AccountStatsTab from './components/AccountStatsTab';
 import DomainRegistryTab from './components/DomainRegistryTab';
@@ -20,12 +21,23 @@ import IndexStatusTab from './components/IndexStatusTab';
 
 import type { SessionUser } from './components/AuthGate';
 
+const GROUPS = [
+  { id: 'all', label: '전체 업종' },
+  { id: 'cleaning-ravi', label: '청소' },
+  { id: 'moving-ravi', label: '이사' },
+  { id: 'demolition-ravi', label: '철거' },
+];
+
 export default function App({ user }: { user: SessionUser }) {
   const [activeTab, setActiveTab] = useState<
     'dev_roadmap' | 'account' | 'domain' | 'deployment' | 'ownership' | 'crawl' | 'index'
   >('dev_roadmap');
 
-  const [loading, setLoading] = useState(true);
+  const [selectedGroupKey, setSelectedGroupKey] = useState<string>('all');
+  const [loading, setLoading] = useState(false);
+
+  // Stats Cache for instantaneous 0ms switching
+  const statsCacheRef = useRef<Record<string, any>>({});
 
   // Dev Tasks State (CRUD)
   const [devTasks, setDevTasks] = useState<DevTask[]>([]);
@@ -33,14 +45,11 @@ export default function App({ user }: { user: SessionUser }) {
   // Monitoring Stats State (R)
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [domainCounts, setDomainCounts] = useState<AccountDomainCount[]>([]);
-  const [crawlDailyStats, setCrawlDailyStats] = useState<CrawlDailyStat[]>([]);
-  const [recentCrawlLogs, setRecentCrawlLogs] = useState<CrawlLog[]>([]);
-  const [todayCrawl, setTodayCrawl] = useState<CrawlDailyStat | null>(null);
-  const [crawlDailyQuota, setCrawlDailyQuota] = useState(50000);
-  const [totalCrawlResultCount, setTotalCrawlResultCount] = useState(0);
+  const [crawlTodayByProject, setCrawlTodayByProject] = useState<CrawlTodayStat[]>([]);
+  const [candidateStats, setCandidateStats] = useState<CandidateProjectStat[]>([]);
   const [leadSubmissions, setLeadSubmissions] = useState<LeadSubmission[]>([]);
 
-  // DB 에서 집계해 내려주는 요약. 3,000행을 프론트에서 세면 느리고 값이 어긋난다.
+  // DB 에서 집계해 내려주는 요약
   const [accountSummary, setAccountSummary] = useState<AccountSummary | null>(null);
   const [ownershipSummary, setOwnershipSummary] = useState<OwnershipSummary | null>(null);
   const [deploymentSummary, setDeploymentSummary] = useState<DeploymentSummary | null>(null);
@@ -59,78 +68,77 @@ export default function App({ user }: { user: SessionUser }) {
     }
   };
 
-  // Fetch Monitoring Data from Backend API
-  const fetchRealDbData = async () => {
+  const applyData = useCallback((data: any) => {
+    if (!data) return;
+    if (data.accounts) setAccounts(data.accounts);
+    if (data.accountDomainCounts) setDomainCounts(data.accountDomainCounts);
+
+    if (data.accountSummary) setAccountSummary(data.accountSummary);
+    if (data.ownershipSummary) setOwnershipSummary(data.ownershipSummary);
+    if (data.deploymentSummary) setDeploymentSummary(data.deploymentSummary);
+    if (data.rootDomains) setRootDomains(data.rootDomains);
+    if (data.candidateStats) setCandidateStats(data.candidateStats);
+    if (data.crawlTodayByProject) setCrawlTodayByProject(data.crawlTodayByProject);
+
+    if (data.leads) setLeadSubmissions(data.leads as LeadSubmission[]);
+  }, []);
+
+  // Pre-fetch all industry groups concurrently
+  const fetchAllGroupsData = useCallback(async () => {
     setLoading(true);
     try {
       await fetchDevTasks();
 
-      const res = await fetch('/api/stats');
-      if (res.ok) {
-        const data = await res.json();
-
-        if (data.accounts) setAccounts(data.accounts);
-        if (data.accountDomainCounts) setDomainCounts(data.accountDomainCounts);
-
-        // DB 가 세어준 집계를 쓴다. 프론트에서 만 행을 다시 세면 느리고,
-        // 목록이 잘려 내려오면 숫자가 실제와 어긋난다.
-        if (data.accountSummary) setAccountSummary(data.accountSummary);
-        if (data.ownershipSummary) setOwnershipSummary(data.ownershipSummary);
-        if (data.deploymentSummary) setDeploymentSummary(data.deploymentSummary);
-        if (data.rootDomains) setRootDomains(data.rootDomains);
-
-        if (data.crawlDaily) {
-          const byDate = new Map<string, CrawlDailyStat>();
-          let sumCount = 0;
-          data.crawlDaily.forEach((item: any) => {
-            const date = String(item.date);
-            const count = Number(item.count || 0);
-            sumCount += count;
-            if (!byDate.has(date)) {
-              byDate.set(date, { date, submitted: 0, quotaStop: 0, failed: 0, total: 0 });
-            }
-            const row = byDate.get(date)!;
-            row.total += count;
-            if (item.status === 'submitted') row.submitted += count;
-            else if (item.status === 'quota-stop') row.quotaStop += count;
-            else if (item.status === 'failed') row.failed += count;
-          });
-
-          const chartList = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
-          setTotalCrawlResultCount(sumCount);
-          setCrawlDailyStats(chartList);
-          setCrawlDailyQuota(Number(data.crawlDailyQuota) || 50000);
-          // DB 가 KST 기준으로 직접 세어준 값을 우선한다. 차트에서 찾아 쓰면
-        // 시간대 경계에서 어긋난다.
-        if (data.crawlToday) {
-          setTodayCrawl({
-            date: data.todayKst,
-            submitted: data.crawlToday.submitted || 0,
-            quotaStop: data.crawlToday.quota_stop || 0,
-            failed: data.crawlToday.failed || 0,
-            total: (data.crawlToday.submitted || 0) + (data.crawlToday.quota_stop || 0) + (data.crawlToday.failed || 0),
-          });
-        } else {
-          setTodayCrawl(chartList.find((r) => r.date === data.todayKst) || null);
+      const fetchPromises = GROUPS.map(async (g) => {
+        const queryUrl = g.id !== 'all' ? `/api/stats?groupKey=${encodeURIComponent(g.id)}` : '/api/stats';
+        try {
+          const res = await fetch(queryUrl);
+          if (res.ok) {
+            const data = await res.json();
+            statsCacheRef.current[g.id] = data;
+            return { id: g.id, data };
+          }
+        } catch (e) {
+          console.error(`Failed to fetch stats for ${g.id}:`, e);
         }
-        }
+        return null;
+      });
 
-        if (data.recentCrawlLogs) setRecentCrawlLogs(data.recentCrawlLogs);
-        if (data.leads) setLeadSubmissions(data.leads as LeadSubmission[]);
-      } else {
-        console.error('API /api/stats failed:', res.statusText);
+      await Promise.all(fetchPromises);
+
+      // Apply selected group immediately
+      const current = statsCacheRef.current[selectedGroupKey];
+      if (current) {
+        applyData(current);
       }
-
     } catch (err) {
-      console.error('Error querying DB/API:', err);
+      console.error('Error prefetching DB stats:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedGroupKey, applyData]);
 
+  // 첫 로드만 한다. 자동 폴링(20초)은 뺐다 — 통계 쿼리가 130만 행 풀스캔이라
+  // 20초보다 오래 걸리고, 그러면 쿼리가 계속 쌓여 DB 전체(수집요청 러너 포함)가
+  // 타임아웃 났다 (2026-08-20 실측: 활성 쿼리 10개+ 적체). 새로고침은 브라우저로.
   useEffect(() => {
-    fetchRealDbData();
+    fetchAllGroupsData();
   }, []);
+
+  // Instant switch handler
+  const handleSelectGroup = (groupId: string) => {
+    setSelectedGroupKey(groupId);
+    // If cached in memory, switch instantly in 0ms!
+    if (statsCacheRef.current[groupId]) {
+      applyData(statsCacheRef.current[groupId]);
+    }
+    // Background re-fetch for this group
+    const queryUrl = groupId !== 'all' ? `/api/stats?groupKey=${encodeURIComponent(groupId)}` : '/api/stats';
+    fetch(queryUrl).then(res => res.json()).then(data => {
+      statsCacheRef.current[groupId] = data;
+      applyData(data);
+    }).catch(console.error);
+  };
 
   // CRUD Handlers for Dev Tasks
   const handleAddTask = async (newTaskData: Omit<DevTask, 'id'>) => {
@@ -176,16 +184,13 @@ export default function App({ user }: { user: SessionUser }) {
   };
 
   const navItems = [
-    { key: 'dev_roadmap', label: '🚀 개발팀 전체 진행과정', badge: `${devTasks.length}건`, icon: Kanban, isCrucial: true },
-    { key: 'account', label: '🔑 1. 계정 확인', badge: `${accountSummary?.total ?? accounts.length}개`, icon: KeyRound },
-    { key: 'domain', label: '🌐 2. 도메인 등록', badge: `${(ownershipSummary?.total ?? 0).toLocaleString()}개`, icon: Globe },
-    { key: 'deployment', label: '🚀 3. 배포 현황', badge: `${(deploymentSummary?.deployed_domains ?? ownershipSummary?.deployed ?? 0).toLocaleString()}개`, icon: Rocket },
-    { key: 'ownership', label: '🛡️ 4. 소유 확인', badge: `${(ownershipSummary?.verified ?? 0).toLocaleString()}개`, icon: ShieldCheck },
-    // 수집요청 뱃지는 '오늘 제출'이다. 누적을 보여주면 일일 한도와 비교가 안 된다.
-    { key: 'crawl', label: '📨 5. 수집 요청 현황', badge: `오늘 ${(todayCrawl?.submitted || 0).toLocaleString()}건`, icon: Send },
-    // 색인 뱃지는 조사된 것 중 색인된 수다. 조사 자체가 아직 전량이 아니라
-    // 여기에 1만 개 기준 비율을 적으면 실제보다 낮아 보인다.
-    { key: 'index', label: '📈 6. 색인 현황', badge: '검색 노출', icon: TrendingUp }
+    { key: 'dev_roadmap', label: '개발팀 전체 진행과정', badge: `${devTasks.length}건`, icon: Kanban, isCrucial: true },
+    { key: 'account', label: '1. 계정 확인', badge: `${accountSummary?.total ?? accounts.length}개`, icon: KeyRound },
+    { key: 'domain', label: '2. 도메인 등록', badge: `${(ownershipSummary?.total ?? 0).toLocaleString()}개`, icon: Globe },
+    { key: 'deployment', label: '3. 배포 현황', badge: `${(deploymentSummary?.deployed_domains ?? ownershipSummary?.deployed ?? 0).toLocaleString()}개`, icon: Rocket },
+    { key: 'ownership', label: '4. 소유 확인', badge: `${(ownershipSummary?.verified ?? 0).toLocaleString()}개`, icon: ShieldCheck },
+    { key: 'crawl', label: '5. 수집 요청 현황', badge: `오늘 ${crawlTodayByProject.reduce((a, r) => a + (r.submitted || 0), 0).toLocaleString()}건`, icon: Send },
+    { key: 'index', label: '6. 색인 현황', badge: '검색 노출', icon: TrendingUp }
   ];
 
   return (
@@ -205,7 +210,7 @@ export default function App({ user }: { user: SessionUser }) {
         position: 'sticky',
         top: 0,
         height: '100vh',
-        boxSizing: 'border-row' as any
+        boxSizing: 'border-box'
       }}>
         <div>
           {/* Logo & Header */}
@@ -310,7 +315,7 @@ export default function App({ user }: { user: SessionUser }) {
         {/* Sidebar Footer Refresh Controls */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
           <button
-            onClick={fetchRealDbData}
+            onClick={() => fetchAllGroupsData()}
             style={{
               width: '100%',
               display: 'flex',
@@ -336,6 +341,40 @@ export default function App({ user }: { user: SessionUser }) {
 
       {/* Main Content Area */}
       <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
+        
+        {/* 업종(프로젝트) 선택 바: 동일 서브도메인을 공유하므로 소유확인/도메인/배포 탭에는 노출하지 않고 수집요청 및 색인현황 탭에만 표시 */}
+        {(activeTab === 'crawl' || activeTab === 'index') && (
+          <div className="glass-panel" style={{ padding: '14px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e2e8f0' }}>업종(프로젝트) 선택:</span>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {GROUPS.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSelectGroup(p.id)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      border: selectedGroupKey === p.id ? '1px solid #818cf8' : '1px solid var(--border-color)',
+                      background: selectedGroupKey === p.id ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.04)',
+                      color: selectedGroupKey === p.id ? '#ffffff' : 'var(--text-muted)',
+                      fontSize: '0.85rem',
+                      fontWeight: selectedGroupKey === p.id ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              선택된 업종: <code style={{ color: '#818cf8', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: '4px' }}>{selectedGroupKey === 'all' ? '전체 업종' : selectedGroupKey === 'cleaning-ravi' ? '청소 (cleaning-ravi)' : selectedGroupKey === 'moving-ravi' ? '이사 (moving-ravi)' : '철거 (demolition-ravi)'}</code>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'dev_roadmap' && (
           <DevRoadmapTab
             tasks={devTasks}
@@ -363,16 +402,12 @@ export default function App({ user }: { user: SessionUser }) {
 
         {activeTab === 'crawl' && (
           <CrawlRequestTab
-            crawlDailyStats={crawlDailyStats}
-            todayCrawl={todayCrawl}
-            crawlDailyQuota={crawlDailyQuota}
-            totalCrawlResultCount={totalCrawlResultCount}
-            recentLogs={recentCrawlLogs}
+            crawlTodayByProject={crawlTodayByProject}
+            candidateStats={candidateStats}
           />
         )}
 
-        {/* 색인 탭은 /api/stats 를 안 쓴다. 자기 데이터를 따로 부른다. */}
-        {activeTab === 'index' && <IndexStatusTab />}
+        {activeTab === 'index' && <IndexStatusTab selectedGroupKey={selectedGroupKey} />}
       </main>
 
     </div>

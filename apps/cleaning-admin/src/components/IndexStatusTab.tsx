@@ -13,11 +13,15 @@ import { IndexFilter, useIndexStatus } from '../useIndexStatus';
  * 그래서 "조사 완료 / 전체"를 맨 앞에 둔다. 색인률만 크게 띄우면 아직
  * 조사도 안 한 도메인이 몇 개인지 안 보인다.
  */
-export default function IndexStatusTab() {
+interface IndexStatusTabProps {
+  selectedGroupKey?: string;
+}
+
+export default function IndexStatusTab({ selectedGroupKey = '' }: IndexStatusTabProps) {
   const [filter, setFilter] = useState<IndexFilter>('indexed');
   const [q, setQ] = useState('');
   const { summary, buckets, roots, rows, total, page, setPage, totalPages, loading, error } =
-    useIndexStatus(filter, q);
+    useIndexStatus(filter, q, selectedGroupKey);
 
   const totalDomains = summary?.total_domains ?? 0;
   const checked = summary?.checked ?? 0;

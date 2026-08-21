@@ -45,6 +45,9 @@ const client = new pg.Client({
 });
 
 await client.connect();
+// 역할 기본 statement_timeout(2분)은 무거운 마이그레이션에 부족하다.
+// pg Client config 의 statement_timeout 은 서버 세션에 반영되지 않는다 (실측) — SET 으로.
+await client.query(`set statement_timeout = '1200s'`);
 try {
   for (const file of files) {
     const sql = readFileSync(file, 'utf8');

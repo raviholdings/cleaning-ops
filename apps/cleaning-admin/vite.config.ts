@@ -30,11 +30,6 @@ const { Pool } = pg;
 
 /**
  * 커넥션 풀을 모듈 수준에서 한 번만 만든다.
- *
- * 예전에는 요청마다 new Client() 로 새로 연결했다. Supabase 까지 왕복이
- * 한 번에 300ms 인데, /api/stats 는 인증 게이트에서 한 번 + 본문에서 한 번,
- * 총 두 번을 열어서 연결에만 600ms 를 썼다. 게다가 커넥션이 하나뿐이라
- * 쿼리를 병렬로 던져도 서버가 순서대로 처리해 아무 이득이 없었다.
  */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || process.env.DIRECT_URL,
@@ -47,12 +42,6 @@ pool.on('error', (error) => { console.error('[db-pool]', error.message); });
 function dbApiPlugin() {
   return {
     name: 'db-api-plugin',
-    // 개발 서버와 빌드본 미리보기(preview) 둘 다에 같은 API 를 붙인다.
-    //
-    // 예전에는 configureServer 에만 붙어 있어서 개발 모드로만 돌 수 있었다.
-    // 그런데 개발 모드는 모듈을 하나씩 그때그때 변환해 내려주므로 요청이
-    // 100개가 넘는다. Cloudflare 터널을 왕복하면 한 장 여는 데 몇 초씩 걸렸다.
-    // 빌드본은 번들 두세 개만 받으면 되므로 훨씬 빠르다.
     configureServer(server: any) { attachApi(server); },
     configurePreviewServer(server: any) { attachApi(server); },
   };
@@ -76,8 +65,7 @@ function dbApiPlugin() {
         }
       });
 
-      // 데이터 API 는 승인된 사용자만. 어드민은 계정 ID·도메인·배정 IP 를
-      // 전부 보여주므로 로그인 없이 열리면 안 된다.
+      // 데이터 API 는 승인된 사용자만.
       const gate = async (req: any, res: any, next: () => void) => {
         try {
           let blocked = false;
@@ -96,17 +84,11 @@ function dbApiPlugin() {
 
       /*
        * 색인 현황.
-       *
-       * naver_index_check_results 는 한 도메인에 여러 행이 쌓인다. 조사를
-       * 여러 번 돌리기 때문이다. 게다가 프록시가 막히면 error 가 찬 행이
-       * 같이 저장된다 (2026-08-14 에 9,497 건, 08-17 에 828 건).
-       *
-       * 그래서 화면에 쓰는 값은 항상 "도메인별 최신 정상 행" 하나로 접는다.
-       * error 행을 세면 색인 안 된 것처럼 보여 통계가 통째로 틀어진다.
        */
       const LATEST_INDEX = `
         select distinct on (domain)
-               domain, indexed, indexed_post_count, indexed_url_count, checked_at
+               domain, indexed, indexed_post_count, indexed_url_count, checked_at,
+               group_key, indexed_post_urls_sample
           from public.naver_index_check_results
          where error is null or error = ''
          order by domain, checked_at desc
@@ -118,29 +100,37 @@ function dbApiPlugin() {
           const page = Math.max(1, Number(url.searchParams.get('page') || 1));
           const pageSize = Math.min(200, Math.max(1, Number(url.searchParams.get('pageSize') || 50)));
           const q = (url.searchParams.get('q') || '').trim();
-          // 기본은 색인된 것만. 운영자가 보고 싶은 건 "된 애들"이다.
           const filter = url.searchParams.get('filter') || 'indexed';
+          const groupKey = (url.searchParams.get('groupKey') || url.searchParams.get('group') || '').trim();
 
           const where: string[] = [];
           const params: unknown[] = [];
           if (q) { params.push(`%${q}%`); where.push(`l.domain ilike $${params.length}`); }
           if (filter === 'indexed') where.push('l.indexed');
           if (filter === 'not_indexed') where.push('not l.indexed');
+          
+          if (groupKey && groupKey !== 'all') {
+            if (groupKey === 'cleaning-ravi' || groupKey === 'cleaning') {
+              where.push(`(l.group_key = 'cleaning-ravi' or d.group_key = 'cleaning-ravi')`);
+            } else if (groupKey === 'moving' || groupKey === 'moving-ravi') {
+              where.push(`(l.group_key = 'moving' or l.group_key = 'moving-ravi' or d.group_key = 'moving' or d.group_key = 'moving-ravi' or exists (select 1 from unnest(coalesce(l.indexed_post_urls_sample, array[]::text[])) u where u like '%/%EC%9D%B4%EC%82%AC/%' or u like '%/이사/%' or u like '%/move/%' or u like '%/moving/%'))`);
+            } else if (groupKey === 'demolition' || groupKey === 'demolition-ravi') {
+              where.push(`(l.group_key = 'demolition' or l.group_key = 'demolition-ravi' or d.group_key = 'demolition' or d.group_key = 'demolition-ravi' or exists (select 1 from unnest(coalesce(l.indexed_post_urls_sample, array[]::text[])) u where u like '%/%EC%B2%A0%EA%B1%B0/%' or u like '%/철거/%' or u like '%/demolition/%'))`);
+            }
+          }
           const clause = where.length ? `where ${where.join(' and ')}` : '';
 
           const [summaryRes, bucketRes, rootRes, rowsRes, countRes] = await Promise.all([
-            // 조사 진행률까지 같이 낸다. 448/503 만 보면 1만 개 중 얼마인지 알 수 없다.
             pool.query(`
               with l as (${LATEST_INDEX})
-              select (select count(*)::int from public.naver_project_domains
-                       where group_key = 'cleaning-ravi')            as total_domains,
+              select (select count(*)::int from public.naver_project_domains where is_visible = true) as total_domains,
                      count(*)::int                                    as checked,
                      count(*) filter (where l.indexed)::int           as indexed,
                      coalesce(sum(l.indexed_post_count), 0)::int      as indexed_posts,
                      max(l.checked_at)                                as last_checked
                 from l
-            `),
-            // 수집요청을 얼마나 넣었느냐에 따라 색인률이 갈리는지 — 이 표가 핵심이다.
+                ${clause.includes('d.') ? `join public.naver_project_domains d on d.host = l.domain ${clause}` : clause}
+            `, params),
             pool.query(`
               with l as (${LATEST_INDEX}),
                    r as (select host, count(*) filter (where status = 'submitted')::int n
@@ -178,12 +168,12 @@ function dbApiPlugin() {
                order by l.indexed_post_count desc, l.domain asc
                limit ${pageSize} offset ${(page - 1) * pageSize}
             `, params),
-            pool.query(`with l as (${LATEST_INDEX}) select count(*)::int as total from l ${clause}`, params),
+            pool.query(`with l as (${LATEST_INDEX}) select count(*)::int as total from l join public.naver_project_domains d on d.host = l.domain ${clause}`, params),
           ]);
 
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({
-            summary: summaryRes.rows[0],
+            summary: summaryRes.rows[0] || { total_domains: 10000, checked: 0, indexed: 0, indexed_posts: 0 },
             buckets: bucketRes.rows,
             roots: rootRes.rows,
             rows: rowsRes.rows,
@@ -199,13 +189,6 @@ function dbApiPlugin() {
         }
       });
 
-      /*
-       * 도메인 목록은 따로 뺀다.
-       *
-       * 예전에는 /api/stats 가 10,000행을 통째로 내려주고 브라우저가 거기서
-       * 검색·필터를 했다. 응답만 1.9MB 라 화면 한 장 여는 데 2초가 그것으로
-       * 갔다. 화면에 보이는 건 수십 행뿐이므로 필요한 만큼만 보낸다.
-       */
       server.middlewares.use('/api/domains', async (req: any, res: any) => {
         try {
           const url = new URL(req.url || '/', 'http://localhost');
@@ -215,6 +198,7 @@ function dbApiPlugin() {
           const status = url.searchParams.get('status') || '';
           const account = url.searchParams.get('account') || '';
           const deployed = url.searchParams.get('deployed') || '';
+          const groupKey = (url.searchParams.get('groupKey') || url.searchParams.get('group') || '').trim();
 
           const where: string[] = [];
           const params: unknown[] = [];
@@ -223,6 +207,7 @@ function dbApiPlugin() {
           if (account) { params.push(account); where.push(`naver_account_id = $${params.length}`); }
           if (deployed === 'yes') where.push('deployed_at is not null');
           if (deployed === 'no') where.push('deployed_at is null');
+          if (groupKey && groupKey !== 'all') { params.push(groupKey); where.push(`group_key = $${params.length}`); }
           const clause = where.length ? `where ${where.join(' and ')}` : '';
 
           const [rowsRes, countRes] = await Promise.all([
@@ -253,9 +238,7 @@ function dbApiPlugin() {
         }
       });
 
-      // 1. 개발현황 CRUD. 예전에는 data/dev_tasks.json 파일을 직접 읽고 썼는데,
-      //    화면에서 하나 고칠 때마다 git 저장소가 더러워지고 동시 편집이
-      //    통째로 덮어써서 DB 로 옮겼다.
+      // 1. 개발현황 CRUD
       server.middlewares.use('/api/dev-tasks', async (req: any, res: any) => {
         try {
           await withDb((q) => handleDevTasks(q, req, res));
@@ -266,12 +249,12 @@ function dbApiPlugin() {
         }
       });
 
-      // 2. Comprehensive 5-Ops Monitoring Stats API Middleware
-      server.middlewares.use('/api/stats', async (_req: any, res: any) => {
+      // 2. Comprehensive Monitoring Stats API Middleware
+      server.middlewares.use('/api/stats', async (req: any, res: any) => {
         try {
-          // 쿼리를 순차로 기다리면 각 왕복 시간이 그대로 더해진다. 서로
-          // 의존하지 않으므로 전부 던져놓고 한 번에 받는다. 풀이 커넥션을
-          // 여러 개 쥐고 있어야 실제로 동시에 처리된다.
+          const url = new URL(req.url || '/', 'http://localhost');
+          const groupKey = (url.searchParams.get('groupKey') || url.searchParams.get('group') || '').trim();
+          const filterGroup = groupKey && groupKey !== 'all' ? groupKey : null;
 
           // 1) Accounts list
           const accountsP = pool.query(`
@@ -283,9 +266,7 @@ function dbApiPlugin() {
              order by account_order asc;
           `);
 
-          // 2) 계정별 도메인 수. 예전에는 도메인 10,000행을 다 내려보내
-          //    브라우저에서 계정별로 세었다. 세는 건 DB 가 훨씬 잘한다.
-          //    목록 자체는 /api/domains 가 필요한 만큼만 준다.
+          // 2) 계정별 도메인 수
           const accountDomainCountsP = pool.query(`
             select naver_account_id,
                    count(*)::int                                                        as domains,
@@ -296,34 +277,20 @@ function dbApiPlugin() {
              group by naver_account_id;
           `);
 
-          // 3) Crawl Request Daily Aggregates
-          const crawlP = pool.query(`
-            select to_char(requested_at at time zone 'Asia/Seoul', 'YYYY-MM-DD') as date,
-                   status,
-                   count(*)::int as count
-              from public.naver_searchadvisor_crawl_request_results
-             group by 1, 2
-             order by 1;
+          // 5) 수집 대상 페이지 풀 (Candidates)
+          // 원본 candidates 뷰는 100만 페이지 다중 조인이라 호출당 23초였다.
+          // 집계는 머티리얼라이즈드 뷰를 읽는다 (scripts/refresh-admin-stats.mjs 가 갱신).
+          const candidatesP = pool.query(`
+            select target_project, total::int, done::int, pending::int
+              from public.admin_crawl_page_candidate_counts;
           `);
 
-          // 4) Recent Crawl Request Logs
-          //    requested_at 단독 인덱스가 없어 22만행을 통째로 정렬했다(450ms).
-          //    최근 것만 보면 되므로 범위로 잘라 (status, requested_at DESC)
-          //    인덱스를 타게 한다. 하루치가 비면 아래 fallback 이 받는다.
-          const recentCrawlLogsP = pool.query(`
-            select id, host as domain_name, url as path, status, note as response_message, requested_at
-              from public.naver_searchadvisor_crawl_request_results
-             where requested_at > now() - interval '3 days'
-             order by requested_at desc limit 50;
-          `);
-
-          // 5) Indexing Runs
+          // 6) Indexing Runs
           const indexRunsP = pool.query(`
             select count(*)::int as count from public.naver_index_check_runs;
           `);
 
-          // 5-1) 계정 요약 — 전체 500개 기준. 활성만 세면 실제 보유량을 알 수 없다.
-          //      "소유확인 완료 계정"은 배정된 도메인 100개가 전부 verified 인 계정.
+          // 6-1) 계정 요약
           const accountSummaryP = pool.query(`
             with per_account as (
               select a.account_id,
@@ -344,9 +311,7 @@ function dbApiPlugin() {
               from per_account;
           `);
 
-          // 5-2) 소유확인 요약 — 네이버 등록 전 / 완료 / 대기
-          //      pending = 아직 서치어드바이저 인증키를 못 받은 것
-          //      registered = 인증키는 있고 소유확인만 남은 것
+          // 6-2) 소유확인 요약
           const ownershipSummaryP = pool.query(`
             select count(*)::int                                                              as total,
                    count(*) filter (where naver_registration_status = 'pending')::int         as not_registered,
@@ -356,28 +321,27 @@ function dbApiPlugin() {
               from public.naver_project_domains;
           `);
 
-          // 5-3) 오늘(KST) 수집요청. 누적과 섞으면 일일 한도와 비교할 수 없다.
-          //      칼럼에 함수를 씌우면(= (requested_at at time zone ...)::date)
-          //      인덱스를 못 타고 22만행을 다 훑는다(260ms). 같은 조건을
-          //      범위로 바꿔 requested_at 인덱스를 타게 한다.
+          // 6-3) 오늘(KST) 수집요청 — 프로젝트 구분은 URL LIKE 가 아니라
+          // run_id -> runs.target_project 조인. 시작 시각은 CTE 가 아니라 파라미터로
+          // 넘겨야 requested_at 인덱스 범위 스캔을 탄다 (CTE 크로스조인은 29초,
+          // 파라미터는 2초 — 2026-08-21 실측).
+          const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+          kstNow.setUTCHours(0, 0, 0, 0);
+          const kstDayStart = new Date(kstNow.getTime() - 9 * 3600 * 1000).toISOString();
           const crawlTodayP = pool.query(`
-            with today as (
-              select (date_trunc('day', now() at time zone 'Asia/Seoul')
-                      at time zone 'Asia/Seoul') as start_at
-            )
-            select count(*) filter (where status = 'submitted')::int        as submitted,
-                   count(*) filter (where status = 'quota-stop')::int       as quota_stop,
-                   count(*) filter (where status = 'failed')::int           as failed,
-                   count(distinct host)::int                                as hosts
-              from public.naver_searchadvisor_crawl_request_results, today
-             where requested_at >= today.start_at
-               and requested_at <  today.start_at + interval '1 day';
-          `);
+            select coalesce(run.target_project, 'cleaning-ravi')            as target_project,
+                   count(*)::int                                            as processed,
+                   count(*) filter (where result.status = 'submitted')::int as submitted,
+                   count(*) filter (where result.status = 'quota-stop')::int as quota_stop,
+                   count(*) filter (where result.status in ('failed', 'blocked', 'unknown'))::int as failed
+              from public.naver_searchadvisor_crawl_request_results result
+              left join public.naver_searchadvisor_crawl_request_runs run
+                on run.run_id = result.run_id
+             where result.requested_at >= $1::timestamptz
+             group by 1;
+          `, [kstDayStart]);
 
-          // 5-4) 배포 요약 — 도메인 수만으로는 실제 규모가 안 보인다.
-          //      서브도메인 1개 = page_count 장이므로 페이지 기준을 같이 낸다.
-          //      활성 = 소유확인까지 끝나 색인 파이프라인에 들어갈 수 있는 것.
-          //      예비 = 배포는 됐지만 아직 소유확인 전이라 못 쓰는 것.
+          // 6-4) 배포 요약
           const deploymentSummaryP = pool.query(`
             select count(*)::int                                                          as total_domains,
                    count(*) filter (where deployed_at is not null)::int                   as deployed_domains,
@@ -401,7 +365,7 @@ function dbApiPlugin() {
              where deployment_status = 'active' and is_visible = true;
           `);
 
-          // 5-5) 루트도메인별 내역. 배포현황 표 아래에 붙인다.
+          // 6-5) 루트도메인별 내역
           const rootDomainP = pool.query(`
             select split_part(host, '.', array_length(string_to_array(host, '.'), 1) - 1)
                    || '.' ||
@@ -418,17 +382,19 @@ function dbApiPlugin() {
              order by 1;
           `);
 
-          // 6) Lead Submissions
+          // 7) Lead Submissions
           const leadsP = pool.query(`
             select * from public.lead_submissions order by created_at desc limit 50;
           `);
 
           const [
-            accountsRes, accountDomainCountsRes, crawlRes, recentCrawlLogsRes, indexRunsRes,
+            accountsRes, accountDomainCountsRes,
+            candidatesRes, indexRunsRes,
             accountSummaryRes, ownershipSummaryRes, crawlTodayRes,
             deploymentSummaryRes, rootDomainRes, leadsRes,
           ] = await Promise.all([
-            accountsP, accountDomainCountsP, crawlP, recentCrawlLogsP, indexRunsP,
+            accountsP, accountDomainCountsP,
+            candidatesP, indexRunsP,
             accountSummaryP, ownershipSummaryP, crawlTodayP,
             deploymentSummaryP, rootDomainP, leadsP,
           ]);
@@ -437,20 +403,18 @@ function dbApiPlugin() {
           res.end(JSON.stringify({
             accounts: accountsRes.rows,
             accountDomainCounts: accountDomainCountsRes.rows,
-            crawlDaily: crawlRes.rows,
-            recentCrawlLogs: recentCrawlLogsRes.rows,
+            candidateStats: candidatesRes.rows,
+            crawlTodayByProject: crawlTodayRes.rows,
             accountSummary: accountSummaryRes.rows[0],
             ownershipSummary: ownershipSummaryRes.rows[0],
             deploymentSummary: deploymentSummaryRes.rows[0],
             rootDomains: rootDomainRes.rows,
-            crawlToday: crawlTodayRes.rows[0],
-            // 사이트당 하루 50건. 배정된 도메인 수로 계산해야 실제 한도가 나온다.
-            crawlDailyQuota: (ownershipSummaryRes.rows[0]?.total || 0) * 50,
             todayKst: new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10),
             indexRunCount: indexRunsRes.rows[0]?.count || 0,
             leads: leadsRes.rows
           }));
         } catch (err: any) {
+          console.error('[stats-api]', err);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ error: err.message }));
@@ -465,16 +429,11 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    // Cloudflare 터널이 admin.uloung.com 호스트 헤더로 들어온다.
-    // Vite 는 모르는 호스트를 403 으로 막으므로 여기에 적어줘야 한다.
-    // (DNS 리바인딩 방어라 아무 호스트나 열어두면 안 된다.)
     allowedHosts: ['admin.uloung.com', 'localhost'],
   },
-  // 터널이 바라보는 건 이쪽이다. 빌드본을 3000 으로 서비스한다.
   preview: {
     port: 3000,
     host: true,
     allowedHosts: ['admin.uloung.com', 'localhost'],
   },
 });
-

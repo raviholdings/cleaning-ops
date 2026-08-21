@@ -117,8 +117,15 @@ export interface CrawlDailyStat {
   total: number;
 }
 
+export interface CandidateStat {
+  total: number;
+  done: number;
+  pending: number;
+}
+
 export interface CrawlLog {
   id: number;
+  group_key?: string;
   domain_name: string;
   path: string;
   status: string;
@@ -172,4 +179,21 @@ export interface IndexRow {
   checked_at: string | null;
   naver_account_id: string | null;
   account_order: number | null;
+}
+
+/** 오늘(KST) 수집요청 프로젝트별 집계 — /api/stats.crawlTodayByProject */
+export interface CrawlTodayStat {
+  target_project: string;
+  processed: number;
+  submitted: number;
+  quota_stop: number;
+  failed: number;
+}
+
+/** 수집 대상 풀 집계(MV) — /api/stats.candidateStats */
+export interface CandidateProjectStat {
+  target_project: string;
+  total: number;
+  done: number;
+  pending: number;
 }

@@ -10,7 +10,7 @@ export type IndexFilter = 'indexed' | 'not_indexed' | 'all';
  * 같은 응답에 실려 온다는 것뿐이다. 세 가지를 따로 부르면 왕복이 세 번이 되고,
  * 어차피 서버에서 같은 CTE 를 공유하므로 한 번에 받는 편이 싸다.
  */
-export function useIndexStatus(filter: IndexFilter, q: string, pageSize = 50) {
+export function useIndexStatus(filter: IndexFilter, q: string, groupKey = '', pageSize = 50) {
   const [summary, setSummary] = useState<IndexSummary | null>(null);
   const [buckets, setBuckets] = useState<IndexBucket[]>([]);
   const [roots, setRoots] = useState<IndexRoot[]>([]);
@@ -20,10 +20,9 @@ export function useIndexStatus(filter: IndexFilter, q: string, pageSize = 50) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 응답이 순서를 바꿔 도착하면 옛 결과가 새 결과를 덮어쓴다.
   const requestId = useRef(0);
 
-  useEffect(() => { setPage(1); }, [filter, q]);
+  useEffect(() => { setPage(1); }, [filter, q, groupKey]);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     const id = ++requestId.current;
@@ -34,6 +33,7 @@ export function useIndexStatus(filter: IndexFilter, q: string, pageSize = 50) {
         page: String(page), pageSize: String(pageSize), filter,
       });
       if (q) params.set('q', q);
+      if (groupKey && groupKey !== 'all') params.set('groupKey', groupKey);
       const res = await fetch(`/api/index-status?${params.toString()}`, { signal });
       if (!res.ok) throw new Error(`색인 현황을 불러오지 못했습니다 (HTTP ${res.status})`);
       const data = await res.json();
@@ -49,7 +49,7 @@ export function useIndexStatus(filter: IndexFilter, q: string, pageSize = 50) {
     } finally {
       if (id === requestId.current) setLoading(false);
     }
-  }, [page, pageSize, filter, q]);
+  }, [page, pageSize, filter, q, groupKey]);
 
   useEffect(() => {
     const controller = new AbortController();
