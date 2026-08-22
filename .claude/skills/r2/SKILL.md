@@ -37,7 +37,9 @@ assets.* 10개 존 전부 Cloudflare Cache Rule 로 **엣지 TTL 1년 강제**�
 - `moving/001_포장이사_01.webp` … 500장 (유형 25종 × 20장)
 - `moving/compare1.webp` ~ `compare5.webp` — SERP ItemList 용 업체 사진
 - `site/moving-v1/` — moving.css · moving.js (favicon.ico 는 별도 확인)
-- 청소: `cleaning/` 이미지, `site/v3/` 자산
+- 청소: `cleaning/` 이미지, **`site/v4/` 자산 (2026-08-22 라이브 — 비콘 포함)**.
+  v1(비콘 없음)·v3 은 옛 버전 — 페이지가 참조하는 버전은
+  scripts/lib/merged-page-data.mjs 의 ASSET_VERSION 기본값이 진실이다.
 
 ## 절차
 
