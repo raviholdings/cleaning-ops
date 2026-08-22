@@ -29,3 +29,18 @@ description: 네이버 서치어드바이저 수집요청 실행 절차와 함�
 - **소유확인**: 토큰이 있다고 등록된 게 아니다 — 실제 상태는
   scripts/verify-naver-searchadvisor-sites.mjs 로 확인한다.
 - 정지 계정 이관: scripts/migrate-blocked-account.ps1
+
+## 재수집 회차 (-DoneSince, 2026-08-23 도입)
+
+노출 초기화 등으로 **전량을 처음부터 다시 제출**할 때:
+
+    powershell -File scripts/run-crawl-range.ps1 -From 1 -To 20 -DoneSince 2026-08-23T00:00:00+09:00
+
+- 기준선 이전의 제출 기록을 "없던 것"으로 친다 — 후보 선정(catalog)·dedup·
+  fast-skip 세 곳 모두 (env NAVER_CRAWL_DONE_SINCE).
+- 기준선 이후 기록은 정상 dedup — 회차 안에서 이중 제출 없다. 오늘 한도
+  소진(quota-stop) 스킵도 그대로 산다.
+- 다음 회차는 날짜만 올려서 다시 주면 된다. 이사(run-moving-crawl-range.ps1)도
+  같은 파라미터.
+- check-crawl-remaining 은 기준선을 모른다 — 재수집 진행률은 관리자 카드의
+  오늘 제출 수와 기준선 이후 누적으로 본다.

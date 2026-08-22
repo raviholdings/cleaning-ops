@@ -24,7 +24,9 @@ param(
 	[Parameter(Mandatory = $true)][int]$From,
 	[Parameter(Mandatory = $true)][int]$To,
 	[switch]$DryRun,
-	[switch]$NoHaiIp
+	[switch]$NoHaiIp,
+	# 재수집 기준선 — 청소 run-crawl-range.ps1 과 동일. 예: -DoneSince 2026-08-23T00:00:00+09:00
+	[string]$DoneSince = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -64,6 +66,13 @@ $env:NAVER_CRAWL_INCLUDE_GROUPS = 'moving-ravi'
 $env:NAVER_CRAWL_EXCLUDE_GROUPS = ''
 $env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = 'moving-ravi'
 $env:NAVER_CRAWL_SITEMAP_PATH = '/%EC%9D%B4%EC%82%AC/sitemap.xml'
+
+if ($DoneSince) {
+	$env:NAVER_CRAWL_DONE_SINCE = $DoneSince
+	Write-Host "재수집 기준선: $DoneSince 이전 제출은 없던 것으로 칩니다." -ForegroundColor Yellow
+} else {
+	$env:NAVER_CRAWL_DONE_SINCE = ''
+}
 
 $forwarded = @()
 if ($DryRun) { $forwarded += '-DryRun' }

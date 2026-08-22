@@ -30,7 +30,11 @@ param(
 	[Parameter(Mandatory = $true)][int]$From,
 	[Parameter(Mandatory = $true)][int]$To,
 	[switch]$DryRun,
-	[switch]$NoHaiIp
+	[switch]$NoHaiIp,
+	# 재수집 기준선 — 이 시각 이전의 제출 기록은 없던 셈 치고 1페이지부터 다시
+	# 제출한다 (2026-08-23 노출 초기화 사태 대응). 예: -DoneSince 2026-08-23T00:00:00+09:00
+	# 다음 회차는 날짜만 바꿔서 다시 주면 된다. 안 주면 종전처럼 미완료분만 돈다.
+	[string]$DoneSince = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -70,6 +74,13 @@ $env:NAVER_CRAWL_EXCLUDE_ACCOUNTS = ''
 # 구글시트 갱신 끔 — 시트가 실제로 만들어진 적이 없는데 계정마다 무거운 DB 조회만
 # 돌리고 타임아웃으로 죽었다 (2026-08-21). 현황은 관리자 페이지가 담당한다.
 $env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS = '0'
+
+if ($DoneSince) {
+	$env:NAVER_CRAWL_DONE_SINCE = $DoneSince
+	Write-Host "재수집 기준선: $DoneSince 이전 제출은 없던 것으로 칩니다." -ForegroundColor Yellow
+} else {
+	$env:NAVER_CRAWL_DONE_SINCE = ''
+}
 
 $forwarded = @()
 if ($DryRun) { $forwarded += '-DryRun' }

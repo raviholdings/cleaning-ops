@@ -106,6 +106,26 @@ try {
     process.exit(0);
   }
 
+  /*
+   * 재수집 모드 (NAVER_CRAWL_DONE_SINCE, 2026-08-23): 기준선 이전 완료는 무효라
+   * "다 끝났다" 계열 스킵 판정이 전부 틀리게 된다. 오늘 한도 소진 스킵(위)만
+   * 남기고 나머지 판정은 건너뛴다 — 실제 후보 선정은 러너의 catalog 쿼리가
+   * 같은 기준선으로 한다.
+   */
+  if (process.env.NAVER_CRAWL_DONE_SINCE) {
+    print({
+      skip: false,
+      reason: 'redo-mode-done-since',
+      doneSince: process.env.NAVER_CRAWL_DONE_SINCE,
+      accountId,
+      targetProject,
+      domainCount,
+      pageCount,
+      quotaDeferredHostCount,
+    });
+    process.exit(0);
+  }
+
   if (catalogProjects.has(targetProject)) {
     const pendingResult = await client.query(
       `

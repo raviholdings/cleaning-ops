@@ -164,6 +164,13 @@ const options = {
   exposurePrioritySource: initialExposurePriority.source,
   exposurePriorityGroups: [],
   useDbDoneUrls: process.env.NAVER_CRAWL_USE_DB_DONE_URLS !== '0',
+  /*
+   * 재수집 기준선 (2026-08-23, 네이버 노출 초기화 사태 후 전량 재수집용).
+   * 이 시각 이전의 제출 기록은 "안 한 것"으로 친다 — 후보 선정과 dedup 양쪽에
+   * 적용된다. 이후의 기록은 그대로 dedup 되므로 회차 안에서 이중 제출은 없다.
+   * ISO 예: 2026-08-23T00:00:00+09:00. 다음 회차는 날짜만 다시 올리면 된다.
+   */
+  doneSince: process.env.NAVER_CRAWL_DONE_SINCE || '',
   submitMode: normalizeSubmitMode(process.env.NAVER_CRAWL_SUBMIT_MODE || process.env.NAVER_CRAWL_MODE || 'api'),
   apiFallback: process.env.NAVER_CRAWL_API_FALLBACK !== '0',
   apiTimeoutMs: readInt(process.env.NAVER_CRAWL_API_TIMEOUT_MS, 20000),
@@ -218,6 +225,10 @@ const catalogDbProjects = new Set(splitEnv(
 const sitemapOnlyDbProjects = new Set(splitEnv(
   process.env.NAVER_CRAWL_SITEMAP_ONLY_PROJECTS || '',
 ));
+
+if (options.doneSince && Number.isNaN(Date.parse(options.doneSince))) {
+  throw new Error(`NAVER_CRAWL_DONE_SINCE 를 해석할 수 없습니다: ${options.doneSince} (예: 2026-08-23T00:00:00+09:00)`);
+}
 
 const crawlDb = {
   enabled: process.env.NAVER_CRAWL_RECORD_DB !== '0',
@@ -878,8 +889,11 @@ async function loadCatalogDbQueueSource({ client, accountId, targets }) {
   options.exposurePriorityEnabled = priorityPolicy.enabled;
   options.exposurePrioritySource = priorityPolicy.source;
   options.exposurePriorityGroups = priorityPolicy.groups;
+  // doneSince 가 있으면 그 이전 완료는 미완료로 취급한다 (재수집 회차).
   const pendingClause = options.catalogOnlyPending
-    ? 'and candidate.last_done_at is null'
+    ? (options.doneSince
+      ? 'and (candidate.last_done_at is null or candidate.last_done_at < $5::timestamptz)'
+      : 'and candidate.last_done_at is null')
     : '';
   const { rows } = await client.query(
     `
@@ -943,7 +957,8 @@ async function loadCatalogDbQueueSource({ client, accountId, targets }) {
         domain_id,
         request_id
     `,
-    [accountId, crawlDb.targetProject, options.exposurePriorityEnabled, options.exposureStatuses],
+    [accountId, crawlDb.targetProject, options.exposurePriorityEnabled, options.exposureStatuses,
+      ...(options.catalogOnlyPending && options.doneSince ? [options.doneSince] : [])],
   );
 
   if (rows.length === 0 && !options.catalogOnlyPending) {
@@ -2670,9 +2685,11 @@ async function addDbDoneUrls(alreadyDone, tasks, { allowDryRun = false } = {}) {
           and (run.account_id = $1 or result.account = $1)
           and result.status = any($4::text[])
           and result.url = any($3::text[])
+          ${options.doneSince ? 'and result.requested_at >= $5::timestamptz' : ''}
         order by result.url, result.requested_at desc, result.id desc
       `,
-      [options.accountId, crawlDb.targetProject, urls, doneStatusList],
+      [options.accountId, crawlDb.targetProject, urls, doneStatusList,
+        ...(options.doneSince ? [options.doneSince] : [])],
     );
 
     for (const row of rows) {
