@@ -453,6 +453,7 @@ export function extendPageData(data, opts = {}) {
   if (data.gallery?.first?.src) data.ogImage = data.gallery.first.src;
 
   data.jsonLd = addImageJsonLd(data.jsonLd, data.gallery, data.canonical, short);
+  data.itemListJson = vendorItemListJson(data.canonical);
 
   return data;
 }
@@ -683,6 +684,7 @@ export function extendIndexData(data, ctx) {
 
   if (data.gallery?.first?.src) data.ogImage = data.gallery.first.src;
   data.jsonLd = addImageJsonLd(data.jsonLd, data.gallery, data.canonical, seedLocation);
+  data.itemListJson = vendorItemListJson(data.canonical);
 
   return data;
 }
@@ -704,6 +706,34 @@ export function extendIndexData(data, ctx) {
  * ItemList 를 쓰는 이유는 캐러셀이 "여러 항목의 나열"로 해석되기 때문이다.
  * ImageObject 로 폭·높이·설명까지 적어야 로봇이 크기를 알고 후보로 삼는다.
  */
+/*
+ * 캐러셀용 업체 비교 ItemList — @graph 에 넣지 않고 독립 스크립트 블록으로
+ * 내보낸다 (이사에서 실측 검증한 형태, 2026-08-21). 네이버 요건: image 필수 ·
+ * url 절대 경로 · 페이지당 1개. 이미지는 자산 도메인이 아니라 페이지 자신의
+ * 도메인(/img/cleaning/, nginx 공유 경로)에서 서빙한다 — 캐러셀 수집 안정성.
+ * 링크는 /go/cN 절대 경로라 제휴 코드 교체와 무관하다.
+ */
+const CLEANING_VENDORS = [
+  { name: '새집느낌', path: '/go/c1', image: 'compare1.webp' },
+  { name: '이사방청소', path: '/go/c2', image: 'compare2.webp' },
+  { name: '24번가 입주청소', path: '/go/c3', image: 'compare3.webp' },
+];
+
+export function vendorItemListJson(canonical) {
+  const origin = new URL(canonical).origin;
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: CLEANING_VENDORS.map((vendor, index) => ({
+      '@type': 'ListItem',
+      position: String(index + 1),
+      name: vendor.name,
+      image: `${origin}/img/cleaning/${vendor.image}`,
+      url: `${origin}${vendor.path}`,
+    })),
+  });
+}
+
 function addImageJsonLd(jsonLd, gallery, canonical, locationName) {
   const items = (gallery?.items || []).filter((item) => item?.src);
   if (!items.length) return jsonLd;
@@ -742,19 +772,12 @@ function addImageJsonLd(jsonLd, gallery, canonical, locationName) {
       image: images,
     });
 
-    graph.push({
-      '@type': 'ItemList',
-      '@id': `${canonical}#imagelist`,
-      name: `${locationName} 청소 시공 사진 ${items.length}장`,
-      numberOfItems: items.length,
-      itemListOrder: 'https://schema.org/ItemListOrderAscending',
-      itemListElement: items.map((item, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        item: imageObject(item, index),
-      })),
-    });
-
+    /*
+     * 이미지 ItemList 는 @graph 에서 뺐다 (2026-08-23). 네이버 캐러셀 요건이
+     * "페이지당 ItemList 1개 · 독립 스크립트 블록"이라, 업체 비교 ItemList
+     * (vendorItemListJson)를 독립 블록으로 내보내는 것과 충돌한다.
+     * 이미지 묶음 정보는 ImageGallery 가 계속 말해준다.
+     */
     parsed['@graph'] = graph;
     return JSON.stringify(parsed);
   } catch {
