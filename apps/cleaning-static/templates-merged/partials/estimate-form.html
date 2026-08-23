@@ -10,7 +10,15 @@
         bodyMargin: null,
         bodyMarginV1: 0,
         bodyPadding: null,
-        checkOrigin: true,
+        /*
+         * true 로 두면 iframe-resizer 가 "src 속성의 origin" 과 메시지 origin 을
+         * 비교한다. src 가 /go/quote(자기 도메인 302) 로 바뀐 뒤로는 메시지가
+         * replyalba 에서 오므로 전부 거부돼 높이가 150px 에 고정됐다
+         * (2026-08-23 실측 — 폼이 잘려 보이는 사고). 허용 목록(배열)은 리플알바가
+         * 얹어주는 구버전 리사이저가 못 읽고 true 취급한다 — false 만 동작한다
+         * (A/B 실측: false=762px, 배열=150px).
+         */
+        checkOrigin: false,
         enablePublicMethods: false,
         heightCalculationMethod: 'offset',
         interval: 32,
