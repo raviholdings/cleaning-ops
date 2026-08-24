@@ -610,9 +610,19 @@ async function verifySearchAdvisor(statePath) {
     });
     const page = await context.newPage();
     const response = await page.goto(SEARCH_ADVISOR_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    // 판정에 쓸 글자가 화면에 나타나면 바로 진행한다 (고정 1.5초 + 1.5초 대체).
-    await settle(page, async () => /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|아이디 또는 전화번호|로그인 상태 유지/
-      .test(await page.evaluate(() => document.body?.innerText || '')), 8000);
+    /*
+     * 결론이 나는 글자가 보일 때까지 기다린다.
+     *
+     * 여기에 `웹마스터 가이드` 를 넣어뒀던 게 화근이었다. 그 글자는 SPA 껍데기가
+     * 처음 그려질 때 이미 있어서, 콘솔이 렌더되기도 전에 대기가 끝나고 그 순간의
+     * 제목("로그인 - 네이버 서치어드바이저")으로 실패 판정을 내렸다. 쿠키는
+     * NID_AUT·NID_SES·SADV 까지 멀쩡한데 검증만 계속 실패한 이유다
+     * (2026-08-24 uwzmoykotr2). 캡처 쪽은 고쳤는데 검증 쪽을 빠뜨렸다.
+     *
+     * 콘솔 내용이 나오거나, 진짜 로그인 폼이 나올 때까지만 본다.
+     */
+    await settle(page, async () => /사이트 관리|사이트 등록|간단체크|아이디 또는 전화번호|로그인 상태 유지|QR 코드 로그인/
+      .test(await page.evaluate(() => document.body?.innerText || '')), 20_000);
     const url = page.url();
     if (url.includes('nid.naver.com')) return { ok: false, reason: '로그인 페이지로 튕겼습니다.' };
     if (response && response.status() >= 400) return { ok: false, reason: `HTTP ${response.status()}` };
@@ -623,6 +633,10 @@ async function verifySearchAdvisor(statePath) {
     // 화면 내용으로 로그인 여부를 확정한다.
     const title = (await page.title()) || '';
     const body = (await page.evaluate(() => document.body?.innerText || '')).replace(/\s+/g, ' ');
+
+    // 콘솔 내용이 보이면 통과다. SPA 라 제목이 늦게 바뀌는 경우가 있어, 제목보다
+    // 화면 내용을 먼저 본다 (제목만 보고 멀쩡한 세션을 버렸다).
+    if (CONSOLE_ONLY.test(body)) return { ok: true, title: title.slice(0, 40) };
     if (/아이디 또는 전화번호|로그인 상태 유지|QR 코드 로그인|추가 확인을 해주세요/.test(body)) {
       return { ok: false, reason: '로그인 화면이 그려져 있습니다(추가 인증이 필요할 수 있습니다).' };
     }
