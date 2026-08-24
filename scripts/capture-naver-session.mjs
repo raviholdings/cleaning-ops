@@ -298,16 +298,26 @@ async function captureOne(account) {
      * 아직 서치어드바이저 인증이 안 끝난 상태라, 검증에서 "로그인 화면"으로 나온다
      * (2026-08-24 운영자: "콘솔창 로딩 되기도 전에 닫히고 저렇게 떠").
      */
-    let inConsole = await settle(page, () => isSearchAdvisorConsole(page), 25_000);
-    if (!inConsole && !options.noPause) {
-      console.log('\n  ⏸ 서치어드바이저 콘솔까지 못 들어갔습니다 (동의가 남았을 수 있습니다).');
+    // 동의 모달이 늦게 뜨는 경우가 있어 몇 번 더 시도한다.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (!(await consentPending(page))) break;
+      await acceptSearchAdvisorTerms(page);
+      await settle(page, async () => !(await consentPending(page)), 8000);
+    }
+
+    // 콘솔에 들어갔고, 동의도 남아 있지 않아야 끝난 것이다.
+    const ready = async () => (await isSearchAdvisorConsole(page)) && !(await consentPending(page));
+    let done = await settle(page, ready, 25_000);
+    if (!done && !options.noPause) {
+      const pending = await consentPending(page);
+      console.log(`\n  ⏸ ${pending ? '이용약관 동의가 남아 있습니다.' : '서치어드바이저 콘솔까지 못 들어갔습니다.'}`);
       console.log('     브라우저에서 동의를 눌러 콘솔 화면까지 띄워주세요.');
       console.log('     **창은 닫지 마세요** (닫으면 세션을 못 뽑습니다). 끝나면 이 콘솔에서 Enter.');
       await waitForEnter();
-      inConsole = await settle(page, () => isSearchAdvisorConsole(page), 15_000);
+      done = await settle(page, ready, 15_000);
     }
-    if (!inConsole) {
-      throw new Error('서치어드바이저 콘솔까지 들어가지 못해 세션을 저장하지 않습니다.');
+    if (!done) {
+      throw new Error('콘솔 진입/약관 동의가 끝나지 않아 세션을 저장하지 않습니다.');
     }
 
     // 콘솔이 떴어도 인증 쿠키가 다 내려오기 전일 수 있다. 통신이 잦아들 때까지 둔다.
@@ -472,6 +482,21 @@ async function settle(page, predicate, capMs = 6000, stepMs = 250) {
  */
 async function isSearchAdvisorConsole(page) {
   return CONSOLE_ONLY.test(await page.evaluate(() => document.body?.innerText || ''));
+}
+
+/*
+ * 최초 이용 동의가 아직 남아 있는지.
+ *
+ * 동의 화면이 콘솔 위에 모달로 뜨는 경우가 있다. 그러면 뒤에 콘솔 글자가 비쳐서
+ * isSearchAdvisorConsole 이 참이 되고, 동의를 누르지도 않았는데 세션을 저장하고
+ * 창을 닫아버린다 (2026-08-24 운영자: "동의를 안 했는데 창이 닫혀버린다").
+ * 체크박스와 동의 문구가 같이 있으면 아직 남은 것으로 본다.
+ */
+async function consentPending(page) {
+  const boxes = await page.locator('input[type=checkbox]').count().catch(() => 0);
+  if (!boxes) return false;
+  const body = await page.evaluate(() => document.body?.innerText || '').catch(() => '');
+  return CONSENT_LABEL.test(body);
 }
 
 /*
