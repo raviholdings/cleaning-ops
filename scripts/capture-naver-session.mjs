@@ -253,6 +253,17 @@ async function captureOne(account) {
       || CONSOLE_OR_TERMS.test(await page.evaluate(() => document.body?.innerText || '')), 8000);
     await acceptSearchAdvisorTerms(page);
 
+    // 콘솔까지 들어갔는지 본다. 아직 약관 화면이면 여기서 사람에게 넘긴다 —
+    // 그냥 지나가면 검증 단계에서 "콘솔에 못 들어갑니다"로 실패하고 세션이 버려진다.
+    const inConsole = await settle(page, () => isSearchAdvisorConsole(page), 3000);
+    if (!inConsole && !options.noPause) {
+      console.log('\n  ⏸ 서치어드바이저 동의가 남아 있습니다.');
+      console.log('     브라우저에서 동의만 눌러주세요. **창은 닫지 마세요** (닫으면 세션을 못 뽑습니다).');
+      console.log('     끝나면 이 콘솔에서 Enter 를 눌러주세요.');
+      await waitForEnter();
+      await settle(page, () => isSearchAdvisorConsole(page), 8000);
+    }
+
     storageState = await context.storageState();
   } finally {
     await context.close().catch(() => {});
@@ -387,18 +398,71 @@ async function settle(page, predicate, capMs = 6000, stepMs = 250) {
 /** 콘솔이든 약관 화면이든, 화면이 그려졌으면 참. */
 const CONSOLE_OR_TERMS = /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|약관|동의/;
 
-async function acceptSearchAdvisorTerms(page) {
-  const checkbox = page.locator('input[type=checkbox]').first();
-  const confirm = page.locator('button:has-text("확인")').first();
-  if (!(await checkbox.count()) || !(await confirm.count())) return false;
+/** 콘솔 안에서만 보이는 글자로 판정한다 (첫 화면 메뉴에도 있는 '웹마스터 도구'는 쓰면 안 된다). */
+const CONSOLE_ONLY = /사이트 관리|사이트 등록|간단체크/;
+const isSearchAdvisorConsole = async (page) => CONSOLE_ONLY.test(
+  await page.evaluate(() => document.body?.innerText || ''),
+);
 
-  await checkbox.check({ force: true }).catch(() => {});
-  if (!(await checkbox.isChecked().catch(() => false))) return false;
-  await confirm.click().catch(() => {});
-  // 약관 화면이 사라지면 끝난 것이다. 고정 4초는 대부분 낭비였다.
-  await settle(page, async () => (await page.locator('input[type=checkbox]').count()) === 0, 8000);
-  console.log(`  이용약관 자동 동의 완료 (${await page.title()})`);
-  return true;
+/*
+ * 서치어드바이저 최초 이용 동의.
+ *
+ * 예전에는 `input[type=checkbox]` + `button:has-text("확인")` 딱 하나만 봤다.
+ * 실제 화면이 그 형태가 아니면 조용히 false 를 돌려주고 지나가서, 사람이 직접
+ * 동의를 누르고 Enter 를 쳐야 했다 (2026-08-24 운영자 보고).
+ *
+ * 그래서 (1) 체크박스는 라벨 클릭까지 폴백하고 (2) 버튼 문구 후보를 여러 개
+ * 시도하고 (3) iframe 안도 뒤지고 (4) 그래도 못 찾으면 화면에 보이는 버튼
+ * 문구를 찍어 남긴다. 다음 실행 때 그 로그만 보면 셀렉터를 맞출 수 있다.
+ */
+const TERMS_BUTTON_TEXTS = ['전체 동의', '동의하기', '동의', '확인', '시작하기', '다음'];
+
+async function acceptSearchAdvisorTerms(page) {
+  for (const scope of [page, ...page.frames()]) {
+    const boxes = scope.locator('input[type=checkbox]');
+    const count = await boxes.count().catch(() => 0);
+    if (!count) continue;
+
+    // 체크박스를 전부 켠다. 라벨로 감싼 커스텀 체크박스는 직접 못 눌러서 라벨을 누른다.
+    for (let i = 0; i < count; i += 1) {
+      const box = boxes.nth(i);
+      if (await box.isChecked().catch(() => true)) continue;
+      const ok = await box.check({ force: true }).then(() => true).catch(() => false);
+      if (ok) continue;
+      const id = await box.getAttribute('id').catch(() => null);
+      if (id) await scope.locator(`label[for="${id}"]`).click({ force: true }).catch(() => {});
+    }
+
+    for (const text of TERMS_BUTTON_TEXTS) {
+      const button = scope.locator(`button:has-text("${text}"), a:has-text("${text}"), input[type=submit][value*="${text}"]`).first();
+      if (!(await button.count().catch(() => 0))) continue;
+      if (!(await button.isVisible().catch(() => false))) continue;
+      await button.click({ force: true }).catch(() => {});
+      await settle(page, async () => (await page.locator('input[type=checkbox]').count()) === 0, 8000);
+      console.log(`  이용약관 자동 동의 완료 ("${text}" 클릭, ${await page.title()})`);
+      return true;
+    }
+  }
+
+  // 못 찾았다. 무엇이 보이는지 남겨야 다음에 고칠 수 있다.
+  const seen = await page.evaluate(() => {
+    const labels = [...document.querySelectorAll('button, a[role=button], input[type=submit]')]
+      .map((el) => (el.innerText || el.value || '').replace(/\s+/g, ' ').trim())
+      .filter(Boolean).slice(0, 12);
+    return {
+      title: document.title,
+      checkboxes: document.querySelectorAll('input[type=checkbox]').length,
+      buttons: labels,
+      text: (document.body?.innerText || '').replace(/\s+/g, ' ').slice(0, 160),
+    };
+  }).catch(() => null);
+  if (seen && (seen.checkboxes || /약관|동의/.test(seen.text))) {
+    console.log('  ⚠ 약관 화면 같은데 자동 동의에 실패했습니다. 브라우저에서 직접 동의해 주세요.');
+    console.log(`     제목: ${seen.title}`);
+    console.log(`     체크박스 ${seen.checkboxes}개 / 버튼: ${seen.buttons.join(' | ')}`);
+    console.log(`     문구: ${seen.text}`);
+  }
+  return false;
 }
 
 /**
