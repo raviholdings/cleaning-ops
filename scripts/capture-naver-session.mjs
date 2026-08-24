@@ -277,7 +277,12 @@ async function captureOne(account) {
   writeFileSync(statePath, JSON.stringify(storageState));
   chmodSync(statePath, 0o600);
 
-  const verified = await verifySearchAdvisor(statePath);
+  // 사람이 몇 분씩 붙어서 만든 세션이다. 한 번 더 확인하고 버린다.
+  let verified = await verifySearchAdvisor(statePath);
+  if (!verified.ok) {
+    console.log(`  검증 실패(${verified.reason}) — 한 번 더 확인합니다.`);
+    verified = await verifySearchAdvisor(statePath);
+  }
   if (!verified.ok) {
     rmSync(statePath, { force: true });
     rmSync(profileDir, { recursive: true, force: true });
@@ -513,9 +518,31 @@ async function fillAndVerify(page, selector, value, attempts = 3) {
  */
 async function verifySearchAdvisor(statePath) {
   // 설치된 크롬을 쓴다. Playwright 번들 브라우저는 따로 내려받아야 해서 없을 수 있다.
-  const browser = await chromium.launch({ headless: true, channel: 'chrome' });
+  /*
+   * 캡처는 실제 크롬(headless 아님)으로 하면서 검증만 headless 로 띄웠다.
+   * 네이버는 자동화 브라우저를 감지하면 콘솔 대신 로그인 화면을 내준다.
+   * 그래서 멀쩡히 로그인된 세션인데 "로그인 - 네이버 서치어드바이저" 제목이
+   * 나와 검증에 실패하고, 사람이 5분 넘게 붙어서 만든 세션을 버렸다
+   * (2026-08-24 운영자 로그: fbzfr23i69stg).
+   * 캡처와 똑같은 조건으로 띄우되 창만 화면 밖에 둔다.
+   */
+  const browser = await chromium.launch({
+    headless: false,
+    channel: 'chrome',
+    args: [
+      '--disable-blink-features=AutomationControlled',
+      '--lang=ko-KR',
+      '--window-position=-2400,-2400',
+      '--window-size=1280,900',
+    ],
+    ignoreDefaultArgs: ['--enable-automation', '--disable-extensions'],
+  });
   try {
-    const context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
+    const context = await browser.newContext({
+      storageState: statePath,
+      locale: 'ko-KR',
+      timezoneId: 'Asia/Seoul',
+    });
     const page = await context.newPage();
     const response = await page.goto(SEARCH_ADVISOR_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     // 판정에 쓸 글자가 화면에 나타나면 바로 진행한다 (고정 1.5초 + 1.5초 대체).
