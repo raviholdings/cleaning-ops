@@ -239,6 +239,58 @@ export function loadPipingData(projectRoot) {
 }
 
 /**
+ * 사이트 루트(index.html) 데이터.
+ *
+ * 신규 서브도메인은 /배관/ 아래에만 페이지가 있어서 루트가 404 였다. 그런데 사이트
+ * 등록 때 네이버에 알려준 주소가 루트라, 네이버는 소유확인할 때 루트를 읽는다.
+ * 메타태그를 못 찾으니 소유확인이 통째로 막혔다 (2026-08-25).
+ *
+ * 그래서 루트에 소유확인 메타태그를 담은 안내 페이지를 둔다. 겸사겸사 하위 페이지로
+ * 가는 진입점이 생겨 크롤러가 타고 들어가기도 좋다.
+ */
+export async function buildPipingIndexData(opts) {
+  const {
+    projectRoot, locations, siteIndex = 0, siteUrl,
+    pageCount = 200, naverSiteVerification = '', pipingData, linkCount = 40,
+  } = opts;
+
+  const { config, keywordsData } = pipingData || loadPipingData(projectRoot);
+  const expansions = await loadAdminExpansions(projectRoot);
+  const slots = phaseSlots(config);
+  assertPlan(slots, keywordsData, locations.length);
+
+  // 배포된 범위(pageCount) 안에서 고르게 뽑는다.
+  const step = Math.max(1, Math.floor(pageCount / linkCount));
+  const links = [];
+  for (let requestId = 1; requestId <= pageCount && links.length < linkCount; requestId += step) {
+    const picked = selectLocationKeyword({
+      siteIndex, requestId, slots, keywordsData, locationCount: locations.length,
+    });
+    const location = normalizePipingLocation(locations[picked.locIndex], expansions);
+    links.push({
+      href: pipingPagePath(location, picked.keyword),
+      label: `${lastToken(location)} ${picked.keyword}`,
+    });
+  }
+
+  const head = links.slice(0, 2).map((l) => l.label.split(' ')[0]);
+  const title = `${head.join(' · ')} 외 배관 막힘 · 누수 · 수전 상담 안내`;
+  const description = `배관막힘, 하수구·싱크대 막힘, 누수탐지, 수전 교체 상담을 지역별로 안내합니다. ${links.length}개 지역 페이지에서 해당 지역 정보를 확인하실 수 있습니다.`;
+
+  return {
+    title,
+    description,
+    canonical: `${String(siteUrl).replace(/\/+$/, '')}/`,
+    naverSiteVerification,
+    assetBase: opts.assetBase || assetBaseForSite(siteUrl),
+    assetVersion: config.assetVersion || 'piping-v1',
+    sitemapHref: '/배관/sitemap.xml',
+    links,
+    linkCount: links.length,
+  };
+}
+
+/**
  * 페이지 한 장의 데이터 컨텍스트 생성.
  */
 export async function buildPipingPageData(opts) {

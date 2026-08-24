@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
-import { buildPipingPageData, loadLocations, loadPipingData } from './lib/piping-page-data.mjs';
+import { buildPipingPageData, buildPipingIndexData, loadLocations, loadPipingData } from './lib/piping-page-data.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -103,6 +103,20 @@ for (let requestId = 1; requestId <= pageCount; requestId += 1) {
     gzipBytes: gzBuf.byteLength,
   });
 }
+
+// 루트 index (소유확인 메타태그가 여기 있어야 한다)
+const indexTemplate = parseTemplate(
+  readFileSync(resolve(projectRoot, 'apps/piping-static/piping-template/index.html'), 'utf8'),
+  'piping-template/index.html',
+);
+const indexData = await buildPipingIndexData({
+  projectRoot, locations, siteIndex, siteUrl, pageCount,
+  naverSiteVerification: token, pipingData,
+});
+const indexHtml = renderTemplate(indexTemplate, indexData);
+writeFileSync(join(outDir, 'index.html'), Buffer.from(indexHtml, 'utf8'));
+writeFileSync(join(outDir, 'index.html.gz'), gzipSync(Buffer.from(indexHtml, 'utf8'), { level: 6 }));
+console.log(JSON.stringify({ phase: 'index', links: indexData.linkCount, title: indexData.title, bytes: Buffer.byteLength(indexHtml) }));
 
 console.log(JSON.stringify({
   phase: 'complete',

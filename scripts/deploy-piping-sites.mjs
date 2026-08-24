@@ -25,7 +25,7 @@ import { gzipSync } from 'node:zlib';
 import pg from 'pg';
 
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
-import { buildPipingPageData, loadLocations, loadPipingData } from './lib/piping-page-data.mjs';
+import { buildPipingPageData, buildPipingIndexData, loadLocations, loadPipingData } from './lib/piping-page-data.mjs';
 import { prepareOriginSsh } from './lib/origin-ssh.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -48,6 +48,9 @@ const domainGroup = String(options.group || 'cleaning-ravi');
 if (!DOMAIN_GROUPS.includes(domainGroup)) {
   throw new Error(`--group 은 ${DOMAIN_GROUPS.join(' | ')} 중 하나여야 한다 (받은 값: ${domainGroup}).`);
 }
+// 루트 index 만 굽고 올린다. 이미 배포한 페이지는 건드리지 않는다
+// (110만 장을 다시 구울 필요 없이 사이트당 파일 하나만 얹는다).
+const indexOnly = Boolean(options.indexOnly);
 const fromOrder = Number(options.fromOrder || 1);
 const toOrder = Number(options.toOrder || (domainGroup === 'piping-ravi' ? 300 : 105));
 const chunkSize = Math.max(1, Number(options.chunkSites || 500));
@@ -131,7 +134,9 @@ if (existsSync(statePath)) {
     try { done.add(JSON.parse(line).host); } catch { /* 무시 */ }
   }
 }
-const targets = domains.filter((d) => !done.has(d.host));
+// --index-only 는 이미 배포가 끝난 사이트에 루트 한 장을 얹는 작업이라,
+// "이미 했음" 기록을 건너뛰기 근거로 쓰면 안 된다 (전부 건너뛰어 0건이 된다).
+const targets = indexOnly ? domains : domains.filter((d) => !done.has(d.host));
 console.log(JSON.stringify({
   phase: 'start', group: domainGroup, accounts: `${fromOrder}-${toOrder}`,
   domains: domains.length, skipDone: domains.length - targets.length, targets: targets.length,
@@ -142,6 +147,7 @@ if (!targets.length) { console.log(JSON.stringify({ phase: 'nothing-to-do' })); 
 /* ── 템플릿 로더 ── */
 const templateDir = resolve(projectRoot, 'apps/piping-static/piping-template');
 const pageTemplate = parseTemplate(readFileSync(join(templateDir, 'page.html'), 'utf8'), 'piping-template/page.html');
+const indexTemplate = parseTemplate(readFileSync(join(templateDir, 'index.html'), 'utf8'), 'piping-template/index.html');
 const partialsDir = join(templateDir, 'partials');
 const partials = existsSync(partialsDir)
   ? readdirSync(partialsDir)
@@ -164,6 +170,21 @@ async function bakeSite(domain) {
   const siteUrl = domain.site_url || `https://${domain.host}`;
   const siteIndex = domain.ord - 1;
   const written = [];
+
+  /*
+   * 루트 index. 네이버는 등록된 주소(=루트)에서 소유확인 메타태그를 찾는다.
+   * 루트를 비워두면 소유확인이 통째로 막힌다. --index-only 면 이것만 굽는다.
+   */
+  const indexData = await buildPipingIndexData({
+    projectRoot, locations, siteIndex, siteUrl, pageCount,
+    naverSiteVerification: domain.naver_verification_token || '',
+    pipingData,
+  });
+  const indexFile = join(stageDir, domain.host, 'index.html');
+  mkdirSync(dirname(indexFile), { recursive: true });
+  writeFileSync(`${indexFile}.gz`, gzipSync(Buffer.from(renderTemplate(indexTemplate, indexData), 'utf8'), { level: 6 }));
+  if (indexOnly) return;
+
   for (let requestId = 1; requestId <= pageCount; requestId += 1) {
     const data = await buildPipingPageData({
       projectRoot, locations, siteIndex, requestId, siteUrl, pageCount,
@@ -257,7 +278,10 @@ for (const [index, chunk] of chunks.entries()) {
     console.log(JSON.stringify({ phase: 'chunk-skipped', chunk: label, sites: chunk.length }));
   } else {
     const now = new Date().toISOString();
-    appendFileSync(statePath, chunk.map((d) => JSON.stringify({ host: d.host, ord: d.ord, pages: pageCount, at: now })).join('\n') + '\n', 'utf8');
+    // index-only 는 페이지 배포 기록이 아니므로 상태 파일을 오염시키지 않는다.
+    if (!indexOnly) {
+      appendFileSync(statePath, chunk.map((d) => JSON.stringify({ host: d.host, ord: d.ord, pages: pageCount, at: now })).join('\n') + '\n', 'utf8');
+    }
     deployedTotal += chunk.length;
     const elapsed = (Date.now() - startedAt) / 1000;
     const rate = deployedTotal / elapsed;

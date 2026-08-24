@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="{{canonical}}">
+<meta name="robots" content="index, follow">
+<!--
+  이 페이지의 첫 번째 목적은 소유확인이다.
+  사이트 등록 때 네이버에 알려준 주소가 루트라, 네이버는 여기서 메타태그를 찾는다.
+  루트를 비워두면 소유확인이 통째로 막힌다 (2026-08-25).
+-->
+{{#naverSiteVerification}}<meta name="naver-site-verification" content="{{naverSiteVerification}}">{{/naverSiteVerification}}
+
+<meta property="og:locale" content="ko_KR">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{canonical}}">
+
+<link rel="icon" href="{{assetBase}}/site/{{assetVersion}}/favicon.ico" sizes="any">
+<link rel="sitemap" type="application/xml" href="{{sitemapHref}}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="{{assetBase}}/site/{{assetVersion}}/piping.css">
+<!--
+  area-links 는 piping.css 에 없다. CSS 는 R2 immutable 이라 한 줄 고치려고 버전을
+  올리면 이미 배포한 220만 장을 전부 다시 구워야 한다. 루트 한 장에만 필요한
+  스타일이므로 여기 인라인으로 둔다.
+-->
+<style>
+.area-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.area-links a{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 13px;font-size:.86rem;font-weight:700;color:#334155;text-decoration:none}
+.area-links a:hover{border-color:var(--red-dark);color:var(--red-dark)}
+</style>
+</head>
+<body class="post-page">
+<main id="top" class="post-shell">
+
+  <header class="post-header">
+    <h1>{{title}}</h1>
+    <p>{{description}}</p>
+  </header>
+
+  <a class="post-call" href="tel:07071065241" aria-label="전화 상담 070-7106-5241">
+    <span>⚡ 각종 막힘 / 뚫음 / 수전 / 배관공사 전국 24시 빠른출동</span>
+    <strong>📞 070-7106-5241</strong>
+    <small>터치하시면 바로 전화가 연결됩니다</small>
+  </a>
+
+  <section class="post-notice">
+    <p><strong>긴급 서비스 및 견적요청</strong>은 전화연결을 이용해 주세요.</p>
+    <p>아래 지역별 안내에서 해당 지역의 상담 정보를 확인하실 수 있습니다.</p>
+  </section>
+
+  <section class="post-places" aria-label="지역별 안내">
+    <div class="section-heading"><span>Area</span><h2>지역별 배관 상담 안내 ({{linkCount}}곳)</h2></div>
+    <nav class="area-links">{{#links}}<a href="{{href}}">{{label}}</a>{{/links}}</nav>
+  </section>
+
+</main>
+</body>
+</html>
