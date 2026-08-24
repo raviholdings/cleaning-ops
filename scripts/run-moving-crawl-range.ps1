@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
   이사(moving-ravi) 수집요청을 계정 순번 범위로 돌린다.
@@ -68,8 +68,9 @@ $env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = 'moving-ravi'
 $env:NAVER_CRAWL_SITEMAP_PATH = '/%EC%9D%B4%EC%82%AC/sitemap.xml'
 
 if ($DoneSince) {
-	$env:NAVER_CRAWL_DONE_SINCE = $DoneSince
-	Write-Host "재수집 기준선: $DoneSince 이전 제출은 없던 것으로 칩니다." -ForegroundColor Yellow
+	$cleanDoneSince = $DoneSince.Trim().TrimEnd('\', '"', "'")
+	$env:NAVER_CRAWL_DONE_SINCE = $cleanDoneSince
+	Write-Host "재수집 기준선: $cleanDoneSince 이전 제출은 없던 것으로 칩니다." -ForegroundColor Yellow
 } else {
 	$env:NAVER_CRAWL_DONE_SINCE = ''
 }

@@ -15,6 +15,8 @@
 
 배경 문서: `docs/` (MOVING-PROJECT-SPEC, GZIP-ASSET-DEPLOY, STATIC-RENDERER,
 INDEX-CHECK-HANDOVER, LEAD-BEACON, HAIIP-VM-SCALEOUT-PROMPT 등).
+**배관 신규 프로젝트는 docs/PIPING-PROJECT-HANDOVER.md 부터 읽을 것** —
+인프라 전체 플로우·확정 요구사항·실행 단계·함정 총정리 (2026-08-24).
 
 ## ⛔ 최우선 규칙 — 확인 먼저, 실행은 그 다음
 

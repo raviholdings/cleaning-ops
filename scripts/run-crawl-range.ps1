@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
   계정 순번 범위만 골라 수집요청을 돌린다. PC·VM 어디서든 같은 명령을 쓴다.
@@ -76,8 +76,9 @@ $env:NAVER_CRAWL_EXCLUDE_ACCOUNTS = ''
 $env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS = '0'
 
 if ($DoneSince) {
-	$env:NAVER_CRAWL_DONE_SINCE = $DoneSince
-	Write-Host "재수집 기준선: $DoneSince 이전 제출은 없던 것으로 칩니다." -ForegroundColor Yellow
+	$cleanDoneSince = $DoneSince.Trim().TrimEnd('\', '"', "'")
+	$env:NAVER_CRAWL_DONE_SINCE = $cleanDoneSince
+	Write-Host "재수집 기준선: $cleanDoneSince 이전 제출은 없던 것으로 칩니다." -ForegroundColor Yellow
 } else {
 	$env:NAVER_CRAWL_DONE_SINCE = ''
 }
