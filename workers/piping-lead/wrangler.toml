@@ -1,0 +1,24 @@
+name = "piping-lead"
+main = "src/worker.js"
+compatibility_date = "2026-08-01"
+
+# 루트 10개 존 전부에 같은 Worker 를 건다. 서브도메인 와일드카드라
+# 2만 개 서브도메인이 이 라우트 하나로 전부 덮인다.
+routes = [
+  { pattern = "*amunsa.com/api/lead",        zone_name = "amunsa.com" },
+  { pattern = "*anclose.com/api/lead",       zone_name = "anclose.com" },
+  { pattern = "*daddul.com/api/lead",        zone_name = "daddul.com" },
+  { pattern = "*ddulea.com/api/lead",        zone_name = "ddulea.com" },
+  { pattern = "*naoheg.com/api/lead",        zone_name = "naoheg.com" },
+  { pattern = "*neverfoul.com/api/lead",     zone_name = "neverfoul.com" },
+  { pattern = "*one-qfast.com/api/lead",     zone_name = "one-qfast.com" },
+  { pattern = "*oneshot-sewer.com/api/lead", zone_name = "oneshot-sewer.com" },
+  { pattern = "*pipe-oneshot.com/api/lead",  zone_name = "pipe-oneshot.com" },
+  { pattern = "*uloung.com/api/lead",        zone_name = "uloung.com" },
+]
+
+# 비밀값은 여기 두지 않는다. 배포 전에 아래를 한 번씩 실행한다.
+#   npx wrangler secret put SUPABASE_URL
+#   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#   npx wrangler secret put TELEGRAM_BOT_TOKEN
+#   npx wrangler secret put TELEGRAM_CHAT_ID

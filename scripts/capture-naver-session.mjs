@@ -237,7 +237,7 @@ async function captureOne(account) {
         console.log('\n  ⏸ 창을 열어둡니다. 보호조치·본인확인을 처리하신 뒤');
         console.log('     로그인까지 끝내고 이 창에서 Enter 를 눌러주세요. (건너뛰려면 그냥 Enter)');
         await waitForEnter();
-        if (!page.url().includes('nid.naver.com')) {
+        if (await isLoggedIn(page)) {
           console.log('  ✅ 로그인이 확인됐습니다. 계속 진행합니다.');
         } else {
           throw new Error(`로그인이 끝나지 않았습니다 (${info.title || 'unknown'})`);
@@ -313,7 +313,7 @@ async function waitForLogin(page, accountId) {
   let lastNotice = 0;
 
   for (;;) {
-    if (!page.url().includes('nid.naver.com')) return;
+    if (await isLoggedIn(page)) return;
 
     const body = await page.evaluate(() => (document.body?.innerText || '').replace(/\s+/g, ' ')).catch(() => '');
 
@@ -334,6 +334,21 @@ async function waitForLogin(page, accountId) {
     }
     await page.waitForTimeout(2000);
   }
+}
+
+/**
+ * 로그인이 실제로 끝났는지 본다.
+ *
+ * 예전에는 `주소가 nid.naver.com 을 벗어났으면 성공`으로 봤는데, 캡차·본인확인
+ * 단계에서 네이버가 잠깐 다른 주소로 튕기기만 해도 성공으로 오인해 사람이 아직
+ * 아무것도 안 눌렀는데 다음 단계로 넘어가 버렸다 (2026-08-24 운영자 보고).
+ * 인증 쿠키가 실제로 생겼는지로 판정한다.
+ */
+async function isLoggedIn(page) {
+  if (page.url().includes('nid.naver.com')) return false;
+  const cookies = await page.context().cookies().catch(() => []);
+  const names = new Set(cookies.filter((c) => c.value).map((c) => c.name));
+  return names.has('NID_AUT') && names.has('NID_SES');
 }
 
 /** 콘솔에서 Enter 한 줄을 기다린다. */

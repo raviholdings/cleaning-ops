@@ -1,0 +1,23 @@
+<!-- 자체 DB 폼 (POST {{leadApi}} -> lead_submissions 저장 및 텔레그램 연동) -->
+<form id="estimate" class="estimate-card" action="#estimate" method="post"
+      data-lead-form data-lead-api="{{leadApi}}" data-area="{{location}}" data-project="{{leadProject}}">
+  <h2>빠른 견적 문의</h2>
+  <div class="estimate-list">
+    <label>이름<input name="name" placeholder="이름을 입력해 주세요"></label>
+    <label>연락처<input name="phone" inputmode="tel" placeholder="-(하이픈) 을 빼고 입력해주세요"></label>
+    <div class="estimate-address-group">
+      <span class="estimate-label">주소</span>
+      <div class="estimate-split">
+        <label><span class="sr-only">시/도</span><select name="sido" data-region-sido><option value="" selected>-시/도를 선택해주세요</option><option value="서울">서울</option><option value="부산">부산</option><option value="대구">대구</option><option value="인천">인천</option><option value="광주">광주</option><option value="대전">대전</option><option value="울산">울산</option><option value="세종">세종</option><option value="경기">경기</option><option value="강원">강원</option><option value="충북">충북</option><option value="충남">충남</option><option value="전북">전북</option><option value="전남">전남</option><option value="경북">경북</option><option value="경남">경남</option><option value="제주">제주</option></select></label>
+        <label><span class="sr-only">시/군/구</span><select name="sigungu" data-region-sigungu data-region-placeholder="-시/군/구를 선택해주세요" data-selected-sigungu=""><option value="" selected>-시/군/구를 선택해주세요</option></select></label>
+      </div>
+      <label><span class="sr-only">상세주소</span><input name="address" placeholder="-상세주소를 입력해주세요"></label>
+    </div>
+    <label>문의내용<textarea name="message" rows="4" placeholder="-문의 내용을 입력해주세요"></textarea></label>
+    <input class="lead-honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <label class="estimate-check"><input type="checkbox" name="consent" value="true"> 개인정보 수집 및 이용에 동의합니다 <a href="#top">약관보기</a></label>
+    <small>※ 미동의 시 상담 신청을 하실 수 없습니다.</small>
+    <button type="submit" data-lead-submit>신청하기</button>
+    <p class="lead-form-status" data-lead-status aria-live="polite"></p>
+  </div>
+</form>

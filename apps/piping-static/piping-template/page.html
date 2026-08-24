@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="keywords" content="{{keywords}}">
+<link rel="canonical" href="{{canonical}}">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+{{#naverSiteVerification}}<meta name="naver-site-verification" content="{{naverSiteVerification}}">{{/naverSiteVerification}}
+
+<meta property="og:locale" content="ko_KR">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{canonical}}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+
+<link rel="icon" href="{{assetBase}}/site/{{assetVersion}}/favicon.ico" sizes="any">
+{{#rssHref}}<link rel="alternate" type="application/rss+xml" title="{{mainKeyword}}" href="{{rssHref}}">{{/rssHref}}
+{{#sitemapHref}}<link rel="sitemap" type="application/xml" href="{{sitemapHref}}">{{/sitemapHref}}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="{{assetBase}}/site/{{assetVersion}}/piping.css">
+
+<!-- 구조화 데이터: jsonLd(Breadcrumb+Service+FAQ), itemListJson(네이버 검색결과 이미지 캐러셀) -->
+<script type="application/ld+json">{{{jsonLd}}}</script>
+<script type="application/ld+json">{{{itemListJson}}}</script>
+</head>
+<body class="post-page">
+<main id="top" class="post-shell">
+
+  <div class="post-badges">
+    <span>📍 {{location}}</span>
+    <span>🔧 {{mainKeyword}} 외</span>
+  </div>
+
+  <header class="post-header">
+    <h1>{{headline}}</h1>
+    <p>{{subheadline}}</p>
+  </header>
+
+  <a class="post-call" href="tel:07071065241" aria-label="전화 상담 070-7106-5241">
+    <span>⚡ 각종 막힘 / 뚫음 / 수전 / 배관공사 전국 24시 빠른출동</span>
+    <strong>📞 070-7106-5241</strong>
+    <small>터치하시면 바로 전화가 연결됩니다</small>
+  </a>
+
+  <div class="post-action-row">
+    <a class="post-action blue" href="#estimate"><strong>🛠️</strong><span>각종막힘/누수 온라인 상담</span></a>
+    <a class="post-action green" href="#estimate"><strong>📦</strong><span>수전/변기/세면대 교체 상담</span></a>
+  </div>
+
+  <section class="post-notice">
+    <p><strong>긴급 서비스 및 견적요청</strong>은 전화연결을 이용해 주세요.</p>
+    <p>자세한 상담이 필요한 경우 온라인 상담을 남겨주시면 빠른 서비스가 가능합니다.</p>
+    <small>업체 확인 후 자세한 서비스 내용 및 긴급출동 신청 등이 가능합니다.</small>
+  </section>
+
+  {{#heroImage}}<figure class="post-hero-media">
+    <img src="{{src}}" alt="{{alt}}" decoding="async">
+  </figure>{{/heroImage}}
+
+  {{{estimateForm}}}
+
+  <section class="post-summary">
+    <div>
+      <h2>{{summaryTitle}}</h2>
+      <p>{{summaryText}}</p>
+    </div>
+    <dl>
+      <div><dt>대표 지역</dt><dd>{{location}}</dd></div>
+      <div><dt>대표 업종</dt><dd>{{mainKeyword}}</dd></div>
+      <div><dt>분류 기준</dt><dd>{{categoryLabel}}</dd></div>
+    </dl>
+  </section>
+
+  <!-- 상단 지역 인근 배관 상담 빠른 보기 스트립 -->
+  <section class="post-strip">
+    <h2>{{shortLocation}} 인근 배관 상담 빠른 보기</h2>
+    <div class="rowx">{{#strip}}<div class="pcitem"><div class="pclink"><img class="pcimg" src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async"><div class="pcname">{{label}}</div></div></div>{{/strip}}</div>
+  </section>
+
+  <!-- 지역 플레이스 업체 정보 목록 -->
+  <section id="places" class="post-places" aria-label="지역 업체 정보">
+    <div class="section-heading"><span>Local</span><h2>{{shortLocation}} {{mainKeyword}} 지역 업체 정보</h2></div>
+    <div class="place-grid">{{#places}}<div class="place-card">
+      <div class="place-rank">{{rank}}</div>
+      <div class="place-main">
+        <h3>{{name}}</h3>
+        <p class="place-cat">{{category}}</p>
+        <p class="place-addr">{{address}}</p>
+        <p class="place-kw">{{keywordText}}</p>
+        <p class="place-desc">{{desc}}</p>
+      </div>
+      <div class="place-links">
+        <a href="{{naverMap}}" target="_blank" rel="noopener">네이버지도</a>
+        <a href="{{googleMap}}" target="_blank" rel="noopener">구글지도</a>
+      </div>
+    </div>{{/places}}</div>
+    <div class="post-mini-cta"><a href="#estimate">방문서비스 접수가 필요하신가요?</a><a href="tel:07071065241">24시간 빠른 상담 전화연결</a></div>
+  </section>
+
+  <!-- 전화 상담 프로모 배너 (070-7106-5241 발신) -->
+  {{#promoBanners}}<figure class="post-map-promo{{#wide}} post-map-promo-wide{{/wide}}"><a href="tel:07071065241" aria-label="{{alt}} 전화 상담"><img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async"></a></figure>{{/promoBanners}}
+
+  <section class="faq-section">
+    <div class="section-heading compact"><span>FAQ</span><h2>자주 확인하는 질문</h2></div>
+    {{#faqs}}<button type="button" data-faq-btn="1" class="faq-button">{{q}}</button><div class="faq-panel d-none"><p>{{a}}</p></div>{{/faqs}}
+  </section>
+
+  <nav class="pager" aria-label="페이지 이동">{{#pager}}<a href="{{href}}" class="pager-link{{activeClass}}"{{#isActive}} aria-current="page"{{/isActive}}>{{label}}</a>{{/pager}}{{#pagerNext}}<a href="{{href}}" class="pager-link pager-next">{{label}}</a>{{/pagerNext}}</nav>
+
+  <section class="post-thumbs" aria-label="현장 이미지">{{#thumbs}}<img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async">{{/thumbs}}</section>
+
+  <section class="post-resource-links" aria-label="빠른 상담 링크">{{#resources}}<a class="post-resource-link" href="#estimate"><span class="post-resource-thumb"><img src="{{thumb}}" alt="{{title}}" loading="lazy" decoding="async"></span><strong class="post-resource-title">{{title}}</strong><em class="post-resource-arrow">›</em></a>{{/resources}}</section>
+
+</main>
+<script src="{{assetBase}}/site/{{assetVersion}}/piping.js" defer></script>
+</body>
+</html>

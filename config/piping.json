@@ -1,0 +1,117 @@
+{
+  "phone": "070-7106-5241",
+  "phoneTel": "07071065241",
+  "leadApi": "/api/lead",
+  "leadProject": "piping-ravi",
+  "basePath": "/배관/",
+  "assetVersion": "piping-v2",
+  "groupKeys": {
+    "own": "piping-ravi",
+    "shared": "piping-ravi-shared"
+  },
+  "keywordPhases": [
+    "막힘",
+    "수전",
+    "누수"
+  ],
+  "pages": {
+    "totalTarget": 4000000,
+    "perSite": 200,
+    "perSitePhase": {
+      "막힘": 110,
+      "수전": 30,
+      "누수": 60
+    },
+    "urlPattern": "/배관/{구-동}/{메인키워드}",
+    "note": "운영자 확정 2026-08-24: 400만 장, 페이즈 순차 살포(막힘 전체→수전 전체→누수 전체). URL은 이사 movingPagePath 방식 그대로 — 한글 비인코딩, 확장자 없음, 지역은 뒤 2토큰(구-동)"
+  },
+  "images": {
+    "servedBase": "/img/piping/",
+    "localSource": "apps/piping-static/piping-template/assets/img/",
+    "hero": "piping-hero.webp",
+    "promo": "piping-promo.webp",
+    "carousel": [
+      {
+        "file": "piping-carousel-01.webp",
+        "label": "싱크대 막힘 내시경 점검",
+        "width": 640,
+        "height": 640
+      },
+      {
+        "file": "piping-carousel-02.webp",
+        "label": "하수구 막힘 스프링 작업",
+        "width": 640,
+        "height": 640
+      },
+      {
+        "file": "piping-carousel-03.webp",
+        "label": "배관 내시경 정밀 점검",
+        "width": 640,
+        "height": 640
+      },
+      {
+        "file": "piping-carousel-04.webp",
+        "label": "배관 고압 세척",
+        "width": 640,
+        "height": 640
+      },
+      {
+        "file": "piping-carousel-05.webp",
+        "label": "누수 탐지 정밀 진단",
+        "width": 640,
+        "height": 640
+      },
+      {
+        "file": "piping-carousel-06.webp",
+        "label": "욕조 배수구 막힘 해결",
+        "width": 640,
+        "height": 640
+      },
+      {
+        "file": "piping-carousel-07.webp",
+        "label": "아파트 싱크대 배관 작업",
+        "width": 640,
+        "height": 640
+      }
+    ],
+    "note": "원본: C:\\Users\\LD\\Desktop\\관련 폴더\\이미지캐러셀\\변경완료 (2026-08-24 수령, 리네임함 — 이미지 안에 다봄배관 워터마크·070-7106-5241 포함). 배포 시 오리진 shared/piping/ 으로 (same-origin /img/piping/). 캐러셀은 640px 로 축소(2026-08-24) — 원본은 apps/piping-static/original-images/ 에 보관. 페이지 이미지 합계 0.86MB",
+    "heroSize": {
+      "width": 1691,
+      "height": 930
+    },
+    "promoSize": {
+      "width": 1536,
+      "height": 1024
+    }
+  },
+  "faqPool": "data/piping-faq-pool.json",
+  "placeCategories": [
+    "건설업 > 배관,냉난방공사",
+    "건설업 > 수도설비공사",
+    "전기,가스,수도사업 > 수도사업",
+    "서비스,산업 > 청소",
+    "건설업 > 배관,냉난방",
+    "건설업 > 건물개수보수공사"
+  ],
+  "newAccounts": {
+    "accountOrderRange": [
+      201,
+      300
+    ],
+    "machineAssignment": {
+      "vm1": [
+        201,
+        230
+      ],
+      "vm2": [
+        231,
+        265
+      ],
+      "vm3": [
+        266,
+        300
+      ]
+    },
+    "note": "PC는 배관 신규 계정에 사용하지 않음 (운영자 확정 2026-08-24). 분배 30/35/35."
+  }
+}
