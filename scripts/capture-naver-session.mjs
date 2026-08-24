@@ -415,7 +415,8 @@ const isSearchAdvisorConsole = async (page) => CONSOLE_ONLY.test(
  * 시도하고 (3) iframe 안도 뒤지고 (4) 그래도 못 찾으면 화면에 보이는 버튼
  * 문구를 찍어 남긴다. 다음 실행 때 그 로그만 보면 셀렉터를 맞출 수 있다.
  */
-const TERMS_BUTTON_TEXTS = ['전체 동의', '동의하기', '동의', '확인', '시작하기', '다음'];
+const TERMS_BUTTON_TEXTS = ['확인', '전체 동의', '동의하기', '동의', '시작하기', '다음'];
+const CONSENT_LABEL = /이용약관에 동의|약관에 동의|동의합니다/;
 
 async function acceptSearchAdvisorTerms(page) {
   for (const scope of [page, ...page.frames()]) {
@@ -423,22 +424,37 @@ async function acceptSearchAdvisorTerms(page) {
     const count = await boxes.count().catch(() => 0);
     if (!count) continue;
 
-    // 체크박스를 전부 켠다. 라벨로 감싼 커스텀 체크박스는 직접 못 눌러서 라벨을 누른다.
+    /*
+     * 사람이 하는 순서 그대로 간다: "이용약관에 동의합니다." 를 누르고 → "확인".
+     *
+     * 체크박스 input 이 숨겨져 있고 화면에 보이는 건 라벨인 경우가 많다.
+     * 그때 input 에 force check 를 하면 DOM 값만 바뀌고 사이트 스크립트는
+     * 모르기 때문에 "확인" 버튼이 계속 비활성으로 남는다. 그래서 보이는
+     * 글자를 실제로 클릭하는 걸 먼저 시도한다.
+     */
+    const labelHit = scope.getByText(CONSENT_LABEL).first();
+    if (await labelHit.count().catch(() => 0)) {
+      await labelHit.click({ force: true }).catch(() => {});
+    }
+
     for (let i = 0; i < count; i += 1) {
       const box = boxes.nth(i);
       if (await box.isChecked().catch(() => true)) continue;
-      const ok = await box.check({ force: true }).then(() => true).catch(() => false);
-      if (ok) continue;
       const id = await box.getAttribute('id').catch(() => null);
       if (id) await scope.locator(`label[for="${id}"]`).click({ force: true }).catch(() => {});
+      if (await box.isChecked().catch(() => true)) continue;
+      await box.check({ force: true }).catch(() => {});
     }
 
     for (const text of TERMS_BUTTON_TEXTS) {
       const button = scope.locator(`button:has-text("${text}"), a:has-text("${text}"), input[type=submit][value*="${text}"]`).first();
       if (!(await button.count().catch(() => 0))) continue;
       if (!(await button.isVisible().catch(() => false))) continue;
+      // 체크가 먹어야 버튼이 살아난다. 잠깐 기다렸다가 누른다.
+      await settle(page, () => button.isEnabled().catch(() => false), 3000, 200);
       await button.click({ force: true }).catch(() => {});
-      await settle(page, async () => (await page.locator('input[type=checkbox]').count()) === 0, 8000);
+      const gone = await settle(page, async () => (await page.locator('input[type=checkbox]').count()) === 0, 8000);
+      if (!gone) continue;   // 화면이 그대로면 다른 버튼 문구를 시도한다
       console.log(`  이용약관 자동 동의 완료 ("${text}" 클릭, ${await page.title()})`);
       return true;
     }
