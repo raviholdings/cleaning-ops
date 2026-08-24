@@ -248,7 +248,9 @@ async function captureOne(account) {
     }
 
     await page.goto(SEARCH_ADVISOR_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(3000);
+    // 화면이 그려지는 즉시 진행한다 (약관 체크박스든 콘솔이든).
+    await settle(page, async () => (await page.locator('input[type=checkbox]').count()) > 0
+      || CONSOLE_OR_TERMS.test(await page.evaluate(() => document.body?.innerText || '')), 8000);
     await acceptSearchAdvisorTerms(page);
 
     storageState = await context.storageState();
@@ -366,6 +368,25 @@ async function waitForEnter() {
  * 사이트 관리 화면으로 들어갈 수 있다. 계정당 1회만 뜬다.
  * 운영자 지시로 자동 동의한다.
  */
+/**
+ * 조건이 만족되면 바로 넘어가고, 안 되면 cap 까지만 기다린다.
+ *
+ * 예전에는 3초·4초·1.5초씩 무조건 쉬었다. 계정당 10초가 그냥 날아가서
+ * 100계정이면 17분이다 (2026-08-24 운영자: "동의하는 게 너무 느리다").
+ * 최악의 경우에만 cap 까지 기다리므로 느려질 일은 없다.
+ */
+async function settle(page, predicate, capMs = 6000, stepMs = 250) {
+  const deadline = Date.now() + capMs;
+  for (;;) {
+    if (await predicate().catch(() => false)) return true;
+    if (Date.now() > deadline) return false;
+    await page.waitForTimeout(stepMs);
+  }
+}
+
+/** 콘솔이든 약관 화면이든, 화면이 그려졌으면 참. */
+const CONSOLE_OR_TERMS = /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|약관|동의/;
+
 async function acceptSearchAdvisorTerms(page) {
   const checkbox = page.locator('input[type=checkbox]').first();
   const confirm = page.locator('button:has-text("확인")').first();
@@ -374,7 +395,8 @@ async function acceptSearchAdvisorTerms(page) {
   await checkbox.check({ force: true }).catch(() => {});
   if (!(await checkbox.isChecked().catch(() => false))) return false;
   await confirm.click().catch(() => {});
-  await page.waitForTimeout(4000);
+  // 약관 화면이 사라지면 끝난 것이다. 고정 4초는 대부분 낭비였다.
+  await settle(page, async () => (await page.locator('input[type=checkbox]').count()) === 0, 8000);
   console.log(`  이용약관 자동 동의 완료 (${await page.title()})`);
   return true;
 }
@@ -416,7 +438,9 @@ async function verifySearchAdvisor(statePath) {
     const context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
     const page = await context.newPage();
     const response = await page.goto(SEARCH_ADVISOR_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(1500);
+    // 판정에 쓸 글자가 화면에 나타나면 바로 진행한다 (고정 1.5초 + 1.5초 대체).
+    await settle(page, async () => /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|아이디 또는 전화번호|로그인 상태 유지/
+      .test(await page.evaluate(() => document.body?.innerText || '')), 8000);
     const url = page.url();
     if (url.includes('nid.naver.com')) return { ok: false, reason: '로그인 페이지로 튕겼습니다.' };
     if (response && response.status() >= 400) return { ok: false, reason: `HTTP ${response.status()}` };
@@ -425,7 +449,6 @@ async function verifySearchAdvisor(statePath) {
     // 실제로 "로그인 - 네이버 서치어드바이저" 화면을 통과시켜 깨진 세션을 저장했다.
     // 그 세션이 멀쩡하던 것을 덮어써서 소유확인 1,000건이 통째로 실패했다(2026-08-06).
     // 화면 내용으로 로그인 여부를 확정한다.
-    await page.waitForTimeout(1500);
     const title = (await page.title()) || '';
     const body = (await page.evaluate(() => document.body?.innerText || '')).replace(/\s+/g, ' ');
     if (/아이디 또는 전화번호|로그인 상태 유지|QR 코드 로그인|추가 확인을 해주세요/.test(body)) {
