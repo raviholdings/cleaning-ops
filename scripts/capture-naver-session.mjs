@@ -69,8 +69,18 @@ const noAutoClick = Boolean(options.noAutoClick);
 /** 보호조치·본인확인 화면인지 본다. 이게 뜨면 사람이 오래 붙어야 한다. */
 const CHALLENGE_PATTERN = /보호조치|이용 제한|본인 확인|본인확인|인증번호|새로운 기기|자동입력 방지|일시적으로 제한|비정상적인 접근|2단계 인증/;
 
-/** 콘솔이든 약관 화면이든, 화면이 그려졌으면 참. */
-const CONSOLE_OR_TERMS = /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|약관|동의/;
+/*
+ * 콘솔이든 최초 이용 동의 화면이든, 로그인이 끝난 뒤의 화면이면 참.
+ *
+ * 예전에는 여기에 `웹마스터 가이드|약관|동의` 가 들어 있었다. 그런데 그 글자들은
+ * **로그아웃 상태의 서치어드바이저 첫 화면**에도 있다 (메뉴의 '웹마스터 가이드',
+ * 푸터의 '이용약관'). 그래서 로그인도 안 됐는데 다음 단계로 넘어갔다.
+ * 로그인 뒤에만 보이는 글자로만 판정한다.
+ */
+const CONSOLE_OR_TERMS = /사이트 관리|사이트 등록|간단체크|이용약관에 동의|약관에 동의|동의합니다/;
+
+/** 로그아웃 상태의 서치어드바이저 첫 화면. 이게 보이면 아직 로그인 전이다. */
+const LOGGED_OUT_SEARCH_ADVISOR = /웹마스터 가이드|웹마스터 도구/;
 
 /** 콘솔 안에서만 보이는 글자로 판정한다 ('웹마스터 도구'는 첫 화면에도 있어서 쓰면 안 된다). */
 const CONSOLE_ONLY = /사이트 관리|사이트 등록|간단체크/;
@@ -388,6 +398,15 @@ async function waitForLogin(page, accountId) {
  */
 async function isLoggedIn(page) {
   if (page.url().includes('nid.naver.com')) return false;
+
+  const body = await page.evaluate(() => document.body?.innerText || '').catch(() => '');
+  // 콘솔에 들어갔거나, 최초 이용 동의 화면이면 로그인은 끝난 것이다.
+  if (CONSOLE_ONLY.test(body) || CONSENT_LABEL.test(body)) return true;
+  // 서치어드바이저 로그아웃 화면이면 아직이다. 쿠키만 보면 여길 통과해버린다
+  // (2026-08-24 uwzmoykotr2: 쿠키는 있는데 화면은 "로그인 - 네이버 서치어드바이저").
+  if (LOGGED_OUT_SEARCH_ADVISOR.test(body)) return false;
+
+  // 그 밖의 화면이면 판단할 근거가 없으니 쿠키로 본다.
   const cookies = await page.context().cookies().catch(() => []);
   const names = new Set(cookies.filter((c) => c.value).map((c) => c.name));
   return names.has('NID_AUT') && names.has('NID_SES');
@@ -501,7 +520,9 @@ async function acceptSearchAdvisorTerms(page) {
       text: (document.body?.innerText || '').replace(/\s+/g, ' ').slice(0, 160),
     };
   }).catch(() => null);
-  if (seen && (seen.checkboxes || /약관|동의/.test(seen.text))) {
+  // 체크박스가 실제로 있을 때만 약관 화면으로 본다. '이용약관'은 로그아웃 화면
+  // 푸터에도 있어서, 글자만 보고 판단하면 엉뚱한 경고가 뜬다.
+  if (seen && seen.checkboxes > 0) {
     console.log('  ⚠ 약관 화면 같은데 자동 동의에 실패했습니다. 브라우저에서 직접 동의해 주세요.');
     console.log(`     제목: ${seen.title}`);
     console.log(`     체크박스 ${seen.checkboxes}개 / 버튼: ${seen.buttons.join(' | ')}`);
