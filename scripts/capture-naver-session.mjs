@@ -52,6 +52,32 @@ const LOGIN_TIMEOUT_MS = Number(options.loginTimeoutMs || 300_000);
 // 반복 자동 로그인으로 추가 인증이 걸리는 것도 줄어든다.
 const noAutoClick = Boolean(options.noAutoClick);
 
+/*
+ * 아래 상수들은 반드시 최상위 실행 블록(try { ... captureOne ... })보다 위에 있어야 한다.
+ *
+ * 이 파일은 함수 정의 사이에 최상위 실행이 끼어 있는 구조라, 실행 지점보다 아래에
+ * 선언한 const 는 실행 시점에 아직 초기화되지 않는다(TDZ). 그런데 대부분 async 함수
+ * 안에서 쓰여서 예외가 조용한 거절로 바뀌는 바람에, 기능이 안 도는 걸 모르고 지나갔다:
+ *   · CHALLENGE_PATTERN  -> waitForLogin 이 즉시 실패 = 보호조치 대기가 아예 안 걸리고
+ *                           매번 진단 + Enter 대기로 빠졌다 ("지혼자 넘어간다"의 정체)
+ *   · TERMS_BUTTON_TEXTS -> 약관 자동 동의가 항상 실패해서 사람이 직접 눌러야 했다
+ *   · isSearchAdvisorConsole -> 동기 호출이라 그대로 터졌다
+ *     ("Cannot access 'isSearchAdvisorConsole' before initialization", 2026-08-24)
+ * 함수 선언(function …)은 호이스팅되니 상관없지만, const 는 여기에 둔다.
+ */
+
+/** 보호조치·본인확인 화면인지 본다. 이게 뜨면 사람이 오래 붙어야 한다. */
+const CHALLENGE_PATTERN = /보호조치|이용 제한|본인 확인|본인확인|인증번호|새로운 기기|자동입력 방지|일시적으로 제한|비정상적인 접근|2단계 인증/;
+
+/** 콘솔이든 약관 화면이든, 화면이 그려졌으면 참. */
+const CONSOLE_OR_TERMS = /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|약관|동의/;
+
+/** 콘솔 안에서만 보이는 글자로 판정한다 ('웹마스터 도구'는 첫 화면에도 있어서 쓰면 안 된다). */
+const CONSOLE_ONLY = /사이트 관리|사이트 등록|간단체크/;
+
+const TERMS_BUTTON_TEXTS = ['확인', '전체 동의', '동의하기', '동의', '시작하기', '다음'];
+const CONSENT_LABEL = /이용약관에 동의|약관에 동의|동의합니다/;
+
 const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!connectionString) throw new Error('DATABASE_URL or DIRECT_URL is required.');
 
@@ -312,8 +338,6 @@ async function captureOne(account) {
   };
 }
 
-/** 보호조치·본인확인 화면인지 본다. 이게 뜨면 사람이 오래 붙어야 한다. */
-const CHALLENGE_PATTERN = /보호조치|이용 제한|본인 확인|본인확인|인증번호|새로운 기기|자동입력 방지|일시적으로 제한|비정상적인 접근|2단계 인증/;
 
 /**
  * 로그인이 끝날 때까지 기다린다.
@@ -400,14 +424,16 @@ async function settle(page, predicate, capMs = 6000, stepMs = 250) {
   }
 }
 
-/** 콘솔이든 약관 화면이든, 화면이 그려졌으면 참. */
-const CONSOLE_OR_TERMS = /사이트 관리|사이트 등록|간단체크|웹마스터 가이드|약관|동의/;
 
-/** 콘솔 안에서만 보이는 글자로 판정한다 (첫 화면 메뉴에도 있는 '웹마스터 도구'는 쓰면 안 된다). */
-const CONSOLE_ONLY = /사이트 관리|사이트 등록|간단체크/;
-const isSearchAdvisorConsole = async (page) => CONSOLE_ONLY.test(
-  await page.evaluate(() => document.body?.innerText || ''),
-);
+/**
+ * 서치어드바이저 콘솔 안까지 들어갔는지.
+ *
+ * 화살표 const 로 두면 최상위 실행보다 아래라 TDZ 에 걸린다. 함수 선언은
+ * 호이스팅되니 위치와 무관하게 안전하다.
+ */
+async function isSearchAdvisorConsole(page) {
+  return CONSOLE_ONLY.test(await page.evaluate(() => document.body?.innerText || ''));
+}
 
 /*
  * 서치어드바이저 최초 이용 동의.
@@ -420,8 +446,6 @@ const isSearchAdvisorConsole = async (page) => CONSOLE_ONLY.test(
  * 시도하고 (3) iframe 안도 뒤지고 (4) 그래도 못 찾으면 화면에 보이는 버튼
  * 문구를 찍어 남긴다. 다음 실행 때 그 로그만 보면 셀렉터를 맞출 수 있다.
  */
-const TERMS_BUTTON_TEXTS = ['확인', '전체 동의', '동의하기', '동의', '시작하기', '다음'];
-const CONSENT_LABEL = /이용약관에 동의|약관에 동의|동의합니다/;
 
 async function acceptSearchAdvisorTerms(page) {
   for (const scope of [page, ...page.frames()]) {
