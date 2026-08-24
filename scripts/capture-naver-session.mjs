@@ -291,15 +291,27 @@ async function captureOne(account) {
 
     // 콘솔까지 들어갔는지 본다. 아직 약관 화면이면 여기서 사람에게 넘긴다 —
     // 그냥 지나가면 검증 단계에서 "콘솔에 못 들어갑니다"로 실패하고 세션이 버려진다.
-    const inConsole = await settle(page, () => isSearchAdvisorConsole(page), 3000);
+    /*
+     * 콘솔이 실제로 그려질 때까지 기다린다.
+     *
+     * 3초만 주니 로그인 직후 콘솔이 뜨기도 전에 세션을 뽑고 창을 닫았다. 그 세션은
+     * 아직 서치어드바이저 인증이 안 끝난 상태라, 검증에서 "로그인 화면"으로 나온다
+     * (2026-08-24 운영자: "콘솔창 로딩 되기도 전에 닫히고 저렇게 떠").
+     */
+    let inConsole = await settle(page, () => isSearchAdvisorConsole(page), 25_000);
     if (!inConsole && !options.noPause) {
-      console.log('\n  ⏸ 서치어드바이저 동의가 남아 있습니다.');
-      console.log('     브라우저에서 동의만 눌러주세요. **창은 닫지 마세요** (닫으면 세션을 못 뽑습니다).');
-      console.log('     끝나면 이 콘솔에서 Enter 를 눌러주세요.');
+      console.log('\n  ⏸ 서치어드바이저 콘솔까지 못 들어갔습니다 (동의가 남았을 수 있습니다).');
+      console.log('     브라우저에서 동의를 눌러 콘솔 화면까지 띄워주세요.');
+      console.log('     **창은 닫지 마세요** (닫으면 세션을 못 뽑습니다). 끝나면 이 콘솔에서 Enter.');
       await waitForEnter();
-      await settle(page, () => isSearchAdvisorConsole(page), 8000);
+      inConsole = await settle(page, () => isSearchAdvisorConsole(page), 15_000);
+    }
+    if (!inConsole) {
+      throw new Error('서치어드바이저 콘솔까지 들어가지 못해 세션을 저장하지 않습니다.');
     }
 
+    // 콘솔이 떴어도 인증 쿠키가 다 내려오기 전일 수 있다. 통신이 잦아들 때까지 둔다.
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
     storageState = await context.storageState();
   } finally {
     await context.close().catch(() => {});
@@ -313,11 +325,19 @@ async function captureOne(account) {
   writeFileSync(statePath, JSON.stringify(storageState));
   chmodSync(statePath, 0o600);
 
-  // 사람이 몇 분씩 붙어서 만든 세션이다. 한 번 더 확인하고 버린다.
+  // 사람이 몇 분씩 붙어서 만든 세션이다. 간격을 두고 두 번 더 보고 버린다.
   let verified = await verifySearchAdvisor(statePath);
-  if (!verified.ok) {
-    console.log(`  검증 실패(${verified.reason}) — 한 번 더 확인합니다.`);
+  for (let attempt = 2; !verified.ok && attempt <= 3; attempt += 1) {
+    console.log(`  검증 실패(${verified.reason}) — ${attempt}번째 확인합니다.`);
+    await new Promise((r) => setTimeout(r, 3000));
     verified = await verifySearchAdvisor(statePath);
+  }
+  if (!verified.ok) {
+    // 왜 안 되는지 좁히려면 저장된 쿠키가 어떤 모양인지 봐야 한다.
+    const cookies = storageState.cookies || [];
+    const naver = cookies.filter((c) => String(c.domain).includes('naver'));
+    console.log(`  저장된 쿠키 ${cookies.length}개 (naver ${naver.length}개): `
+      + naver.map((c) => `${c.name}@${c.domain}`).slice(0, 12).join(', '));
   }
   if (!verified.ok) {
     rmSync(statePath, { force: true });
