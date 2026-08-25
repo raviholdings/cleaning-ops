@@ -2,8 +2,11 @@
 /**
  * 배관 랜딩페이지 공용 자산(CSS, JS, Favicon)을 Cloudflare R2 에 업로드한다.
  *
- *   node scripts/upload-piping-assets-to-r2.mjs
- *   node scripts/upload-piping-assets-to-r2.mjs --version piping-v1
+ *   node scripts/upload-piping-assets-to-r2.mjs --version piping-v2 --dry-run
+ *   node scripts/upload-piping-assets-to-r2.mjs --version piping-v2
+ *
+ * --version 은 필수다. 버전 폴더는 immutable(엣지 1년 캐시)이라 덮어쓰면 되돌릴
+ * 수 없고, 배포된 페이지가 보는 버전은 config/piping.json 의 assetVersion 이다.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -40,7 +43,12 @@ const valueOf = (flag) => {
 };
 
 const dryRun = args.includes('--dry-run');
-const version = valueOf('--version') || 'piping-v1';
+// 기본값을 두지 않는다 — 실수로 기존 버전 폴더(immutable, 엣지 1년 캐시)를
+// 덮어쓰는 사고를 막는다. 반드시 --version piping-vN 으로 명시할 것 (2026-08-25).
+const version = valueOf('--version');
+if (!version) {
+  throw new Error('--version piping-vN 을 명시하세요 (기존 버전 덮어쓰기 방지). 현재 페이지가 참조하는 버전은 config/piping.json 의 assetVersion 입니다.');
+}
 
 const bucket = need('R2_BUCKET_NAME');
 const accountId = need('CLOUDFLARE_ACCOUNT_ID');
@@ -55,7 +63,9 @@ const FILES = [
 
 const CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
+const configVersion = JSON.parse(readFileSync(resolve(projectRoot, 'config/piping.json'), 'utf8')).assetVersion;
 console.log(`=== 배관 자산 R2 업로드 (버전 ${version}, dryRun=${dryRun}) ===`);
+console.log(`    config/piping.json assetVersion = ${configVersion}` + (configVersion === version ? '' : `  ⚠️ 불일치 — 페이지는 ${configVersion} 를 참조합니다`));
 console.log(`  버킷: ${bucket}`);
 
 function awsEnv() {
