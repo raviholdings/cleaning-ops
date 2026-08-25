@@ -6,7 +6,7 @@ export interface SessionUser {
   username: string;
   name: string | null;
   status: 'pending' | 'approved' | 'blocked';
-  role: 'owner' | 'member';
+  role: 'owner' | 'staff' | 'member';
 }
 
 interface Props {

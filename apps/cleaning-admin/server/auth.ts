@@ -31,7 +31,7 @@ export interface SessionUser {
   username: string;
   name: string | null;
   status: 'pending' | 'approved' | 'blocked';
-  role: 'owner' | 'member';
+  role: 'owner' | 'staff' | 'member';
 }
 
 // ---------------------------------------------------------------- 비밀번호
@@ -233,6 +233,24 @@ export async function handleAuth(query: DbQuery, req: IncomingMessage, res: Serv
  * 데이터 API 앞에 세우는 문지기.
  * 승인된 사용자가 아니면 401/403 을 주고 true 를 돌려준다(= 여기서 끝).
  */
+/*
+ * 역할 제한 게이트. requireApproved 는 승인 여부만 보므로 member 도 통과한다 —
+ * 고객 개인정보가 나가는 API(리드 등)는 이걸 써서 역할까지 본다.
+ * 화면에서 숨기는 것만으로는 막을 수 없다. 서버에서 막아야 한다.
+ */
+export async function requireRole(
+  query: DbQuery,
+  req: IncomingMessage,
+  res: ServerResponse,
+  allowed: SessionUser['role'][],
+): Promise<boolean> {
+  const user = await currentUser(query, req);
+  if (!user) return send(res, 401, { error: '로그인이 필요합니다.' }), true;
+  if (user.status !== 'approved') return send(res, 403, { error: '승인 대기 중인 계정입니다.' }), true;
+  if (!allowed.includes(user.role)) return send(res, 403, { error: '접근 권한이 없습니다.' }), true;
+  return false;
+}
+
 export async function requireApproved(query: DbQuery, req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const user = await currentUser(query, req);
   if (!user) return send(res, 401, { error: '로그인이 필요합니다.' }), true;

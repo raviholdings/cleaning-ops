@@ -246,7 +246,7 @@ export default function App({ user }: { user: SessionUser }) {
               {user.name || user.username}
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-              {user.role === 'owner' ? '소유자' : '멤버'}
+              {user.role === 'owner' ? '소유자' : user.role === 'staff' ? '스태프' : '멤버'}
             </div>
             <button
               onClick={async () => {

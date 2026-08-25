@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react';
 import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
-import { handleAuth, requireApproved } from './server/auth';
+import { handleAuth, requireApproved, requireRole } from './server/auth';
 import { handleDevTasks } from './server/devTasks';
+import { handleLeads } from './server/leads';
 
 // Load root .env
 try {
@@ -81,6 +82,21 @@ function dbApiPlugin() {
       server.middlewares.use('/api/stats', gate);
       server.middlewares.use('/api/domains', gate);
       server.middlewares.use('/api/index-status', gate);
+      // 리드는 고객 개인정보(이름·전화·문의내용)라 owner·staff 만. member 는 막는다.
+      const leadGate = async (req: any, res: any, next: () => void) => {
+        try {
+          let blocked = false;
+          await withDb(async (query) => {
+            blocked = await requireRole(query, req, res, ['owner', 'staff']);
+          });
+          if (!blocked) next();
+        } catch (error: any) {
+          console.error('[leadGate]', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: String(error?.message || error) }));
+        }
+      };
+      server.middlewares.use('/api/leads', leadGate);
 
       /*
        * 색인 현황.
@@ -185,6 +201,19 @@ function dbApiPlugin() {
           console.error('[index-status]', error);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: String(error?.message || error) }));
+        }
+      });
+
+      /*
+       * 배관 접수(리드). lead-dashboard.uloung.com 화면 전용.
+       */
+      server.middlewares.use('/api/leads', async (req: any, res: any) => {
+        try {
+          await withDb((query) => handleLeads(query, req, res));
+        } catch (error: any) {
+          console.error('[leads]', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: String(error?.message || error) }));
         }
       });
@@ -429,11 +458,11 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    allowedHosts: ['admin.uloung.com', 'localhost'],
+    allowedHosts: ['admin.uloung.com', 'lead-dashboard.uloung.com', 'localhost'],
   },
   preview: {
     port: 3000,
     host: true,
-    allowedHosts: ['admin.uloung.com', 'localhost'],
+    allowedHosts: ['admin.uloung.com', 'lead-dashboard.uloung.com', 'localhost'],
   },
 });
