@@ -51,6 +51,9 @@ if (!DOMAIN_GROUPS.includes(domainGroup)) {
 // 루트 index 만 굽고 올린다. 이미 배포한 페이지는 건드리지 않는다
 // (110만 장을 다시 구울 필요 없이 사이트당 파일 하나만 얹는다).
 const indexOnly = Boolean(options.indexOnly);
+if (indexOnly && domainGroup !== 'piping-ravi') {
+  throw new Error('--index-only 는 piping-ravi 전용이다. cleaning-ravi 는 루트에 청소 홈이 있어 배관 index 를 굽지 않는다.');
+}
 const fromOrder = Number(options.fromOrder || 1);
 const toOrder = Number(options.toOrder || (domainGroup === 'piping-ravi' ? 300 : 105));
 const chunkSize = Math.max(1, Number(options.chunkSites || 500));
@@ -172,17 +175,25 @@ async function bakeSite(domain) {
   const written = [];
 
   /*
-   * 루트 index. 네이버는 등록된 주소(=루트)에서 소유확인 메타태그를 찾는다.
-   * 루트를 비워두면 소유확인이 통째로 막힌다. --index-only 면 이것만 굽는다.
+   * 루트 index — piping-ravi(신규 서브도메인) 전용이다.
+   * 네이버는 등록된 주소(=루트)에서 소유확인 메타태그를 찾는데, 신규 도메인은
+   * /배관/ 아래에만 페이지가 있어 루트가 404 라 소유확인이 통째로 막혔다.
+   *
+   * cleaning-ravi(차용 그룹)에서는 절대 굽지 않는다. 그쪽 루트에는 색인된 청소
+   * 홈이 이미 있고, 전송이 tar 덮어쓰기라 여기서 구우면 청소 홈 1만 장이 배관
+   * index 로 갈아치워진다 (청소 색인 94% 가 붙어 있는 진입점이다).
+   * 차용 그룹은 /배관/ 하위만 건드린다. --index-only 도 piping-ravi 전용.
    */
-  const indexData = await buildPipingIndexData({
-    projectRoot, locations, siteIndex, siteUrl, pageCount,
-    naverSiteVerification: domain.naver_verification_token || '',
-    pipingData,
-  });
-  const indexFile = join(stageDir, domain.host, 'index.html');
-  mkdirSync(dirname(indexFile), { recursive: true });
-  writeFileSync(`${indexFile}.gz`, gzipSync(Buffer.from(renderTemplate(indexTemplate, indexData), 'utf8'), { level: 6 }));
+  if (domainGroup === 'piping-ravi') {
+    const indexData = await buildPipingIndexData({
+      projectRoot, locations, siteIndex, siteUrl, pageCount,
+      naverSiteVerification: domain.naver_verification_token || '',
+      pipingData,
+    });
+    const indexFile = join(stageDir, domain.host, 'index.html');
+    mkdirSync(dirname(indexFile), { recursive: true });
+    writeFileSync(`${indexFile}.gz`, gzipSync(Buffer.from(renderTemplate(indexTemplate, indexData), 'utf8'), { level: 6 }));
+  }
   if (indexOnly) return;
 
   for (let requestId = 1; requestId <= pageCount; requestId += 1) {
