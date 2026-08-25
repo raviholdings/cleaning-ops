@@ -42,4 +42,6 @@ INDEX-CHECK-HANDOVER, LEAD-BEACON, HAIIP-VM-SCALEOUT-PROMPT 등).
 - App dev server: `cd apps/cleaning-ravi && npm run dev`
 - App build: `cd apps/cleaning-ravi && npm run build`
 - 이사 사이트 굽기: `node scripts/build-moving-site.mjs --site-index N --host <host> [--pages 3]`
-- Run Naver crawl requests (Windows): `powershell -File ./scripts/run-windows-naver-crawl-resume.ps1`
+- Run Naver crawl requests (Windows): `powershell -File scripts/run-crawl-range.ps1 -From 1 -To 20`
+  (이사 `run-moving-crawl-range.ps1` / 배관 `run-piping-crawl-range.ps1 -Group …`.
+  `run-windows-naver-crawl-resume.ps1` 은 본체라 직접 부르면 남의 기계 계정까지 돈다)
