@@ -14,6 +14,24 @@
  * "루트" 로 끝나는 줄만(= 앞에 점이 없는 정확 일치) 센다.
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// AWS 자격증명은 .env 에 있다. 셸에 미리 로드해 두고 부르는 스크립트가 많지만,
+// 이건 운영자가 그냥 치는 용도라 스스로 읽는다 (안 읽으면 SSM 이
+// UnrecognizedClientException 으로 죽는다).
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+for (const line of (() => {
+  try { return readFileSync(resolve(projectRoot, '.env'), 'utf8').split(/\r?\n/); }
+  catch (e) { if (e.code === 'ENOENT') return []; throw e; }
+})()) {
+  const m = line.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+  if (!m || line.trim().startsWith('#') || process.env[m[1]] !== undefined) continue;
+  let v = m[2].trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+  process.env[m[1]] = v;
+}
 
 const INSTANCE = 'i-039361b55ae33808b';
 const LOG = '/var/log/nginx/access.log';
