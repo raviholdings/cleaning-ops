@@ -1,0 +1,16 @@
+{
+  "_note": "네이버 IndexNow 키. 도메인마다 별개의 키를 써야 한다(네이버 웹마스터 가이드). 파일은 <key>.txt 로 각 루트 웹루트에 배포되며 공개된다 — 비밀값이 아니다.",
+  "_endpoint": "https://searchadvisor.naver.com/indexnow",
+  "keys": {
+    "amunsa.com": "b5c1c2f66bf4f2f24f3b9a19743d0679",
+    "anclose.com": "72cfd9d347f6bab9402780fd1d92c11a",
+    "daddul.com": "e540523dd81084f81bccc776afc1384f",
+    "ddulea.com": "437c26eb5b581dd16e96ea61077d04b5",
+    "naoheg.com": "343c4d69ad9ce41986fd42adfb7edd0b",
+    "neverfoul.com": "1207320d176e73e2c3f9f3611eb5813e",
+    "one-qfast.com": "884b1d3ae3ed907759247a42e1abaff6",
+    "oneshot-sewer.com": "f73c273ff3d307c07b9d7b504137a370",
+    "pipe-oneshot.com": "c17fe7052f7cda819eba56b72729e442",
+    "uloung.com": "82940489dcbf1a5b1af2fd0bee03e8ea"
+  }
+}

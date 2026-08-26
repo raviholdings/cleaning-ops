@@ -31,6 +31,11 @@ const valueOf = (flag, fallback = '') => {
 
 const content = JSON.parse(readFileSync(resolve(projectRoot, 'data/apex/apex-content.json'), 'utf8'));
 const reviewPool = loadReviewPool(projectRoot);
+// 네이버 IndexNow 키 (루트마다 다름). 없으면 키 파일을 안 굽는다.
+const indexNowKeys = (() => {
+  const p = resolve(projectRoot, 'data/apex/indexnow-keys.json');
+  return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).keys : {};
+})();
 const templateDir = resolve(projectRoot, 'apps/apex-static/apex-template');
 const pageTemplate = parseTemplate(readFileSync(join(templateDir, 'page.html'), 'utf8'), 'apex-template/page.html');
 const partials = Object.fromEntries(readdirSync(join(templateDir, 'partials'))
@@ -308,6 +313,12 @@ function buildRoot(root, overrides = {}) {
   write('robots.txt', `${content.robots
     .replaceAll('{{brand}}', brand)
     .replaceAll('{{siteUrl}}', siteUrl)}\n`);
+
+  // 네이버 IndexNow 소유 확인용 키 파일. 서치어드바이저 등록·계정이 필요 없고,
+  // 이 파일 하나가 소유 증명이다. 도메인마다 키가 달라야 한다(네이버 가이드).
+  // 공개되는 값이라 비밀이 아니다. 파일 이름과 내용이 같아야 한다.
+  const indexNowKey = indexNowKeys[root];
+  if (indexNowKey) write(`${indexNowKey}.txt`, indexNowKey);
 
   write('favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">`
     + `<rect width="64" height="64" rx="12" fill="${palette.accent}"/>`
