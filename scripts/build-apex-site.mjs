@@ -115,9 +115,16 @@ function buildRoot(root, overrides = {}) {
 
   // nginx 는 /숫자 와 /a/b 만 .html 로 넘긴다. 한 단계 경로는 404 라 .html 을 쓴다.
   const homeHref = preview ? 'index.html' : '/';
-  // 견적 폼은 /form/ 서브디렉토리로 낸다. nginx 에 index index.html 이 있어
-  // /form/ -> /form/index.html(.gz) 로 잡힌다. 배포 후 200 을 반드시 확인할 것.
-  const formHref = preview ? 'form/index.html' : '/form/';
+  // 폼 연결 방식은 업종마다 다르다 (apex-content.json 의 cta.<업종>.formMode).
+  //   embed  = 우리 /form/ 페이지에 iframe 으로 끼운다 (청소)
+  //   direct = 외부 폼으로 바로 보낸다 (이사)
+  // 이사 폼은 daum.Postcode 주소검색이 팝업을 띄우는데 iframe 안에서 막힌다.
+  const embedForm = !ctaIsPhone && cta.formMode !== 'direct';
+  // 미리보기는 file:// 라 /go/... 가 file:///go/... 로 풀려 404 가 난다.
+  // 로컬에서도 실제 폼으로 가게 공개 주소를 쓴다. 배포본은 같은 도메인이라 상대경로.
+  const formHref = embedForm
+    ? (preview ? 'form/index.html' : '/form/')
+    : (preview ? `${siteUrl}${cta.formSrc}` : cta.formSrc);
   const ctaHref = ctaIsPhone ? `tel:${cta.phone}` : formHref;
 
   const heroFile = ['.webp', '.jpg', '.jpeg', '.png']
@@ -129,7 +136,7 @@ function buildRoot(root, overrides = {}) {
     .filter((s) => !(s === 'area' && areaMode === 'none'));
   const reviews = reviewMode === 'none' ? [] : pickApexReviews(
     reviewPool, vertical, rng, 3 + Math.floor(rng() * 2),
-    { area: areas[0], main: v.label, sub: v.services[0].name },
+    { area: areas[0], main: v.label, sub: v.services[0].name, sub2: v.services[1].name },
     reviewMode,
   );
 
@@ -151,7 +158,7 @@ function buildRoot(root, overrides = {}) {
     .filter(Boolean).join(' ');
 
   const PAGES = [{ file: 'index.html', sections, home: true }];
-  if (!ctaIsPhone) PAGES.push({ file: 'form/index.html', sections: ['formpage'], home: false });
+  if (embedForm) PAGES.push({ file: 'form/index.html', sections: ['formpage'], home: false });
 
   const TITLES = { 'index.html': brand, 'form/index.html': `무료 견적 신청 | ${brand}` };
   const DESCS = {
@@ -218,8 +225,13 @@ function buildRoot(root, overrides = {}) {
     const anchor = (id) => (page.home ? `#${id}` : `${pageHome}#${id}`);
     const navItems = navSections.map((s) => ({ href: anchor(s), label: navLabel(s), current: false }));
 
+    // 견적 페이지에서 헤더 버튼이 자기 자신을 가리키면 상대경로가 겹쳐 깨진다
+    // (form/ 안에서 form/index.html -> form/form/index.html -> 404).
+    // 그 페이지에서는 폼 섹션으로 스크롤만 시킨다.
+    const pageCta = page.home || ctaIsPhone ? ctaData : { ...ctaData, ctaHref: '#form' };
+
     const heroHtml = renderTemplate(partials.hero, {
-      ...ctaData,
+      ...pageCta,
       tagline: v.tagline,
       headline: page.home ? headline.h1 : '무료 견적 신청',
       headlineSub: page.home ? headline.sub : cta.note,
@@ -235,7 +247,7 @@ function buildRoot(root, overrides = {}) {
     const bodyHtml = heroHtml
       + page.sections
         .map((s, i) => renderTemplate(partials[SECTION_PARTIAL[s]], {
-          ...sectionData, heading: heading(s), bandClass: bandClass(s, i),
+          ...sectionData, ...pageCta, heading: heading(s), bandClass: bandClass(s, i),
         }))
         .join('\n')
       + tail;
@@ -251,7 +263,7 @@ function buildRoot(root, overrides = {}) {
     });
 
     bytes += write(page.file, renderTemplate(pageTemplate, {
-      ...ctaData,
+      ...pageCta,
       title: TITLES[page.file],
       description: DESCS[page.file],
       canonical,
@@ -261,6 +273,7 @@ function buildRoot(root, overrides = {}) {
       vertical,
       layout: layout.name,
       titleMode,
+      pageClass: page.home ? '' : 'page-form',
       theme: themeKey,
       fontHref,
       palette,

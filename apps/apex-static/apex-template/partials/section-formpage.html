@@ -1,7 +1,26 @@
-<section class="band {{bandClass}} formpage">
+<section id="form" class="band {{bandClass}} formpage">
   <div class="wrap narrow">
     <h2>{{ctaHeading}}</h2>
     <p class="body">{{ctaNote}}</p>
-    <div class="form-box"><iframe src="{{ctaFormSrc}}" title="무료 견적 신청"></iframe></div>
+    <!-- 높이는 iFrameResize 가 내용에 맞춘다. CSS 로 높이를 고정하면 이사 폼처럼
+         긴 서식이 넘쳐 iframe 이 자체 스크롤을 갖고, 그러면 주소검색 팝업이
+         position:fixed 로 iframe 상단에 붙어 화면 밖으로 밀린다.
+         이사 서브도메인 1만 개가 쓰는 것과 같은 설정이다
+         (apps/moving-static/move-template/partials/estimate-form.html). -->
+    <div class="form-box">
+      <iframe name="ifrm_icode" id="ifrCCAl" scrolling="no" frameborder="0" width="100%"
+              src="{{ctaFormSrc}}" title="무료 견적 신청"></iframe>
+    </div>
   </div>
 </section>
+<script src="https://replyalba.com/js/jquery-1.11.0.min.js"></script>
+<script src="https://replyalba.com/js/iframeResizer.min.js"></script>
+<script>
+  if (typeof $ !== 'undefined' && $('#ifrCCAl').length) {
+    // checkOrigin:false 만 동작한다 — 리플알바 구버전 리사이저가 배열을 못 읽는다.
+    $('#ifrCCAl').iFrameResize({
+      autoResize: true, checkOrigin: false, heightCalculationMethod: 'offset',
+      interval: 32, scrolling: false, sizeHeight: true, sizeWidth: false, tolerance: 0,
+    });
+  }
+</script>

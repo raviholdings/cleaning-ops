@@ -217,6 +217,11 @@ const CHECKS = [
   ['FAQ 답변', ['section', 'div.wrap', 'dl.faq', 'dd']],
   ['지역 칩', ['section', 'div.wrap', 'ul.chips', 'li']],
   ['섹션 본문', ['section', 'div.wrap', 'p.body']],
+  ['섹션 제목', ['section', 'div.wrap', 'h2']],
+  ['좁은 섹션 제목', ['section', 'div.wrap.narrow', 'h2']],
+  ['좁은 섹션 본문', ['section', 'div.wrap.narrow', 'p.body']],
+  ['히어로 리드', ['section.hero.has-photo', 'div.wrap.hero-in', 'div.hero-txt', 'p.lede']],
+  ['후기 메타', ['section', 'div.wrap', 'ul.reviews', 'li', 'span.meta']],
 ];
 const toEl = (s) => {
   const tag = (s.match(/^[a-z]+/i) || [''])[0];

@@ -129,9 +129,17 @@ node scripts/build-apex-site.mjs --all           # 배포본 (절대경로, gz �
 쓴다(`/form.html`). 깔끔한 주소를 원하면 nginx 에 rewrite 를 추가해야 하는데,
 **서버 변경은 운영자 확인을 받고 할 것.**
 
-**3. 이사 견적 폼은 청소와 다르다.** nginx 에 `/go/quote`(청소, 코드 BtMoZvIUJs)와
-`/go/move-quote`(이사, 코드 H4VMTQ4Rha)가 따로 있다. 섞으면 이사 리드가 청소 폼으로
-간다.
+**3. 이사 견적 폼은 청소와 다르고, iframe 에 넣으면 안 된다.** nginx 에
+`/go/quote`(청소, 코드 BtMoZvIUJs)와 `/go/move-quote`(이사, 코드 H4VMTQ4Rha)가
+따로 있다. 섞으면 이사 리드가 청소 폼으로 간다.
+
+**이사 폼은 `daum.Postcode` 주소검색을 쓰는데 `window.open` 팝업을 띄운다.**
+iframe 안에서는 (특히 모바일) 그 팝업이 막혀 **주소 검색이 안 먹는다** —
+상세주소 입력만 되니 겉보기엔 멀쩡해서 놓치기 쉽다. 남의 폼이라 밖에서 못 고친다.
+그래서 `cta.<업종>.formMode` 로 갈랐다:
+  - `embed`  우리 `/form/` 페이지에 iframe 으로 끼운다 (청소 — 주소 API 를 안 쓴다)
+  - `direct` 외부 폼으로 바로 보낸다. `/form/` 페이지를 아예 안 만든다 (이사)
+청소 폼에 나중에 주소검색이 붙으면 청소도 `direct` 로 바꿔야 한다.
 
 **4. 서브도메인 자산을 끌어다 쓰지 말 것.** 청소 사진 500장(`apps/cleaning-ravi/public/cleaning`)과
 배관 9장은 서브도메인 2만 개가 이미 쓰고 있다. apex 에 같은 이미지를 얹으면

@@ -814,6 +814,7 @@
 .t-hud .card,.t-hud .cases li,
 .t-luxe .card,.t-luxe .reviews li,
 .t-blueprint .band.alt .card,.t-blueprint .band.alt .steps li,
+.t-blueprint .band.alt .reviews li,.t-blueprint .band.alt .cases li,
 .t-glass .band.alt .cases li{
   --fg:var(--paper);
   --fg-mute:color-mix(in srgb,var(--paper) 72%,transparent);
@@ -917,4 +918,4 @@
   background:rgba(8,32,44,.55);
   border-color:rgba(255,255,255,.28)}
 .t-glass .band.alt .reviews p{color:rgba(255,255,255,.88) !important}
-.t-glass .band.alt .reviews .meta{color:var(--accent) !important}
+.t-glass .band.alt .reviews .meta{color:rgba(255,255,255,.82) !important}
