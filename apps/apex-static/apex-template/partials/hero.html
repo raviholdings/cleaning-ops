@@ -1,0 +1,18 @@
+<section class="hero{{#heroPhoto}} has-photo{{/heroPhoto}}">
+  {{#heroPhoto}}
+  <div class="hero-bg"><img src="{{heroSrc}}" alt="" aria-hidden="true" decoding="async" /></div>
+  <div class="scrim"></div>
+  {{/heroPhoto}}
+  <div class="wrap hero-in">
+    <div class="hero-txt">
+      <p class="eyebrow">{{tagline}} · 24시간 접수</p>
+      <h1>{{headline}}</h1>
+      <p class="lede">{{headlineSub}}</p>
+      <div class="hero-cta">
+        <a class="cta" href="{{ctaHref}}">{{{ctaIcon}}}<span>{{ctaLabel}}</span></a>
+      </div>
+      <ul class="hero-mini">{{#badges}}<li>{{.}}</li>{{/badges}}</ul>
+    </div>
+    {{^heroPhoto}}<div class="hero-art">{{{heroArt}}}</div>{{/heroPhoto}}
+  </div>
+</section>

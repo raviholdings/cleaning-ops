@@ -1,0 +1,388 @@
+/* apex(루트 도메인) 전용 스타일.
+   서브도메인용 site/v4 와 공유하지 않는다 — 같은 시트를 쓰면 같은 사이트로 보인다.
+
+   방향: 지배색(ink) 이 화면을 끌고 가고 accent 는 CTA·숫자·밑줄에만 날카롭게 쓴다.
+   고르게 나눈 팔레트를 안 쓰는 이유다. 타이포는 웨이트 대비를 크게 벌린다
+   (Black Han Sans 헤드라인 vs Plex Sans KR 100). 섹션은 세로로만 쌓지 않고
+   레이아웃마다 두 개씩 좌우로 눕힌다(.band.split).
+
+   갤러리 생성기가 셀렉터에 접두사를 붙여 재사용하므로 중첩 CSS 는 쓰지 않는다. */
+
+:root{
+  --f-display:"Black Han Sans","Apple SD Gothic Neo",sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
+  --gut:clamp(1.15rem,4vw,2.6rem);
+  --pad:clamp(2.2rem,4.6vw,3.9rem);
+}
+
+/* ── 면(surface) 토큰 ────────────────────────────────────────
+   글자색을 --ink/--mute 로 직접 박으면 어두운 밴드 위에서 안 보인다.
+   면마다 --fg/--fg-mute/--fg-line 을 뒤집고, 모든 컴포넌트는 그것만 쓴다.
+   테마가 밴드 밝기를 바꾸면 themes.css 에서 이 토큰만 다시 정하면 된다. */
+body{--fg:var(--ink);--fg-mute:var(--mute);--fg-line:var(--line)}
+.band.alt,.estimate,.hero.has-photo,footer.site,.topbar{
+  --fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 72%,transparent);
+  --fg-line:color-mix(in srgb,var(--paper) 20%,transparent)}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:5rem}
+body{margin:0;color:var(--ink);font-family:var(--f-body);font-weight:300;
+  font-size:clamp(.97rem,1.5vw,1.03rem);line-height:1.72;word-break:keep-all;
+  -webkit-font-smoothing:antialiased;
+  background:var(--paper);
+  background-image:
+    radial-gradient(120% 80% at 88% -8%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 58%),
+    radial-gradient(90% 60% at -10% 4%, color-mix(in srgb, var(--haze) 14%, transparent) 0%, transparent 55%);
+  background-attachment:fixed}
+a{color:inherit}
+img{max-width:100%;display:block}
+ul,ol,dl{margin:0;padding:0}
+li{list-style:none}
+p{margin:0 0 1em}
+
+/* ── 타이포 ──────────────────────────────────────────────
+   h1 96px vs 본문 16px = 6배. 라벨 11px 까지 내려 대비를 더 벌린다. */
+h1{font-family:var(--f-display);font-weight:400;
+  font-size:clamp(2.7rem,8.6vw,5.9rem);line-height:.96;letter-spacing:-.035em;
+  margin:0 0 1.1rem;text-wrap:balance}
+/* 제목을 한 줄로 두는 루트. 글자수가 있으니 크기를 낮춰야 안 넘친다.
+   좁은 화면에서는 어차피 못 담으므로 여러 줄로 돌려준다. */
+.ttl-oneline h1{text-wrap:nowrap;font-size:clamp(1.75rem,4.9vw,3.3rem);line-height:1.05}
+@media (max-width:40rem){.ttl-oneline h1{text-wrap:balance;white-space:normal;
+  font-size:clamp(2rem,8vw,2.6rem)}}
+h2{font-family:var(--f-body);font-weight:700;
+  font-size:clamp(1.5rem,3.5vw,2.25rem);line-height:1.14;letter-spacing:-.04em;
+  margin:0 0 1.15rem;text-wrap:balance;position:relative;padding-top:1.15rem}
+h2::before{content:"";position:absolute;top:0;left:0;width:2.6rem;height:.34rem;
+  background:var(--accent)}
+h3{font-family:var(--f-body);font-weight:600;font-size:1.02rem;letter-spacing:-.02em;
+  line-height:1.4;margin:0 0 .45em}
+.eyebrow{font-family:var(--f-mono);font-weight:600;font-size:.7rem;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 1.15rem}
+.lede{font-weight:100;font-size:clamp(1.05rem,2.6vw,1.5rem);line-height:1.52;
+  letter-spacing:-.015em;max-width:54ch;margin:0;text-wrap:pretty}
+.body{font-weight:300;color:var(--fg-mute);max-width:74ch;text-wrap:pretty}
+
+.wrap{width:min(100% - var(--gut) * 2,74rem);margin-inline:auto}
+.wrap.narrow{width:min(100% - var(--gut) * 2,50rem)}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:8px;top:8px;background:var(--accent);color:var(--ink);padding:8px 14px;z-index:99}
+
+/* ── 상단 띠 ─────────────────────────────────────────── */
+.topbar{background:var(--ink);color:var(--paper)}
+.topbar ul{display:flex;gap:1.5rem;flex-wrap:wrap;padding:.55rem 0}
+.topbar li{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.05em;
+  opacity:.72;position:relative;padding-left:.85rem}
+.topbar li::before{content:"";position:absolute;left:0;top:.62em;width:.3rem;height:.3rem;
+  background:var(--accent)}
+
+/* ── 헤더 ────────────────────────────────────────────── */
+header.site{position:sticky;top:0;z-index:40;
+  background:color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:1.1rem;min-height:4.4rem;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:400;font-size:1.5rem;letter-spacing:-.03em;
+  text-decoration:none;flex:none;line-height:1}
+header nav{display:flex;gap:clamp(.6rem,1.9vw,1.5rem);flex-wrap:wrap;flex:1}
+header nav a{text-decoration:none;color:var(--fg-mute);font-size:.86rem;font-weight:300;
+  padding:.18rem 0;position:relative}
+header nav a::after{content:"";position:absolute;left:0;right:100%;bottom:-.1rem;height:2px;
+  background:var(--accent);transition:right .28s cubic-bezier(.2,.7,.3,1)}
+header nav a:hover{color:var(--fg)}
+header nav a:hover::after{right:0}
+.cta-head{flex:none;font-family:var(--f-mono);font-weight:600;font-size:.8rem;
+  background:var(--accent);color:var(--ink);text-decoration:none;
+  padding:.5rem 1rem;white-space:nowrap;letter-spacing:.02em}
+.cta-head:hover{transform:translate(-2px,-2px);box-shadow:3px 3px 0 var(--ink)}
+
+/* ── 히어로 ──────────────────────────────────────────── */
+.hero{position:relative;isolation:isolate;padding:calc(var(--pad) * 1.35) 0;overflow:hidden}
+.hero-in{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.6rem,4vw,3.4rem);
+  align-items:center}
+.hero.has-photo{min-height:clamp(23rem,52vh,31rem);display:grid;align-items:center;
+  color:var(--paper)}
+.hero.has-photo .hero-in{grid-template-columns:1fr;max-width:46rem}
+.hero-bg{position:absolute;inset:0;z-index:-3;overflow:hidden}
+.hero-bg img{width:100%;height:100%;object-fit:cover}
+/* 사진 위에 지배색을 덮고 강조색을 한쪽에서 물들인다. 사진이 얇게 늘어나도
+   질감이 남고, 열 개 루트가 각자 다른 색으로 읽힌다. */
+.scrim{position:absolute;inset:0;z-index:-2;
+  background:
+    linear-gradient(102deg, var(--ink) 6%, color-mix(in srgb, var(--ink) 82%, transparent) 46%, color-mix(in srgb, var(--ink) 30%, transparent) 100%),
+    radial-gradient(70% 120% at 108% 8%, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 62%)}
+/* 히어로 위 무늬는 기본으로 두지 않는다. 열 개에 같은 격자를 씌우면
+   루트마다 다르게 만든 의미가 없다 — 무늬가 콘셉트인 테마만 themes.css 에서 켠다. */
+.hero.has-photo .eyebrow{color:var(--accent)}
+.hero.has-photo .lede{color:color-mix(in srgb, var(--paper) 86%, transparent)}
+.hero-art{min-width:0}
+.art{width:100%;height:auto;max-height:16rem}
+.art-grid line{stroke:var(--line)}
+
+.hero-cta{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin:2rem 0 0}
+.cta{display:inline-flex;align-items:center;gap:.6rem;background:var(--accent);color:var(--ink);
+  text-decoration:none;font-family:var(--f-mono);font-weight:600;
+  font-size:clamp(.95rem,2vw,1.12rem);letter-spacing:.01em;padding:1rem 1.7rem;
+  transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s}
+.cta:hover{transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--paper)}
+.hero:not(.has-photo) .cta:hover{box-shadow:5px 5px 0 var(--ink)}
+.cta:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
+.cta svg{width:1.2rem;height:1.2rem;flex:none}
+.cta.big{margin-top:1.6rem;font-size:1.1rem;padding:1.1rem 2rem}
+
+.hero-mini{display:flex;gap:1.35rem;flex-wrap:wrap;margin:1.6rem 0 0}
+.hero-mini li{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.04em;
+  opacity:.8;position:relative;padding-left:1.15rem}
+.hero-mini li::before{content:"";position:absolute;left:0;top:.34em;width:.62rem;height:.34rem;
+  border-left:2px solid var(--accent);border-bottom:2px solid var(--accent);
+  transform:rotate(-45deg)}
+
+/* ── 본문 밴드 ───────────────────────────────────────── */
+/* 카드 안쪽은 밝은 면이다.
+   .card / .cases li / .reviews li 는 background:var(--paper) 를 깐다. 그런데
+   어두운 테마(hud·luxe)는 --paper 를 글자색으로 쓰기 때문에, 토큰을 안 되돌리면
+   밝은 카드에 밝은 글씨가 나가 안 보인다. 여기서 밝은 면으로 못박는다.
+   카드를 어둡게/투명하게 바꾸는 테마는 themes.css 에서 다시 뒤집는다. */
+.card,.cases li,.reviews li{
+  --fg:var(--ink);--fg-mute:var(--mute);--fg-line:var(--line);color:var(--fg)}
+
+.band{padding:var(--pad) 0;position:relative}
+/* 어두운 밴드가 리듬을 만든다. 사선 패턴과 강조색 번짐으로 깊이를 준다. */
+.band.alt{background:var(--ink);color:var(--paper);overflow:hidden}
+.band.alt::after{content:"";position:absolute;right:-14%;top:-38%;width:52%;height:150%;
+  pointer-events:none;border-radius:50%;
+  background:radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 66%)}
+.band.alt .wrap{position:relative;z-index:1}
+.band.alt h2::before{background:var(--accent)}
+
+/* 좌우 배치. 레이아웃마다 다른 섹션 두 개에 붙는다 — 세로로만 쌓이면 열 개가 같아 보인다.
+   마크업은 그대로 두고 그리드 배치만 바꾼다: h2 는 왼쪽 열에 세로로 걸치고
+   나머지 형제들이 오른쪽 열에 쌓인다. */
+.band.split .wrap{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  column-gap:clamp(1.4rem,3.5vw,4rem);
+  /* row-gap 은 0 이어야 한다. h2 가 여러 행에 걸치면 빈 행마다 gap 이 붙어
+     화면 몇 개 분량의 공백이 생긴다. 간격은 아래 형제 margin 으로 준다. */
+  row-gap:0;align-items:start;align-content:start}
+.band.split .wrap.narrow{width:min(100% - var(--gut) * 2,74rem)}
+.band.split .wrap > h2{grid-column:1;grid-row:1 / span 20;position:sticky;top:6.5rem;
+  margin-bottom:0}
+.band.split .wrap > *:not(h2){grid-column:2;min-width:0}
+.band.split .wrap > *:not(h2) + *:not(h2){margin-top:1.15rem}
+.band.split .body{max-width:none}
+/* 좁은 열에서는 한 줄 목록이 낫다. 두 칸으로 깨지면 마지막 항목이 혼자 남는다. */
+.band.split .cases,.band.split .reviews,.band.split .grid{grid-template-columns:1fr}
+.band.split .steps{grid-template-columns:repeat(auto-fit,minmax(8rem,1fr))}
+
+/* ── 서비스 카드 ─────────────────────────────────────── */
+/* 격자(gap:1px + 배경선)는 기본이 아니다. 열 개에 같은 격자를 씌우면
+   테마를 나눈 의미가 없다 — 격자가 콘셉트인 곳만 themes.css 에서 켠다. */
+.grid{display:grid;gap:1.1rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+.card{background:var(--paper);padding:1.35rem 1.25rem 1.45rem;position:relative;
+  border:1px solid var(--fg-line);transition:background .22s,border-color .22s,transform .22s,box-shadow .22s}
+.card:hover{background:color-mix(in srgb, var(--accent) 10%, var(--paper))}
+.band.alt .card:hover{background:var(--haze)}
+.card-ico{display:flex;align-items:center;margin-bottom:.85rem}
+.card-body{min-width:0}
+.dim-ico{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:3.2rem;height:3.2rem;border-radius:1rem;font-size:1.65rem;
+  line-height:1;position:relative;flex:none;transition:transform .22s,box-shadow .22s;
+  box-shadow:0 6px 14px rgba(0,0,0,.08),inset 0 1px 1px rgba(255,255,255,.8);
+}
+.dim-emoji{display:inline-block;filter:drop-shadow(0 3px 4px rgba(0,0,0,.15));transition:transform .22s}
+.card:hover .dim-emoji{transform:scale(1.15) translateY(-2px)}
+.card p{margin:0;color:var(--fg-mute);font-size:.92rem;text-wrap:pretty}
+.ico{width:2.1rem;height:2.1rem;color:var(--accent);margin:0}
+.also{margin:1.8rem 0 0;padding-top:1.2rem;border-top:1px solid var(--fg-line);
+  color:var(--fg-mute);font-size:.9rem;max-width:76ch;text-wrap:pretty}
+
+/* ── 사례 ────────────────────────────────────────────── */
+.cases{display:grid;gap:1.1rem;counter-reset:c;
+  grid-template-columns:repeat(auto-fit,minmax(17rem,1fr))}
+.cases li{counter-increment:c;position:relative;padding:1.4rem 1.3rem;
+  background:var(--paper);border:1px solid var(--fg-line);border-radius:8px;
+  display:flex;flex-direction:column;gap:.5rem}
+.cases li::before{content:"사례 " counter(c,decimal-leading-zero);
+  font-family:var(--f-mono);font-size:.74rem;font-weight:700;letter-spacing:.06em;
+  color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);
+  padding:.18rem .55rem;border-radius:4px;width:fit-content;display:inline-block;line-height:1.2}
+.band.alt .cases li::before{background:color-mix(in srgb, var(--accent) 22%, transparent);color:var(--accent)}
+.case-body{display:flex;flex-direction:column;gap:.35rem}
+.cases h3{margin:0;font-size:1.05rem;line-height:1.35}
+.cases p{margin:0;color:var(--fg-mute);font-size:.92rem;text-wrap:pretty;line-height:1.55}
+
+/* ── 요금표 ──────────────────────────────────────────── */
+.tbl-wrap{width:100%;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;margin-top:1.4rem;font-size:.94rem}
+.tbl th,.tbl td{text-align:left;padding:.72rem .2rem;border-bottom:1px solid var(--fg-line)}
+.tbl thead th{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--accent);border-bottom-width:2px}
+.tbl tbody th{font-weight:600;width:44%}
+.tbl td{color:var(--fg-mute)}
+
+/* ── FAQ ─────────────────────────────────────────────── */
+.faq dt{font-weight:600;margin-top:1.35rem;padding-left:2rem;position:relative}
+.faq dt:first-child{margin-top:0}
+.faq dt::before{content:"Q";position:absolute;left:0;top:0;font-family:var(--f-mono);
+  font-weight:600;color:var(--accent)}
+.faq dd{margin:.45rem 0 0;padding-left:2rem;color:var(--fg-mute);font-size:.94rem;text-wrap:pretty}
+
+/* ── 지역 ────────────────────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.4rem}
+.chips li{font-family:var(--f-mono);font-size:.82rem;letter-spacing:.02em;
+  border:1px solid var(--fg-line);padding:.4rem .95rem;color:var(--fg-mute);display:inline-flex;align-items:center}
+.chip-dot{color:var(--accent);font-size:.7em;margin-right:.4rem;flex:none}
+
+/* ── 작업 순서 ───────────────────────────────────────── */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:0;
+  counter-reset:s;margin-top:1.6rem}
+.steps li{counter-increment:s;position:relative;padding:2.7rem .9rem 0 0}
+.steps li::before{content:counter(s,decimal-leading-zero);position:absolute;top:0;left:0;
+  font-family:var(--f-display);font-size:1.7rem;line-height:1;color:var(--accent)}
+.steps li::after{content:"";position:absolute;top:1.1rem;left:2.6rem;right:.8rem;height:1px;
+  background:var(--line)}
+.band.alt .steps li::after{background:color-mix(in srgb, var(--paper) 20%, transparent)}
+.steps li:last-child::after{display:none}
+.step-body{min-width:0}
+.steps h3{font-size:.98rem}
+.steps p{margin:0;color:var(--fg-mute);font-size:.86rem;padding-right:.6rem}
+
+/* ── 후기 ────────────────────────────────────────────── */
+.reviews{display:grid;gap:1.1rem;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));
+  margin-top:1.5rem}
+.reviews li{background:var(--paper);padding:1.35rem 1.3rem;display:flex;
+  flex-direction:column;gap:.8rem;border:1px solid var(--fg-line)}
+.rev-stars{font-size:.82rem;color:#eab308;letter-spacing:.15em;line-height:1}
+.reviews p{margin:0;font-size:.94rem;font-weight:300;position:relative;text-wrap:pretty}
+.rev-foot{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-top:auto;
+  padding-top:.75rem;border-top:1px dashed color-mix(in srgb, var(--fg-line) 70%, transparent)}
+.reviews .meta{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.06em;
+  color:var(--accent)}
+.rev-badge{font-family:var(--f-mono);font-size:.68rem;color:var(--fg-mute);
+  background:color-mix(in srgb, var(--accent) 12%, transparent);padding:.12rem .45rem;border-radius:4px}
+
+/* ── 연락 ────────────────────────────────────────────── */
+.estimate{background:var(--ink);color:var(--paper);text-align:center;overflow:hidden}
+.estimate::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(60% 90% at 50% 118%, color-mix(in srgb, var(--accent) 26%, transparent) 0%, transparent 68%)}
+.estimate .wrap{position:relative;z-index:1}
+.estimate h2{padding-top:0;display:inline-block}
+.estimate h2::before{left:50%;transform:translateX(-50%);top:-.9rem}
+.estimate .body{color:color-mix(in srgb, var(--paper) 74%, transparent);
+  margin-inline:auto;max-width:52ch}
+.estimate .cta{margin-inline:auto}
+.phone-box{display:inline-flex;align-items:center;gap:1rem;margin-top:1.8rem;
+  background:var(--accent);color:var(--ink);text-decoration:none;
+  padding:1rem 1.9rem 1rem 1.15rem;
+  transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s}
+.phone-box:hover{transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--paper)}
+.phone-box:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
+.phone-ic{display:grid;place-items:center;width:2.7rem;height:2.7rem;flex:none;
+  background:color-mix(in srgb, var(--ink) 16%, transparent);border-radius:50%}
+.phone-ic svg{width:1.35rem;height:1.35rem}
+.phone-txt{display:flex;flex-direction:column;line-height:1.2;text-align:left}
+.phone-cap{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.14em;
+  text-transform:uppercase;opacity:.74}
+.phone-num{font-family:var(--f-display);font-size:clamp(1.5rem,4vw,2rem);
+  letter-spacing:-.01em;margin-top:.15rem}
+
+.formpage{padding-top:clamp(1.6rem,3vw,2.6rem)}
+.form-box{margin-top:1.6rem;border:1px solid var(--fg-line);background:var(--paper)}
+.form-box iframe{width:100%;height:56rem;border:0;display:block}
+
+/* ── 푸터 ────────────────────────────────────────────── */
+footer.site{background:var(--ink);color:var(--paper);padding:var(--pad) 0 0}
+.foot{display:grid;grid-template-columns:1.7fr 1fr 1fr 1.25fr;gap:2.2rem}
+.fcol h3{font-family:var(--f-mono);font-size:.86rem;letter-spacing:.1em;
+  color:var(--accent);margin:0 0 .9rem;font-weight:600}
+.fcol ul{display:flex;flex-direction:column;gap:.5rem}
+.fcol li{font-size:.88rem;color:color-mix(in srgb, var(--paper) 68%, transparent)}
+.fcol li a{text-decoration:none}
+.fcol li a:hover{color:var(--accent)}
+.brandline{font-family:var(--f-display);font-size:1.8rem;letter-spacing:-.03em;
+  margin:0 0 .7rem;line-height:1}
+.fdesc{color:color-mix(in srgb, var(--paper) 62%, transparent);font-size:.88rem;
+  margin:0;max-width:32ch}
+.fphone{font-family:var(--f-display);font-size:1.7rem;letter-spacing:-.01em;
+  text-decoration:none;color:var(--accent);line-height:1.1;display:inline-block}
+.fquote{display:inline-block;background:var(--accent);color:var(--ink);text-decoration:none;
+  font-family:var(--f-mono);font-weight:600;font-size:.84rem;padding:.62rem 1.15rem}
+.fquote:hover{transform:translate(-2px,-2px);box-shadow:3px 3px 0 var(--paper)}
+.fnote{color:color-mix(in srgb, var(--paper) 52%, transparent);font-size:.78rem;margin:.8rem 0 0}
+.fbottom{border-top:1px solid color-mix(in srgb, var(--paper) 14%, transparent);
+  margin-top:1.9rem;padding:1.1rem 0 5rem}
+.copy{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;
+  color:color-mix(in srgb, var(--paper) 46%, transparent);margin:0}
+
+/* ── 우측 하단 고정 버튼 ─────────────────────────────── */
+.fab{position:fixed;right:clamp(1rem,2.6vw,2rem);bottom:clamp(1rem,2.6vw,2rem);z-index:60;
+  display:inline-flex;align-items:center;gap:.6rem;background:var(--accent);color:var(--ink);
+  text-decoration:none;font-family:var(--f-mono);font-weight:600;font-size:.9rem;
+  padding:1rem 1.35rem;box-shadow:0 12px 30px color-mix(in srgb, var(--ink) 45%, transparent);
+  animation:fab-in .5s .8s cubic-bezier(.2,1.3,.4,1) both}
+.fab:hover{transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--ink)}
+.fab:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.fab svg{width:1.4rem;height:1.4rem;flex:none}
+@keyframes fab-in{from{opacity:0;transform:translateY(1.6rem) scale(.9)}to{opacity:1}}
+
+/* ── 스태거드 리빌 ───────────────────────────────────
+   JS 가 있을 때만 숨긴다. 없으면 그냥 다 보인다. */
+.js [data-reveal]{opacity:0;transform:translateY(1.5rem)}
+.js [data-reveal].in{opacity:1;transform:none;
+  transition:opacity .62s cubic-bezier(.2,.7,.3,1) var(--d,0s),
+             transform .62s cubic-bezier(.2,.7,.3,1) var(--d,0s)}
+
+/* ── 레이아웃 변주 ───────────────────────────────────── */
+.l-b h2{padding-top:0;padding-left:3.4rem}
+.l-b h2::before{top:.55em;width:2.4rem;height:.24rem}
+.l-b .grid{grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))}
+.l-b .card{padding-top:2.4rem}
+.l-c .card{border-left:3px solid transparent}
+.l-c .card:hover{border-left-color:var(--accent)}
+.l-c .cases li{padding-left:1.2rem;border-top:none;border-left:1px solid var(--line)}
+.l-c .cases li::before{left:1.2rem}
+.l-d h2{text-align:center}
+.l-d h2::before{left:50%;transform:translateX(-50%)}
+.l-d .band:not(.split) .body{margin-inline:auto;text-align:center}
+.l-d .steps li::before{font-size:2.2rem}
+.l-e .cta{border-radius:999px}
+.l-e .cta-head{border-radius:999px}
+.l-e .fab{border-radius:999px}
+.l-e .chips li{border-radius:999px}
+.l-e .phone-box{border-radius:999px}
+.l-e h2::before{width:.34rem;height:1.6rem;top:.3rem}
+.l-e h2{padding-top:0;padding-left:1.4rem}
+
+@media (max-width:56rem){
+  .band.split .wrap{grid-template-columns:1fr}
+  .band.split h2{position:static}
+}
+@media (max-width:48rem){
+  .hero-in{grid-template-columns:1fr}
+  .art{max-height:11rem}
+  .foot{grid-template-columns:1fr 1fr}
+  .fcol:first-child{grid-column:1 / -1}
+}
+@media (max-width:34rem){
+  :root{--pad:clamp(2.4rem,9vw,3.4rem)}
+  .bar{min-height:auto;padding-block:.75rem}
+  header nav{width:100%;order:3;gap:1rem}
+  .foot{grid-template-columns:1fr}
+  .steps li{padding:0 0 1.5rem 3.2rem}
+  .steps li::before{top:.05rem}
+  .steps li::after{top:2.2rem;left:1.1rem;right:auto;bottom:.2rem;width:1px;height:auto}
+  .steps p{padding-right:0}
+  .tbl tbody th{width:auto}
+  .fab{padding:1rem;border-radius:50%}
+  .fab-t{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .form-box iframe{height:62rem}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .js [data-reveal]{opacity:1;transform:none}
+  .fab{animation:none}
+  .cta,.cta-head,.phone-box,.fquote,.fab{transition:none}
+}
+
+

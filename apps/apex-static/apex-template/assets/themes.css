@@ -1,0 +1,920 @@
+/* 테마 — 루트마다 완전히 다른 레이아웃·UI/UX·방향성. body 의 t-* 클래스로 갈린다.
+   색·폰트뿐만 아니라 가로/세로 레이아웃, 입체감 이모지/배지, 카드 구조, 타임라인/플로우차트,
+   후기 형태(말풍선/인증/로그/추천서), 요금표가 완전히 다른 사이트로 동작한다.
+   빌더가 apex.css 뒤에 이 파일을 이어붙여 배포한다. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. 산업 도면 (daddul.com / blueprint) — CAD 도면 사양서 · 가로형 기술 사양 행
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-blueprint{
+  --f-display:"Do Hyeon",sans-serif;
+  --f-body:"IBM Plex Sans KR",sans-serif;
+  --f-mono:"IBM Plex Mono",monospace;
+  background-image:
+    linear-gradient(color-mix(in srgb,var(--ink) 6%,transparent) 1px,transparent 1px),
+    linear-gradient(90deg,color-mix(in srgb,var(--ink) 6%,transparent) 1px,transparent 1px);
+  background-size:2.2rem 2.2rem;background-attachment:fixed;
+}
+.t-blueprint h1{letter-spacing:-.01em}
+.t-blueprint h2::before{height:.24rem;width:4.2rem}
+
+/* 헤더 */
+.t-blueprint header.site{background:var(--paper);border-bottom:2px solid var(--accent)}
+.t-blueprint .bar .brand{font-family:var(--f-mono);font-weight:700;letter-spacing:-.02em}
+.t-blueprint .bar nav a{font-family:var(--f-mono);font-size:.82rem;font-weight:500;padding:.2rem .4rem}
+.t-blueprint .cta-head{border-radius:0;border:1px solid var(--ink)}
+
+/* 입체감 배지 */
+.t-blueprint .dim-ico{
+  background:var(--paper);border:1px solid var(--accent);box-shadow:3px 3px 0 var(--ink);
+  width:3.4rem;height:3.4rem;border-radius:0;
+}
+.t-blueprint .band.alt .dim-ico{
+  background:#093050;border-color:var(--accent);box-shadow:3px 3px 0 #001729;
+}
+
+/* 일반 밴드 (light paper) 텍스트/카드 컬러 */
+.t-blueprint .card,
+.t-blueprint .steps li,
+.t-blueprint .reviews li,
+.t-blueprint .cases li{
+  background:var(--paper);border:1px solid var(--line);color:var(--ink);
+}
+.t-blueprint .card h3,
+.t-blueprint .steps h3,
+.t-blueprint .reviews h3,
+.t-blueprint .cases h3{
+  color:var(--ink) !important;
+}
+.t-blueprint .card p,
+.t-blueprint .steps p,
+.t-blueprint .reviews p,
+.t-blueprint .cases p{
+  color:color-mix(in srgb, var(--ink) 78%, transparent) !important;
+}
+
+/* 어두운 밴드 (.band.alt — Dark Navy CAD) 텍스트/카드 컬러 */
+.t-blueprint .band.alt{background:var(--ink);color:var(--paper)}
+.t-blueprint .band.alt h2{color:#FFFFFF}
+.t-blueprint .band.alt .body{color:color-mix(in srgb, var(--paper) 80%, transparent)}
+
+.t-blueprint .band.alt .card,
+.t-blueprint .band.alt .steps li,
+.t-blueprint .band.alt .reviews li,
+.t-blueprint .band.alt .cases li{
+  background:color-mix(in srgb, var(--paper) 10%, var(--ink));
+  border-color:color-mix(in srgb, var(--paper) 24%, transparent);
+  color:var(--paper);
+}
+.t-blueprint .band.alt .card h3,
+.t-blueprint .band.alt .steps h3,
+.t-blueprint .band.alt .reviews h3,
+.t-blueprint .band.alt .cases h3{
+  color:#FFFFFF !important;
+}
+.t-blueprint .band.alt .card p,
+.t-blueprint .band.alt .steps p,
+.t-blueprint .band.alt .reviews p,
+.t-blueprint .band.alt .cases p{
+  color:color-mix(in srgb, var(--paper) 82%, transparent) !important;
+}
+
+/* 서비스: 가로형 기술 사양 행 (Horizontal Full-Width Tech Rows) */
+.t-blueprint .grid.cards{grid-template-columns:1fr;gap:.75rem}
+.t-blueprint .card{
+  display:grid;grid-template-columns:70px 1fr;gap:1.4rem;align-items:start;
+  padding:1.3rem 1.6rem;position:relative;border-radius:0;
+}
+.t-blueprint .card::before,.t-blueprint .card::after{
+  content:"";position:absolute;width:6px;height:6px;pointer-events:none;
+}
+.t-blueprint .card::before{top:0;left:0;border-top:2px solid var(--accent);border-left:2px solid var(--accent)}
+.t-blueprint .card::after{bottom:0;right:0;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent)}
+.t-blueprint .card .card-ico{padding-top:.1rem;margin:0}
+.t-blueprint .card h3{font-family:var(--f-mono);font-size:1.12rem;margin:0 0 .35rem}
+.t-blueprint .card:hover{border-color:var(--accent)}
+.t-blueprint .band.alt .card:hover{background:color-mix(in srgb, var(--accent) 15%, var(--ink))}
+
+/* 작업 순서: 가로형 배관 플로우차트 (Horizontal Pipeline Flowchart) */
+.t-blueprint .steps{grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:1rem}
+.t-blueprint .steps li{
+  padding:1.4rem 1.2rem;border-radius:0;
+}
+.t-blueprint .steps li::before{font-family:var(--f-mono);font-size:1.4rem;position:static;display:block;margin-bottom:.5rem}
+.t-blueprint .steps li::after{display:none}
+
+/* 요금표: CAD 단가 사양표 */
+.t-blueprint .tbl-wrap{border:1px solid var(--line);background:var(--paper);padding:.4rem 1rem}
+.t-blueprint .band.alt .tbl-wrap{
+  background:color-mix(in srgb, var(--paper) 10%, var(--ink));
+  border-color:color-mix(in srgb, var(--paper) 24%, transparent);
+}
+.t-blueprint .tbl thead th{background:color-mix(in srgb,var(--accent) 14%,transparent);font-family:var(--f-mono)}
+.t-blueprint .tbl th,.t-blueprint .tbl td{border-bottom:1px dashed var(--line);font-family:var(--f-mono)}
+.t-blueprint .band.alt .tbl th{color:#FFFFFF !important;border-color:color-mix(in srgb, var(--paper) 24%, transparent)}
+.t-blueprint .band.alt .tbl td{color:color-mix(in srgb, var(--paper) 82%, transparent) !important;border-color:color-mix(in srgb, var(--paper) 24%, transparent)}
+
+/* 사례: 현장 검측 및 조치 로그 (사례 01 일체형 배지) */
+.t-blueprint .cases{grid-template-columns:1fr;gap:.75rem}
+.t-blueprint .cases li{
+  display:grid;grid-template-columns:100px 1fr;gap:1.2rem;align-items:start;
+  padding:1.2rem 1.4rem;border-radius:0;
+}
+.t-blueprint .cases li::before{
+  content:"[사례 " counter(c,decimal-leading-zero) "]";
+  font-family:var(--f-mono);font-size:.8rem;font-weight:700;
+  color:var(--accent);background:rgba(255,95,31,0.15);border:1px solid rgba(255,95,31,0.4);
+  padding:.25rem .5rem;border-radius:0;display:inline-block;text-align:center;width:auto;
+}
+.t-blueprint .band.alt .cases li::before{
+  background:rgba(255,95,31,0.22);border-color:var(--accent);color:var(--accent);
+}
+
+/* 후기 & 지역 */
+.t-blueprint .reviews li{border-left:4px solid var(--accent);border-radius:0}
+.t-blueprint .chips li{border-style:dashed;border-radius:0;font-family:var(--f-mono)}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. 따뜻한 생활설비 (ddulea.com / warm-utility) — 플로팅 캡슐 · 카톡 말풍선 후기
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-warm-utility{--f-display:"Gowun Batang",serif;--f-body:"Gothic A1",sans-serif}
+.t-warm-utility h1{font-weight:700;letter-spacing:-.02em;line-height:1.08}
+.t-warm-utility h2::before{border-radius:99px}
+.t-warm-utility .band.alt{border-radius:2.4rem 2.4rem 0 0}
+
+/* 플로팅 알약형 헤더 */
+.t-warm-utility header.site{
+  width:min(100% - 2.5rem,74rem);margin:.8rem auto;border-radius:99px;
+  background:rgba(255,255,255,.94);border:1px solid var(--line);
+  box-shadow:0 4px 18px rgba(38,32,27,.06);top:.8rem;
+}
+.t-warm-utility .bar{padding:0 1.2rem;min-height:3.8rem}
+.t-warm-utility .cta-head,.t-warm-utility .cta,.t-warm-utility .phone-box,.t-warm-utility .fab{border-radius:99px}
+
+/* 입체감 배지 */
+.t-warm-utility .dim-ico{
+  background:linear-gradient(135deg, #FFF9F0 0%, #FFEED9 100%);
+  border:1px solid #FFE0B8;box-shadow:0 8px 18px rgba(245,158,11,.16), inset 0 2px 3px #fff;
+  width:3.5rem;height:3.5rem;border-radius:50%;margin-bottom:.8rem;
+}
+
+/* 카드 및 후기 */
+.t-warm-utility .card,
+.t-warm-utility .reviews li,
+.t-warm-utility .steps li,
+.t-warm-utility .cases li{
+  color:var(--ink);
+}
+.t-warm-utility .card h3,
+.t-warm-utility .reviews h3,
+.t-warm-utility .steps h3,
+.t-warm-utility .cases h3{
+  color:var(--ink) !important;
+}
+.t-warm-utility .card p,
+.t-warm-utility .reviews p,
+.t-warm-utility .steps p,
+.t-warm-utility .cases p{
+  color:#55483D !important;
+}
+.t-warm-utility .band.alt .card h3,
+.t-warm-utility .band.alt .reviews h3,
+.t-warm-utility .band.alt .steps h3,
+.t-warm-utility .band.alt .cases h3{
+  color:var(--ink) !important;
+}
+.t-warm-utility .band.alt .card p,
+.t-warm-utility .band.alt .reviews p,
+.t-warm-utility .band.alt .steps p,
+.t-warm-utility .band.alt .cases p{
+  color:#55483D !important;
+}
+
+/* 서비스: 2x2 부드러운 파스텔 카드 */
+.t-warm-utility .grid.cards{grid-template-columns:repeat(auto-fit,minmax(16.5rem,1fr));gap:1.3rem}
+.t-warm-utility .card{
+  border-radius:1.3rem;border:none;background:#fff;padding:1.6rem 1.4rem;
+  box-shadow:0 4px 14px rgba(38,32,27,.06);display:flex;flex-direction:column;
+}
+.t-warm-utility .card:hover{transform:translateY(-4px);box-shadow:0 14px 30px color-mix(in srgb,var(--accent) 25%,transparent)}
+
+/* 후기: 카카오톡/문자 대화형 말풍선 후기 (Chat Messenger Bubbles) */
+.t-warm-utility .reviews{grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1.5rem}
+.t-warm-utility .reviews li{
+  background:#fff;border-radius:1.3rem 1.3rem 1.3rem .25rem;border:1px solid var(--line);
+  padding:1.5rem 1.6rem;box-shadow:0 4px 16px rgba(0,0,0,.05);position:relative;
+}
+.t-warm-utility .reviews li::before{
+  content:"";position:absolute;left:-8px;bottom:0;width:0;height:0;
+  border-right:8px solid #fff;border-top:8px solid transparent;
+}
+.t-warm-utility .rev-stars{color:#f59e0b;font-size:.9rem}
+.t-warm-utility .chips li{border-radius:99px}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. 글래스모피즘 (neverfoul.com / glass) — 서리유리 캡슐 · 가로 와이드 글래스 바
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-glass{--f-display:"Gothic A1",sans-serif;--f-body:"Gothic A1",sans-serif}
+.t-glass h1{font-weight:900;letter-spacing:-.045em}
+.t-glass .lede{font-weight:100}
+
+/* 플로팅 글래스 캡슐 헤더 */
+.t-glass header.site{
+  width:min(100% - 2.5rem,74rem);margin:.8rem auto;border-radius:99px;
+  background:rgba(231,244,248,.68);backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,.8);box-shadow:0 8px 32px rgba(18,184,214,.12);top:.8rem;
+}
+.t-glass .bar{padding:0 1.2rem;min-height:3.8rem}
+.t-glass .cta-head,.t-glass .cta,.t-glass .phone-box,.t-glass .fab{border-radius:99px}
+
+/* 입체감 배지 */
+.t-glass .dim-ico{
+  background:rgba(255,255,255,.75);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.95);box-shadow:0 8px 24px rgba(18,184,214,.2), inset 0 2px 4px #fff;
+  width:3.5rem;height:3.5rem;border-radius:1.2rem;
+}
+
+/* 서비스: 2열 가로형 와이드 글래스 바 (Horizontal Frosted Glass Bars) */
+.t-glass .grid.cards{grid-template-columns:repeat(auto-fit,minmax(23rem,1fr));gap:1.3rem}
+.t-glass .card{
+  display:flex;flex-direction:row;align-items:center;gap:1.5rem;
+  background:rgba(255,255,255,.58);backdrop-filter:blur(20px) saturate(150%);
+  border:1px solid rgba(255,255,255,.85);border-radius:1.4rem;padding:1.4rem 1.7rem;
+  box-shadow:0 8px 24px rgba(14,42,56,.06);
+}
+.t-glass .card .card-ico{margin:0}
+.t-glass .card:hover{
+  background:rgba(255,255,255,.88);box-shadow:0 12px 36px rgba(18,184,214,.22);transform:translateY(-3px);
+}
+
+/* 사례 & FAQ 글래스 */
+.t-glass .cases li{
+  background:rgba(255,255,255,.55);backdrop-filter:blur(16px);border-radius:1.2rem;
+  border:1px solid rgba(255,255,255,.75);padding:1.4rem 1.6rem;
+}
+.t-glass .band.alt .cases li{
+  background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;
+}
+.t-glass .band.alt .cases li h3{color:#fff !important}
+.t-glass .band.alt .cases li p{color:rgba(255,255,255,.85) !important}
+
+.t-glass .faq dt{
+  background:rgba(255,255,255,.6);border-radius:.8rem;padding:.85rem 1.2rem;margin-top:.8rem;
+  border:1px solid rgba(255,255,255,.75);
+}
+.t-glass .faq dd{padding:.75rem 1.2rem;background:rgba(255,255,255,.3);border-radius:0 0 .8rem .8rem}
+.t-glass .chips li{border-radius:99px;background:rgba(255,255,255,.6);backdrop-filter:blur(10px)}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. 긴급 출동 (oneshot-sewer.com / emergency) — 24H 사이렌 배너 · 고속 긴급 타임라인
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-emergency{--f-display:"Black Han Sans",sans-serif;--f-body:"Noto Sans KR",sans-serif}
+.t-emergency h1{letter-spacing:-.03em}
+
+.t-emergency .topbar{background:var(--accent);color:#fff;font-weight:700}
+.t-emergency .topbar li{opacity:1;font-weight:700}
+.t-emergency .topbar li::before{background:#fff}
+
+.t-emergency header.site{background:#111317;border-bottom:3px solid var(--accent);color:#fff}
+.t-emergency header.site .brand{color:#fff}
+.t-emergency header nav a{color:rgba(255,255,255,.75);font-weight:500}
+.t-emergency header nav a:hover{color:#fff}
+.t-emergency .cta-head{background:var(--accent);color:#fff;font-weight:800;animation:siren 2.2s infinite}
+
+/* 입체감 배지 */
+.t-emergency .dim-ico{
+  background:linear-gradient(135deg, #FFEBEB 0%, #FFD6D6 100%);
+  border:2px solid #E4002B;box-shadow:0 6px 18px rgba(228,0,43,.22), inset 0 2px 2px #fff;
+  width:3.4rem;height:3.4rem;border-radius:.9rem;
+}
+
+/* 카드 및 스텝 내부 텍스트 선명도 */
+.t-emergency .card,
+.t-emergency .steps li,
+.t-emergency .reviews li,
+.t-emergency .cases li{
+  background:#fff;color:#111;
+}
+.t-emergency .card h3,
+.t-emergency .steps h3,
+.t-emergency .reviews h3,
+.t-emergency .cases h3{
+  color:#111 !important;
+}
+.t-emergency .card p,
+.t-emergency .steps p,
+.t-emergency .reviews p,
+.t-emergency .cases p{
+  color:#333 !important;
+}
+.t-emergency .band.alt .card h3,
+.t-emergency .band.alt .steps h3,
+.t-emergency .band.alt .reviews h3,
+.t-emergency .band.alt .cases h3{
+  color:#111 !important;
+}
+.t-emergency .band.alt .card p,
+.t-emergency .band.alt .steps p,
+.t-emergency .band.alt .reviews p,
+.t-emergency .band.alt .cases p{
+  color:#333 !important;
+}
+
+/* 서비스: 긴급 붉은 띠 경보 카드 (Left Solid Red Alert Bars) */
+.t-emergency .grid.cards{grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1.1rem}
+.t-emergency .card{
+  border:none;border-left:6px solid var(--accent);
+  box-shadow:0 4px 16px rgba(0,0,0,.08);padding:1.5rem 1.3rem;border-radius:4px;
+}
+.t-emergency .card h3{font-weight:900}
+
+/* 작업 순서: 가로형 30분 긴급 타임라인 (30-Min Speed Sprint Timeline) */
+.t-emergency .steps{grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.8rem}
+.t-emergency .steps li{
+  border:2px solid var(--line);border-radius:6px;padding:1.4rem 1.1rem;
+}
+.t-emergency .steps li::before{
+  background:var(--accent);color:#fff;border-radius:50%;width:2.2rem;height:2.2rem;
+  display:grid;place-items:center;font-size:1.1rem;font-weight:900;position:static;margin-bottom:.6rem;
+}
+.t-emergency .steps li::after{display:none}
+
+/* 사례 */
+.t-emergency .cases li{
+  border-left:5px solid var(--accent);border-radius:4px;padding:1.2rem 1.4rem;box-shadow:0 4px 14px rgba(0,0,0,.06);
+}
+.t-emergency .cases li::before{
+  content:"사례 " counter(c,decimal-leading-zero);
+  background:rgba(228,0,43,.14);color:var(--accent);font-weight:800;
+}
+
+/* 후기 & CTA */
+.t-emergency .reviews li{border-left:5px solid var(--accent);background:#fff}
+.t-emergency .rev-stars{color:var(--accent);font-weight:900}
+.t-emergency .estimate{background:var(--accent);color:#fff;padding:4.5rem 0}
+.t-emergency .estimate .body{color:rgba(255,255,255,.9)}
+.t-emergency .estimate .phone-box{background:#fff;color:var(--accent);box-shadow:0 12px 36px rgba(0,0,0,.3)}
+
+@keyframes siren{
+  0%{box-shadow:0 0 0 0 rgba(228,0,43,.6)}
+  70%{box-shadow:0 0 0 1.2rem transparent}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. 탐지 HUD (pipe-oneshot.com / hud) — 다크 모드 · 가로형 터미널 콘솔 로그 피드
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-hud{
+  --f-display:"Gothic A1",sans-serif;
+  --f-body:"Gothic A1",sans-serif;
+  --f-mono:"Share Tech Mono",monospace;
+  background:#080A14;color:#E4E9F5;
+}
+.t-hud h1{font-weight:900;letter-spacing:-.04em;text-shadow:0 0 2.4rem rgba(0,229,255,.5)}
+.t-hud .lede{color:rgba(228,233,245,.8)}
+.t-hud .body{color:rgba(228,233,245,.65)}
+
+.t-hud header.site{background:rgba(8,10,20,.94);border-bottom:2px solid var(--accent);box-shadow:0 0 20px rgba(0,229,255,.2)}
+.t-hud header nav a{font-family:var(--f-mono);color:rgba(228,233,245,.7)}
+.t-hud header nav a:hover{color:var(--accent)}
+
+/* 입체감 배지 */
+.t-hud .dim-ico{
+  background:rgba(0,229,255,.12);border:1px solid rgba(0,229,255,.6);
+  box-shadow:0 0 18px rgba(0,229,255,.3), inset 0 0 10px rgba(0,229,255,.2);
+  width:3.4rem;height:3.4rem;border-radius:4px;
+}
+
+/* 서비스: 터미널 계측 진단 카드 */
+.t-hud .grid.cards{grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1rem}
+.t-hud .card{
+  background:#0e1222;border:1px solid rgba(0,229,255,.35);box-shadow:0 0 16px rgba(0,229,255,.08);
+  padding:1.4rem;position:relative;border-radius:0;
+}
+.t-hud .card:hover{background:rgba(0,229,255,.08);box-shadow:0 0 26px rgba(0,229,255,.3);border-color:var(--accent)}
+
+/* 사례: 가로형 터미널 콘솔 로그 피드 */
+.t-hud .cases{grid-template-columns:1fr;gap:.7rem}
+.t-hud .cases li{
+  display:grid;grid-template-columns:95px 1fr;gap:1.2rem;align-items:start;
+  background:#0c0f1c;border:1px solid rgba(0,229,255,.25);padding:1.1rem 1.4rem;border-radius:0;
+}
+.t-hud .cases li::before{
+  content:"LOG-" counter(c,decimal-leading-zero);
+  font-family:var(--f-mono);background:rgba(0,229,255,.15);color:var(--accent);border:1px solid var(--accent);
+  padding:.22rem .45rem;border-radius:0;display:inline-block;text-align:center;font-size:.8rem;font-weight:700;width:auto;
+}
+
+/* 요금 & 지역 */
+.t-hud .tbl thead th{background:rgba(0,229,255,.12);border-bottom:1px solid var(--accent);color:var(--accent);font-family:var(--f-mono)}
+.t-hud .tbl th,.t-hud .tbl td{border-bottom:1px solid rgba(0,229,255,.2);font-family:var(--f-mono)}
+.t-hud .chips li{border-color:rgba(0,229,255,.34);color:rgba(228,233,245,.85);font-family:var(--f-mono)}
+.t-hud .chip-dot{color:var(--accent);animation:radar-dot 1.5s infinite}
+@keyframes radar-dot{0%,100%{opacity:.3}50%{opacity:1}}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. 메디컬 미니멀 (naoheg.com / clinic) — 스위스 미니멀 · 가로형 프로토콜 목록
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-clinic{--f-display:"Gothic A1",sans-serif;--f-body:"Gothic A1",sans-serif;--pad:clamp(3.2rem,7vw,5.8rem)}
+.t-clinic h1{font-weight:200;letter-spacing:-.05em}
+.t-clinic h2{font-weight:400;letter-spacing:-.04em;padding-top:1.6rem}
+.t-clinic h2::before{height:1px;width:2.8rem;top:.6rem}
+
+.t-clinic header.site{background:#fff;border-bottom:1px solid #E4EEEA}
+
+/* 입체감 배지 */
+.t-clinic .dim-ico{
+  background:linear-gradient(135deg, #F0FDF8 0%, #D8F8ED 100%);
+  border:1px solid #A2ECDA;box-shadow:0 6px 16px rgba(0,192,139,.14), inset 0 2px 3px #fff;
+  width:3.4rem;height:3.4rem;border-radius:1.1rem;
+}
+
+/* 서비스: 가로형 메디컬 프로토콜 목록 (Full-Width Protocol Rows) */
+.t-clinic .grid.cards{grid-template-columns:1fr;gap:0;border-top:1px solid #E4EEEA}
+.t-clinic .card{
+  display:grid;grid-template-columns:80px 220px 1fr;gap:2rem;align-items:center;
+  padding:1.6rem .5rem;border:none;border-bottom:1px solid #E4EEEA;background:transparent;border-radius:0;
+}
+.t-clinic .card .card-ico{margin:0}
+.t-clinic .card h3{margin:0;font-size:1.1rem;font-weight:600}
+.t-clinic .card:hover{background:#F8FCFA;color:var(--accent)}
+
+/* 작업 순서: 세로형 정밀 클리닉 타임라인 (Vertical Clinical Timeline) */
+.t-clinic .steps{display:flex;flex-direction:column;gap:1.4rem;border-left:2px solid #E4EEEA;padding-left:2rem;margin-left:1rem}
+.t-clinic .steps li{padding:0;border:none;position:relative}
+.t-clinic .steps li::before{position:absolute;left:-2.6rem;top:.2rem;background:#00C08B;border-radius:50%;width:.9rem;height:.9rem;font-size:0}
+.t-clinic .steps li::after{display:none}
+
+.t-clinic .cases li::before{
+  content:"사례 " counter(c,decimal-leading-zero);
+  background:#E4EEEA;color:var(--ink);font-weight:600;
+}
+
+.t-clinic .faq{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem 2rem}
+.t-clinic .tbl th,.t-clinic .tbl td{border-bottom:1px solid #E4EEEA}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. 유기농 에코 (amunsa.com / organic) — 매거진 중앙 헤더 · 벤토 그리드 (Bento Grid)
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-organic{--f-display:"Nanum Myeongjo",serif;--f-body:"Gothic A1",sans-serif}
+.t-organic h1{font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.t-organic h2{font-family:var(--f-display);font-weight:700}
+.t-organic h2::before{border-radius:99px;height:.28rem}
+
+/* 중앙 정렬 매거진 헤더 */
+.t-organic header.site{background:var(--paper);border-bottom:1px solid var(--line)}
+.t-organic .bar{flex-direction:column;justify-content:center;text-align:center;padding:1rem 0;gap:.6rem;min-height:auto}
+.t-organic .bar .brand{font-size:1.9rem;font-family:var(--f-display)}
+.t-organic .bar nav{justify-content:center;gap:1.4rem}
+
+/* 입체감 배지 */
+.t-organic .dim-ico{
+  background:linear-gradient(135deg, #F0F9F3 0%, #DCF0E2 100%);
+  border:1px solid #B8E4C4;box-shadow:0 6px 16px rgba(46,125,50,.14), inset 0 2px 3px #fff;
+  width:3.4rem;height:3.4rem;border-radius:1.1rem;
+}
+
+/* 카드 및 후기 텍스트 가독성 */
+.t-organic .card,
+.t-organic .reviews li,
+.t-organic .steps li,
+.t-organic .cases li{
+  color:#2A3128;
+}
+.t-organic .card h3,
+.t-organic .reviews h3,
+.t-organic .steps h3,
+.t-organic .cases h3{
+  color:#2A3128 !important;
+}
+.t-organic .card p,
+.t-organic .reviews p,
+.t-organic .steps p,
+.t-organic .cases p{
+  color:#444 !important;
+}
+.t-organic .band.alt .card h3,
+.t-organic .band.alt .reviews h3,
+.t-organic .band.alt .steps h3,
+.t-organic .band.alt .cases h3{
+  color:#2A3128 !important;
+}
+.t-organic .band.alt .card p,
+.t-organic .band.alt .reviews p,
+.t-organic .band.alt .steps p,
+.t-organic .band.alt .cases p{
+  color:#444 !important;
+}
+
+/* 서비스: 벤토 그리드 레이아웃 (Bento Grid — 1 Large Feature + 3 Stacked Cards) */
+.t-organic .grid.cards{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto auto auto;gap:1.2rem}
+.t-organic .card:first-child{
+  grid-row:span 3;background:#EAE5D6;border-radius:1.6rem;padding:2.4rem 2rem;
+  display:flex;flex-direction:column;justify-content:center;border:none;
+}
+.t-organic .card:first-child h3{font-size:1.4rem;font-family:var(--f-display);margin-bottom:.8rem}
+.t-organic .card:not(:first-child){
+  border-radius:1.2rem;background:#fff;padding:1.4rem 1.6rem;border:1px solid var(--line);
+  box-shadow:0 4px 16px rgba(42,49,40,.05);
+}
+
+/* 사례 */
+.t-organic .cases li{
+  background:#fff;border-radius:1.2rem;padding:1.3rem 1.5rem;box-shadow:0 4px 16px rgba(0,0,0,.05);
+}
+.t-organic .cases li::before{
+  content:"살림이야기 " counter(c,decimal-leading-zero);
+  background:rgba(46,125,50,.12);color:var(--accent);border-radius:99px;font-weight:700;
+}
+
+/* 요금: 도트 리더 스타일 (Dot Leaders) */
+.t-organic .tbl th{font-family:var(--f-display)}
+.t-organic .reviews li{border-radius:1.3rem;background:#fff;padding:1.6rem;box-shadow:0 4px 16px rgba(0,0,0,.05)}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8. 네오 브루탈리즘 (anclose.com / brutal) — 3px 블랙 보더 · 고대비 스티커
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-brutal{--f-display:"Bagel Fat One",sans-serif;--f-body:"Noto Sans KR",sans-serif}
+.t-brutal h1{letter-spacing:-.02em;line-height:1.02}
+.t-brutal h2{font-weight:900;letter-spacing:-.03em}
+.t-brutal h2::before{height:.7rem;width:2.2rem;border:2px solid #000}
+
+.t-brutal header.site{border-bottom:3px solid #000;background:var(--paper);backdrop-filter:none}
+.t-brutal .cta-head{border:3px solid #000;box-shadow:4px 4px 0 #000;font-weight:900}
+
+/* 어두운 밴드 대비 및 가독성 100% 보장 */
+.t-brutal .band.alt{background:#111;color:#FDF6D8}
+.t-brutal .band.alt h2{color:#FFE600}
+.t-brutal .band.alt .body{color:#FDF6D8}
+
+/* 카드 및 스텝 내부: 흰색 배경 위에서는 무조건 선명한 검정 텍스트 */
+.t-brutal .card,
+.t-brutal .steps li,
+.t-brutal .reviews li,
+.t-brutal .cases li,
+.t-brutal .tbl-wrap{
+  background:#fff;color:#000;
+}
+.t-brutal .card h3,
+.t-brutal .steps h3,
+.t-brutal .reviews h3,
+.t-brutal .cases h3{
+  color:#000 !important;font-weight:900;
+}
+.t-brutal .card p,
+.t-brutal .steps p,
+.t-brutal .reviews p,
+.t-brutal .cases p{
+  color:#1a1a1a !important;font-weight:500;
+}
+.t-brutal .tbl th,
+.t-brutal .tbl td{
+  color:#000 !important;font-weight:600;
+}
+.t-brutal .band.alt .card p,
+.t-brutal .band.alt .steps p,
+.t-brutal .band.alt .cases p,
+.t-brutal .band.alt .tbl td{
+  color:#1a1a1a !important;
+}
+
+/* 입체감 배지 */
+.t-brutal .dim-ico{
+  background:#FFE600;border:3px solid #000;box-shadow:4px 4px 0 #000;
+  width:3.6rem;height:3.6rem;border-radius:0;font-size:1.85rem;
+}
+
+/* 서비스: 가로형 브루탈리즘 스티커 스트립 (Horizontal Brutalist Strips) */
+.t-brutal .grid.cards{grid-template-columns:1fr;gap:1.1rem}
+.t-brutal .card{
+  display:grid;grid-template-columns:75px 1fr;gap:1.4rem;align-items:center;
+  background:#fff;border:3px solid #000;box-shadow:6px 6px 0 #000;padding:1.3rem 1.6rem;border-radius:0;
+}
+.t-brutal .card .card-ico{margin:0}
+.t-brutal .card h3{font-size:1.2rem;font-weight:900}
+.t-brutal .card:hover{background:#FDF6D8;transform:translate(-3px,-3px);box-shadow:9px 9px 0 #000}
+
+/* 작업 순서: 청키 번호 스티커 박스 공정 */
+.t-brutal .steps{grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:1rem}
+.t-brutal .steps li{
+  border:3px solid #000;box-shadow:5px 5px 0 #000;background:#fff;padding:1.4rem 1.2rem;border-radius:0;
+}
+.t-brutal .steps li::before{
+  background:#FFE600;color:#000;border:2px solid #000;box-shadow:2px 2px 0 #000;
+  font-weight:900;font-size:1.1rem;padding:.15rem .55rem;position:static;display:inline-block;margin-bottom:.6rem;
+}
+.t-brutal .steps li::after{display:none}
+
+/* 사례 (cases) */
+.t-brutal .cases li{
+  background:#fff;border:3px solid #000;box-shadow:5px 5px 0 #000;
+  padding:1.3rem 1.4rem;color:#000;border-radius:0;
+}
+.t-brutal .cases li::before{
+  content:"사례 " counter(c,decimal-leading-zero);
+  background:#FFE600;color:#000;border:2px solid #000;box-shadow:2px 2px 0 #000;
+  font-weight:900;font-size:.82rem;padding:.12rem .45rem;border-radius:0;
+}
+
+/* FAQ */
+.t-brutal .faq dt{
+  background:#fff;color:#000;border:2px solid #000;box-shadow:4px 4px 0 #000;
+  padding:.8rem 1.2rem;margin-top:1rem;
+}
+.t-brutal .faq dt::before{color:#000;font-weight:900;left:.8rem}
+.t-brutal .faq dd{
+  background:#FDF6D8;color:#000;border:2px solid #000;border-top:none;
+  box-shadow:4px 4px 0 #000;padding:.8rem 1.2rem;margin:0 0 1rem;
+}
+
+/* 요금 & CTA */
+.t-brutal .tbl-wrap{border:3px solid #000;box-shadow:6px 6px 0 #000;background:#fff}
+.t-brutal .tbl thead th{background:#FFE600;border-bottom:3px solid #000;font-weight:900;color:#000}
+.t-brutal .estimate{
+  background:#FFE600;color:#000;border:3px solid #000;box-shadow:8px 8px 0 #000;
+  width:min(100% - 2.5rem,74rem);margin:2rem auto;border-radius:0;
+}
+.t-brutal .estimate h2{color:#000}
+.t-brutal .estimate .body{color:#222}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9. 스마트 앱 (one-qfast.com / appish) — 모바일 앱 플랫 · 가로 2열 와이드 앱 카드
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-appish{--f-display:"Jua",sans-serif;--f-body:"Noto Sans KR",sans-serif}
+.t-appish h1{letter-spacing:-.02em;line-height:1.14}
+.t-appish h2::before{border-radius:99px;height:.3rem}
+
+.t-appish header.site{background:#fff;border-bottom:1px solid #E2E8F0}
+.t-appish header nav a{border-radius:99px;padding:.3rem .8rem}
+.t-appish header nav a:hover{background:#EEF4FF;color:#2F6BFF}
+.t-appish .cta-head,.t-appish .cta,.t-appish .fab{border-radius:99px}
+
+/* 입체감 배지 */
+.t-appish .dim-ico{
+  background:linear-gradient(135deg, #EEF4FF 0%, #DCE8FF 100%);
+  border:1px solid #BED6FF;box-shadow:0 8px 18px rgba(47,107,255,.18), inset 0 2px 3px #fff;
+  width:3.6rem;height:3.6rem;border-radius:1.2rem;
+}
+
+/* 카드 및 스텝 내부 텍스트 선명도 */
+.t-appish .card,
+.t-appish .reviews li,
+.t-appish .steps li,
+.t-appish .cases li{
+  background:#fff;color:#0f172a;
+}
+.t-appish .card h3,
+.t-appish .reviews h3,
+.t-appish .steps h3,
+.t-appish .cases h3{
+  color:#0f172a !important;
+}
+.t-appish .card p,
+.t-appish .reviews p,
+.t-appish .steps p,
+.t-appish .cases p{
+  color:#475569 !important;
+}
+.t-appish .band.alt .card h3,
+.t-appish .band.alt .reviews h3,
+.t-appish .band.alt .steps h3,
+.t-appish .band.alt .cases h3{
+  color:#0f172a !important;
+}
+.t-appish .band.alt .card p,
+.t-appish .band.alt .reviews p,
+.t-appish .band.alt .steps p,
+.t-appish .band.alt .cases p{
+  color:#475569 !important;
+}
+
+/* 서비스: 2열 가로형 와이드 앱 카드 (2-Column Horizontal App Cards) */
+.t-appish .grid.cards{grid-template-columns:repeat(auto-fit,minmax(22rem,1fr));gap:1.3rem}
+.t-appish .card{
+  display:flex;flex-direction:row;align-items:center;gap:1.4rem;
+  border-radius:1.4rem;border:1px solid #E2E8F0;
+  box-shadow:0 4px 20px rgba(47,107,255,.07);padding:1.5rem 1.6rem;
+}
+.t-appish .card .card-ico{margin:0}
+.t-appish .card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(47,107,255,.18)}
+
+/* 사례 */
+.t-appish .cases li{
+  border-radius:1.3rem;border:1px solid #E2E8F0;padding:1.4rem 1.6rem;box-shadow:0 4px 18px rgba(0,0,0,.05);
+}
+.t-appish .cases li::before{
+  content:"사례 " counter(c,decimal-leading-zero);
+  background:#EEF4FF;color:#2F6BFF;border-radius:99px;font-weight:700;
+}
+
+/* 후기: 모바일 앱 리뷰 피드 */
+.t-appish .reviews li{
+  border-radius:1.3rem;border:1px solid #E2E8F0;
+  box-shadow:0 4px 18px rgba(0,0,0,.05);padding:1.5rem;
+}
+.t-appish .rev-stars{color:#2F6BFF}
+.t-appish .chips li{border-radius:99px;background:#EEF4FF;border-color:transparent;color:#2F6BFF;font-weight:600}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   10. 럭셔리 컨시어지 (uloung.com / luxe) — 샴페인 골드 실선 · 가로형 로만 리스티클
+   ══════════════════════════════════════════════════════════════════════════ */
+.t-luxe{
+  --f-display:"Song Myung",serif;
+  --f-body:"Nanum Myeongjo",serif;
+  --f-mono:"IBM Plex Mono",monospace;
+  background:#141311;color:#F0EBE1;
+}
+.t-luxe h1{font-weight:400;letter-spacing:-.01em;line-height:1.1}
+.t-luxe h2{font-family:var(--f-display);font-weight:400;letter-spacing:.02em}
+.t-luxe h2::before{height:1px;width:3.6rem;top:.5rem}
+.t-luxe .lede{color:rgba(240,235,225,.75)}
+.t-luxe .body{color:rgba(240,235,225,.6)}
+
+.t-luxe header.site{background:rgba(20,19,17,.94);border-bottom:1px solid rgba(198,164,92,.35)}
+.t-luxe header nav a{letter-spacing:.08em;font-family:var(--f-display);color:rgba(240,235,225,.65)}
+.t-luxe header nav a:hover{color:var(--accent)}
+
+/* 입체감 배지 */
+.t-luxe .dim-ico{
+  background:linear-gradient(135deg, #252320 0%, #181715 100%);
+  border:1px solid rgba(198,164,92,.65);box-shadow:0 6px 18px rgba(0,0,0,.5), inset 0 1px 1px rgba(198,164,92,.5);
+  width:3.4rem;height:3.4rem;border-radius:.9rem;
+}
+
+/* 서비스: 가로형 로만 럭셔리 리스티클 (Horizontal Roman Luxury Listicle) */
+.t-luxe .grid.cards{grid-template-columns:1fr;gap:0;border-top:1px solid rgba(198,164,92,.3)}
+.t-luxe .card{
+  display:grid;grid-template-columns:70px 220px 1fr;gap:2rem;align-items:center;
+  border:none;border-bottom:1px solid rgba(198,164,92,.25);background:transparent;padding:1.9rem 1rem;border-radius:0;
+}
+.t-luxe .card .card-ico{margin:0}
+.t-luxe .card h3{font-family:var(--f-display);font-size:1.2rem;margin:0}
+.t-luxe .card:hover{background:rgba(198,164,92,.06);color:var(--accent)}
+
+/* 사례 */
+.t-luxe .cases li::before{
+  content:"사례 " counter(c,decimal-leading-zero);
+  background:rgba(198,164,92,.18);color:var(--accent);border:1px solid rgba(198,164,92,.4);font-family:var(--f-display);border-radius:0;
+}
+
+/* 요금 & 후기 & 지역 */
+.t-luxe .tbl th{font-family:var(--f-display);border-bottom:1px solid rgba(198,164,92,.3)}
+.t-luxe .tbl td{border-bottom:1px solid rgba(198,164,92,.2)}
+.t-luxe .reviews li{border:none;border-left:1px solid var(--accent);background:transparent;padding:.5rem 1.6rem}
+.t-luxe .chips li{border-color:rgba(198,164,92,.3);letter-spacing:.08em;border-radius:0}
+
+/* ── 면 토큰 보정 ─────────────────────────────────────────
+   테마가 밴드 밝기를 바꾸면 글자색 토큰도 같이 뒤집어야 한다.
+   안 그러면 밝은 면에 밝은 글씨, 어두운 면에 어두운 글씨가 나온다. */
+
+/* 페이지 전체가 어두운 테마 — 기본면부터 밝은 글씨다. */
+.t-hud,.t-luxe{
+  --fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 68%,transparent);
+  --fg-line:color-mix(in srgb,var(--accent) 26%,transparent)}
+.t-hud .band.alt,.t-luxe .band.alt{
+  --fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 68%,transparent);
+  --fg-line:color-mix(in srgb,var(--accent) 26%,transparent)}
+
+
+/* 브루탈리즘의 alt 밴드는 #111 위 크림색이다. */
+.t-brutal .band.alt{
+  --fg:#FDF6D8;
+  --fg-mute:color-mix(in srgb,#FDF6D8 78%,transparent);
+  --fg-line:color-mix(in srgb,#FDF6D8 30%,transparent)}
+
+/* 긴급 출동의 연락 섹션은 붉은 바탕이라 흰 글씨가 맞다. */
+.t-emergency .estimate{
+  --fg:#fff;
+  --fg-mute:rgba(255,255,255,.86);
+  --fg-line:rgba(255,255,255,.3)}
+
+/* 유기농·생활설비는 카드가 흰 바탕이라 어두운 밴드 안에서도 글씨는 어두워야 한다. */
+.t-organic .band.alt .card,.t-organic .band.alt .reviews li,
+.t-warm-utility .band.alt .card,.t-warm-utility .band.alt .reviews li,
+.t-appish .band.alt .card,.t-appish .band.alt .reviews li{
+  --fg:var(--ink);--fg-mute:var(--mute);--fg-line:var(--line);color:var(--ink)}
+
+/* 긴급 출동 연락 섹션은 붉은 바탕이다. 86% 흰색으로는 3.8:1 밖에 안 나와
+   본문 기준(4.5)에 못 미친다. 흰색 그대로 쓴다. */
+.t-emergency .estimate{--fg-mute:#fff}
+
+/* ── 카드를 어둡게/투명하게 쓰는 테마는 토큰을 다시 뒤집는다 ──────
+   apex.css 가 카드 안쪽을 밝은 면으로 못박아 두었기 때문이다. */
+.t-hud .card,.t-hud .cases li,
+.t-luxe .card,.t-luxe .reviews li,
+.t-blueprint .band.alt .card,.t-blueprint .band.alt .steps li,
+.t-glass .band.alt .cases li{
+  --fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 72%,transparent);
+  --fg-line:color-mix(in srgb,var(--paper) 22%,transparent);
+  color:var(--fg)}
+
+/* 어두운 밴드 위 steps 는 카드가 아니라 맨바닥이다. 밴드 토큰을 그대로 따른다. */
+.band.alt .steps li{--fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 74%,transparent);color:var(--fg)}
+.t-hud .steps li,.t-luxe .steps li{--fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 72%,transparent);color:var(--fg)}
+
+/* steps 의 제목·본문이 어디서든 면을 따르게. 테마가 !important 로 박은 건
+   그 테마 안에서만 유효하고, 나머지는 이 토큰을 쓴다. */
+.steps h3{color:var(--fg)}
+.steps p{color:var(--fg-mute)}
+.cases h3,.reviews h3,.card h3{color:var(--fg)}
+
+/* ── 어두운 밴드 위 작업순서 글씨 ───────────────────────────
+   테마들이 .steps h3 / .steps p 를 카드와 묶어 !important 로 어둡게 박아 뒀다.
+   그런데 .steps li 는 대부분 배경이 없어(투명) 어두운 밴드 위에 그대로 얹힌다.
+   결과가 어두운 배경 + 어두운 글씨였다. 여기서 밝게 되돌린다.
+   제외: blueprint(자체 어두운 카드 규칙이 이미 맞음), clinic(alt 밴드가 밝음). */
+.t-warm-utility .band.alt .steps h3,
+.t-glass .band.alt .steps h3,
+.t-organic .band.alt .steps h3,
+.t-clinic .band.alt .steps h3,
+.t-hud .band.alt .steps h3,
+.t-luxe .band.alt .steps h3{color:#fff !important}
+
+.t-warm-utility .band.alt .steps p,
+.t-glass .band.alt .steps p,
+.t-organic .band.alt .steps p,
+.t-clinic .band.alt .steps p,
+.t-hud .band.alt .steps p,
+.t-luxe .band.alt .steps p{color:rgba(255,255,255,.84) !important}
+
+/* 단계 사이 연결선도 어두운 밴드에서는 밝게. */
+.band.alt .steps li::after{background:rgba(255,255,255,.24)}
+
+/* ── 흰 카드 위 작업순서는 어두운 밴드에서도 검은 글씨 ─────────
+   emergency · brutal · appish 는 .steps li 에 background:#fff 를 주고
+   어두운 밴드용 재정의가 없다. 즉 어두운 밴드 위에도 흰 카드가 얹힌다.
+   여기에 흰 글씨를 주면 안 보인다. */
+.t-emergency .band.alt .steps h3,
+.t-brutal .band.alt .steps h3,
+.t-appish .band.alt .steps h3{color:#111 !important}
+.t-emergency .band.alt .steps p,
+.t-brutal .band.alt .steps p,
+.t-appish .band.alt .steps p{color:#333 !important}
+.t-emergency .band.alt .steps li,
+.t-brutal .band.alt .steps li,
+.t-appish .band.alt .steps li{
+  --fg:#111;--fg-mute:#333;--fg-line:rgba(0,0,0,.18)}
+
+/* clinic 의 alt 밴드는 기본 어두운 밴드(--ink)를 그대로 쓴다.
+   다만 카드마다 배경이 다르다 — 투명한 것만 밝은 글씨로 간다.
+     .card       transparent  -> 밴드가 비침. 밝은 글씨
+     .cases li   var(--paper) -> 흰 카드. 어두운 글씨 (기본 그대로 둔다)
+     .reviews li var(--paper) -> 흰 카드. 어두운 글씨
+     .steps li   배경 없음     -> 밴드가 비침. 밝은 글씨 */
+.t-clinic .band.alt .card{
+  --fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 74%,transparent);
+  --fg-line:color-mix(in srgb,var(--paper) 20%,transparent);color:var(--fg)}
+.t-clinic .band.alt .card h3{color:var(--paper) !important}
+.t-clinic .band.alt .card p{color:color-mix(in srgb,var(--paper) 74%,transparent) !important}
+.t-clinic .band.alt .cases li,.t-clinic .band.alt .reviews li{
+  --fg:var(--ink);--fg-mute:var(--mute);--fg-line:var(--line);color:var(--fg)}
+.t-clinic .band.alt .cases h3,.t-clinic .band.alt .reviews h3{color:var(--ink) !important}
+.t-clinic .band.alt .cases p,.t-clinic .band.alt .reviews p{color:var(--mute) !important}
+.t-clinic .band.alt .steps li::after{background:rgba(255,255,255,.24)}
+
+/* ── 스스로 배경을 까는 요소의 토큰 보정 ────────────────────
+   요소가 제 배경을 정하면 그 안은 새 면이다. 토큰을 같이 안 뒤집으면
+   어두운 밴드의 밝은 글씨가 흰 요소 위로 그대로 흘러들어 안 보인다. */
+
+/* 브루탈리즘 요금표는 흰 바탕에 검은 글씨다 (밴드가 어두워도). */
+.t-brutal .tbl-wrap{--fg:#000;--fg-mute:#1a1a1a;--fg-line:rgba(0,0,0,.25)}
+.t-brutal .band.alt .tbl td{color:#1a1a1a !important}
+.t-brutal .band.alt .tbl tbody th{color:#000 !important}
+
+/* 유리·앱 테마의 칩은 흰 알약이라 글씨가 어두워야 한다. */
+.t-glass .chips li,.t-appish .chips li{--fg-mute:var(--ink);color:var(--ink)}
+
+/* 유리 테마의 어두운 밴드 카드는 반투명 검정이다 — 밝은 글씨로. */
+.t-glass .band.alt .card,.t-glass .band.alt .reviews li{
+  --fg:var(--paper);
+  --fg-mute:color-mix(in srgb,var(--paper) 80%,transparent);
+  --fg-line:color-mix(in srgb,var(--paper) 26%,transparent);color:var(--fg)}
+.t-glass .band.alt .card h3{color:#fff !important}
+.t-glass .band.alt .card p{color:rgba(255,255,255,.86) !important}
+
+/* 유리 테마의 어두운 밴드 FAQ 답변도 같은 이유. */
+.t-glass .band.alt .faq dt{color:#fff !important}
+.t-glass .band.alt .faq dd{color:rgba(255,255,255,.84) !important}
+
+/* 유리 테마의 어두운 밴드 카드는 반투명 흰색(55%)이 그대로 얹혀 중간톤이 된다.
+   어두운 쪽으로 바꿔 깔고 글씨를 밝게 가야 읽힌다. */
+.t-glass .band.alt .card,.t-glass .band.alt .reviews li{
+  background:rgba(8,32,44,.55);
+  border-color:rgba(255,255,255,.28)}
+.t-glass .band.alt .reviews p{color:rgba(255,255,255,.88) !important}
+.t-glass .band.alt .reviews .meta{color:var(--accent) !important}

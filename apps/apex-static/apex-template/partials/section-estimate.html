@@ -1,0 +1,16 @@
+<section class="band estimate" data-reveal id="estimate">
+  <div class="wrap narrow">
+    <h2>{{ctaHeading}}</h2>
+    <p class="body">{{ctaNote}}</p>
+    {{#ctaIsPhone}}
+    <a class="phone-box" href="{{ctaHref}}">
+      <span class="phone-ic">{{{ctaIcon}}}</span>
+      <span class="phone-txt">
+        <span class="phone-cap">24시간 접수 · 바로 연결</span>
+        <span class="phone-num">{{ctaPhoneText}}</span>
+      </span>
+    </a>
+    {{/ctaIsPhone}}
+    {{#ctaIsForm}}<a class="cta big" href="{{ctaHref}}">{{{ctaIcon}}}<span>{{ctaLabel}}</span></a>{{/ctaIsForm}}
+  </div>
+</section>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{title}}</title>
+<meta name="description" content="{{description}}" />
+<link rel="canonical" href="{{canonical}}" />
+{{#naverVerification}}<meta name="naver-site-verification" content="{{naverVerification}}" />{{/naverVerification}}
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="{{brand}}" />
+<meta property="og:title" content="{{title}}" />
+<meta property="og:description" content="{{description}}" />
+<meta property="og:url" content="{{canonical}}" />
+<meta name="theme-color" content="{{palette.ink}}" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="{{fontHref}}" />
+<link rel="stylesheet" href="{{cssHref}}" />
+<!-- 마지막 값 뒤에 세미콜론을 반드시 둘 것. 변수 닫는 괄호 바로 뒤에 CSS 닫는
+     괄호를 붙이면 템플릿 엔진이 셋을 한 태그로 먹어 CSS 블록이 안 닫힌다.
+     (주석 안에도 변수 표기를 쓰지 말 것 — 엔진이 그대로 읽는다) -->
+<style>:root{--ink:{{palette.ink}};--paper:{{palette.paper}};--accent:{{palette.accent}};--haze:{{palette.haze}};--mute:{{palette.mute}};--line:{{palette.line}};}</style>
+<script>document.documentElement.className+=" js";</script>
+<script type="application/ld+json">{{{jsonLd}}}</script>
+</head>
+<body class="v-{{vertical}} l-{{layout}} t-{{theme}} ttl-{{titleMode}}">
+<a class="skip" href="#main">본문 바로가기</a>
+
+<div class="topbar"><div class="wrap"><ul>{{#topbar}}<li>{{.}}</li>{{/topbar}}</ul></div></div>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="{{homeHref}}">{{brand}}</a>
+    <nav aria-label="주요 메뉴">
+      {{#nav}}<a href="{{href}}">{{label}}</a>{{/nav}}
+    </nav>
+    <a class="cta-head" href="{{ctaHref}}">{{ctaLabel}}</a>
+  </div>
+</header>
+
+<main id="main">{{{bodyHtml}}}</main>
+
+<footer class="site">
+  <div class="wrap foot">
+    <div class="fcol">
+      <p class="brandline">{{brand}}</p>
+      <p class="fdesc">{{footerDesc}}</p>
+    </div>
+    <div class="fcol">
+      <h3>{{footerServicesLabel}}</h3>
+      <ul>{{#footerServices}}<li>{{.}}</li>{{/footerServices}}</ul>
+    </div>
+    <div class="fcol">
+      <h3>{{footerInfoLabel}}</h3>
+      <ul>{{#footerInfo}}<li><a href="{{href}}">{{label}}</a></li>{{/footerInfo}}</ul>
+    </div>
+    <div class="fcol">
+      <h3>{{footerContactLabel}}</h3>
+      {{#ctaIsPhone}}<a class="fphone" href="{{ctaHref}}">{{ctaPhoneText}}</a>{{/ctaIsPhone}}
+      {{#ctaIsForm}}<a class="fquote" href="{{ctaHref}}">견적 요청 바로가기</a>{{/ctaIsForm}}
+      <p class="fnote">{{footerHours}}</p>
+    </div>
+  </div>
+  <div class="wrap fbottom">
+    <p class="copy">&copy; {{year}} {{brand}}. All rights reserved.</p>
+  </div>
+</footer>
+
+<a class="fab" href="{{ctaHref}}" aria-label="{{ctaFabAria}}">
+  {{{ctaIcon}}}<span class="fab-t">{{ctaFabLabel}}</span>
+</a>
+
+<script>
+// 스태거드 리빌. 형제 순번만큼 지연을 줘서 한 덩어리가 차례로 올라오게 한다.
+(function () {
+  var items = document.querySelectorAll('[data-reveal]');
+  if (!items.length) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || !('IntersectionObserver' in window)) {
+    for (var i = 0; i < items.length; i++) items[i].classList.add('in');
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var el = e.target;
+      var sibs = el.parentNode ? el.parentNode.querySelectorAll(':scope > [data-reveal]') : [];
+      var idx = Array.prototype.indexOf.call(sibs, el);
+      el.style.setProperty('--d', (idx > 0 ? idx * 0.075 : 0) + 's');
+      el.classList.add('in');
+      io.unobserve(el);
+    });
+  }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
+  for (var j = 0; j < items.length; j++) io.observe(items[j]);
+})();
+</script>
+</body>
+</html>
