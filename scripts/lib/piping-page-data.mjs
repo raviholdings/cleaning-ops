@@ -45,14 +45,23 @@ export function lastToken(location) {
   return tokens[tokens.length - 1] || location;
 }
 
-export function pipingPagePath(location, mainKeyword) {
-  const locSlug = pathLocation(location);
-  return `/배관/${locSlug}/${mainKeyword}`;
+/*
+ * 숫자 URL (2026-08-25 전환). 종전에는 /배관/{구-동}/{키워드} 였다.
+ *
+ * 한글 경로가 물리던 비용을 없앤다 — dedup 인코딩 불일치(원문 vs percent-encoded),
+ * Git Bash(MSYS) 의 경로 인자 변조, 결과 테이블의 긴 url 텍스트. 그리고 페이지마다
+ * 디렉토리를 만들지 않아 inode 가 페이지당 2개에서 1개로 준다.
+ *
+ * 페이지 내용(제목·H1·본문)의 지역·키워드는 그대로다. 주소만 번호가 된다.
+ * 청소도 /1~/131 숫자 URL 이고 색인 전환율 35% 를 낸다.
+ */
+export function pipingPagePath(requestId) {
+  return `/piping/${requestId}`;
 }
 
-export function pipingPageUrl(siteUrl, location, mainKeyword) {
+export function pipingPageUrl(siteUrl, requestId) {
   const base = String(siteUrl).replace(/\/+$/, '');
-  return `${base}${pipingPagePath(location, mainKeyword)}`;
+  return `${base}${pipingPagePath(requestId)}`;
 }
 
 function hash(input) {
@@ -105,12 +114,17 @@ function slotFor(slots, requestId) {
 /*
  * (사이트, 페이지) -> (지역, 키워드) 배정. 전역 중복 0 을 보장한다.
  *
- *   키워드 = 슬롯번호 j 로만 정한다 (j < 키워드수 이므로 한 사이트 안에서 안 겹친다)
- *   지역   = (siteIndex * LOC_STRIDE + j * SLOT_STRIDE) % 지역수
+ *   키워드 = 슬롯번호 j 를 메인 수로 나눈 나머지 (메인이 슬롯보다 적으면 반복된다)
+ *   지역   = (kwIndex * SLOT_STRIDE + mainIndex * LOC_STRIDE) % 지역수
+ *            mainIndex = siteIndex * 사이트당반복수 + 반복번호  → 그 메인 안에서 유일
  *
- * LOC_STRIDE 가 지역수와 서로소라, 같은 키워드(=같은 j)를 쓰는 사이트들끼리 지역이
- * 절대 겹치지 않는다. j 가 다르면 키워드가 달라 URL 이 다르다. 따라서 (지역, 키워드)
- * 쌍은 20,000 사이트 전체에서 단 한 번만 나온다 — 자체 네트워크 내 중복 콘텐츠 0.
+ * LOC_STRIDE 가 지역수와 서로소이고 mainIndex 최대값(60,000)이 지역수(72,938)보다
+ * 작으므로, 같은 메인을 쓰는 페이지들끼리 지역이 절대 겹치지 않는다. 메인이 다르면
+ * 지역이 같아도 다른 페이지다. 따라서 (지역, 메인) 쌍은 20,000 사이트 전체에서 단
+ * 한 번만 나온다 — 자체 네트워크 내 중복 콘텐츠 0 (400만 장 전수 시뮬레이션 검증).
+ *
+ * 2026-08-26: 메인/서브 분리로 메인이 슬롯보다 적어지면서 옛 식((s*LOC + j*SLOT))이
+ * 19.2%(76만 장) 겹쳤다. 메인별 색인을 도입해 해결.
  *
  * 옛 방식((s*31 + r*7), (s*13 + r-1))은 두 식이 같은 r 에 함께 묶여 4.5%(18만 장)가
  * 겹쳤다. 2026-08-24 실측 후 교체.
@@ -119,15 +133,29 @@ const LOC_STRIDE = 30011;
 const SLOT_STRIDE = 601;
 
 let planChecked = false;
-function assertPlan(slots, keywordsData, locationCount) {
+function assertPlan(slots, keywordsData, locationCount, config) {
   if (planChecked) return;
   if (gcd(LOC_STRIDE, locationCount) !== 1) {
     throw new Error(`LOC_STRIDE(${LOC_STRIDE})가 지역 수(${locationCount})와 서로소가 아니다 — 사이트 간 지역이 겹친다.`);
   }
+  /*
+   * 재고 검사. 페이지 하나 = (지역 1 x 메인 1) 이므로 재고는 지역수 x 메인수 다.
+   * 숫자 URL 로 바꾼 뒤로는 한 사이트 안에서 메인이 반복돼도 주소가 겹치지 않는다
+   * (청소·이사와 같은 방식). 대신 네트워크 전체에서 조합이 모자라면 다른 호스트에
+   * 같은 (지역, 메인) 페이지가 생기므로 그것을 여기서 막는다.
+   */
+  const siteCount = Math.round((config?.pages?.totalTarget || 0) / (config?.pages?.perSite || 1)) || 0;
   for (const slot of slots) {
-    const available = (keywordsData.keywords[slot.name] || []).length;
-    if (slot.count > available) {
-      throw new Error(`${slot.name} 페이즈: 페이지 ${slot.count}장 > 키워드 ${available}개 — 한 사이트 안에서 URL 이 겹친다.`);
+    const mainCount = (keywordsData.mains?.[slot.name] || []).length;
+    if (!mainCount) {
+      throw new Error(`${slot.name} 페이즈에 메인 키워드가 없다 (data/keywords/piping-keywords.json 의 mains).`);
+    }
+    // 같은 메인을 쓰는 페이지 수가 지역 수를 넘으면 지역이 재사용된다
+    // = 다른 호스트에 같은 (지역, 메인) 페이지가 생긴다.
+    const repeatsPerSite = Math.ceil(slot.count / mainCount);
+    const perMainPages = siteCount * repeatsPerSite;
+    if (siteCount && perMainPages > locationCount) {
+      throw new Error(`${slot.name} 페이즈: 메인당 ${perMainPages}장 > 지역 ${locationCount}개 — 다른 호스트와 (지역,메인) 이 겹친다. 메인을 늘려라 (현재 ${mainCount}개, 슬롯 ${slot.count}장).`);
     }
   }
   planChecked = true;
@@ -135,15 +163,21 @@ function assertPlan(slots, keywordsData, locationCount) {
 
 export function selectLocationKeyword({ siteIndex, requestId, slots, keywordsData, locationCount }) {
   const slot = slotFor(slots, requestId);
-  const keywords = keywordsData.keywords[slot.name] || [];
+  // 페이지를 따로 만드는 단위는 메인 키워드다 (서브는 본문에 녹는다).
+  const keywords = keywordsData.mains?.[slot.name] || keywordsData.keywords[slot.name] || [];
   const j = requestId - slot.start;
   const kwIndex = j % keywords.length;
+  // 메인 하나가 한 사이트 안에서 몇 번째로 쓰이는가 (0,1,2…)
+  const repeat = Math.floor(j / keywords.length);
+  const repeatsPerSite = Math.ceil(slot.count / keywords.length);
+  // 그 메인 전용 색인. 메인 안에서 유일하므로 지역도 유일해진다.
+  const mainIndex = siteIndex * repeatsPerSite + repeat;
   return {
     phase: slot.name,
     keywords,
     kwIndex,
     keyword: keywords[kwIndex],
-    locIndex: (siteIndex * LOC_STRIDE + j * SLOT_STRIDE) % locationCount,
+    locIndex: (kwIndex * SLOT_STRIDE + mainIndex * LOC_STRIDE) % locationCount,
   };
 }
 
@@ -257,7 +291,7 @@ export async function buildPipingIndexData(opts) {
   const { config, keywordsData } = pipingData || loadPipingData(projectRoot);
   const expansions = await loadAdminExpansions(projectRoot);
   const slots = phaseSlots(config);
-  assertPlan(slots, keywordsData, locations.length);
+  assertPlan(slots, keywordsData, locations.length, config);
 
   // 배포된 범위(pageCount) 안에서 고르게 뽑는다.
   const step = Math.max(1, Math.floor(pageCount / linkCount));
@@ -268,7 +302,7 @@ export async function buildPipingIndexData(opts) {
     });
     const location = normalizePipingLocation(locations[picked.locIndex], expansions);
     links.push({
-      href: pipingPagePath(location, picked.keyword),
+      href: pipingPagePath(requestId),
       label: `${lastToken(location)} ${picked.keyword}`,
     });
   }
@@ -284,7 +318,7 @@ export async function buildPipingIndexData(opts) {
     naverSiteVerification,
     assetBase: opts.assetBase || assetBaseForSite(siteUrl),
     assetVersion: config.assetVersion || 'piping-v1',
-    sitemapHref: '/배관/sitemap.xml',
+    sitemapHref: '/piping/sitemap.xml',
     links,
     linkCount: links.length,
   };
@@ -310,31 +344,36 @@ export async function buildPipingPageData(opts) {
 
   // 1~2. 페이즈 · 지역 · 키워드 배정 (전역 중복 0 — selectLocationKeyword 주석 참고)
   const slots = phaseSlots(config);
-  assertPlan(slots, keywordsData, locations.length);
+  assertPlan(slots, keywordsData, locations.length, config);
 
   const picked = selectLocationKeyword({
     siteIndex, requestId, slots, keywordsData, locationCount: locations.length,
   });
   const currentPhase = picked.phase;
-  const phaseKeywords = picked.keywords;
-  const allMains = [
-    ...(keywordsData.keywords['막힘'] || []),
-    ...(keywordsData.keywords['수전'] || []),
-    ...(keywordsData.keywords['누수'] || []),
-  ];
 
   const location = normalizePipingLocation(locations[picked.locIndex], expansions);
   const shortLocation = lastToken(location);
 
   const kwIndex = picked.kwIndex;
   const mainKeyword = picked.keyword;
-  const subKw1 = phaseKeywords[(kwIndex + 1) % phaseKeywords.length];
-  const subKw2 = phaseKeywords[(kwIndex + 3) % phaseKeywords.length];
+  /*
+   * 서브 키워드 = 이 메인에 묶인 연관어 (data/keywords/piping-keywords.json 의 groups).
+   * 묶인 게 없는 메인은 borrowedSubs 에서 빌려 온다 — 청소 keywords.ts 의 BORROWED_SUBS
+   * 와 같은 방식이다. 제목·설명·H1 에 녹는다. 메인끼리는 서로의 페이지에 안 들어간다.
+   */
+  const ownSubs = keywordsData.groups?.[currentPhase]?.[mainKeyword] || [];
+  const mySubs = ownSubs.length ? ownSubs : (keywordsData.borrowedSubs?.[mainKeyword] || []);
+  const phaseSubs = Object.values(keywordsData.groups?.[currentPhase] || {}).flat();
+  const subSource = mySubs.length ? mySubs : phaseSubs;
+  const pickSub = (off) => (subSource.length ? subSource[(requestId + off) % subSource.length] : mainKeyword);
+  const subKw1 = pickSub(0);
+  let subKw2 = pickSub(1 + Math.floor(subSource.length / 2));
+  if (subKw2 === subKw1) subKw2 = phaseSubs[(requestId + 1) % Math.max(1, phaseSubs.length)] || mainKeyword;
 
   const seed = hash(`piping|${siteUrl}|${requestId}|${location}|${mainKeyword}`);
   const assetBase = opts.assetBase || assetBaseForSite(siteUrl);
   const assetVersion = config.assetVersion || 'piping-v1';
-  const canonical = pipingPageUrl(siteUrl, location, mainKeyword);
+  const canonical = pipingPageUrl(siteUrl, requestId);
 
   // 3. 메타 정보
   const title = `${location} ${mainKeyword} ${subKw1} ${subKw2} 상담 업체 찾기`;
@@ -373,8 +412,15 @@ export async function buildPipingPageData(opts) {
    *                 9~15개뿐이라 같은 말이 6줄 반복된다
    */
   const placeCategories = config.placeCategories;
-  const mainPartners = relatedKeywords(mainKeyword, phaseKeywords, 6, seed);
-  const subPool = phaseKeywords.filter((k) => k !== mainKeyword && !mainPartners.includes(k));
+  /*
+   * 서브 키워드는 이 메인에 묶인 것부터 쓴다 (data/keywords/piping-keywords.json 의
+   * groups). 묶인 게 없는 메인은 borrowedSubs 에서 빌려 온다 — 청소 keywords.ts 의
+   * BORROWED_SUBS 와 같은 방식이다. 6개에 못 미치면 같은 페이즈의 다른 서브로 채운다.
+   */
+  const mainPartners = mySubs.length >= 6
+    ? pickRotated(mySubs, 6, seed)
+    : [...mySubs, ...relatedKeywords(mainKeyword, phaseSubs.filter((k) => !mySubs.includes(k)), 6 - mySubs.length, seed)];
+  const subPool = phaseSubs.filter((k) => k !== mainKeyword && !mainPartners.includes(k));
   const subs = pickRotated(subPool, 12, seed);
   const spots = nearbyLocations(locations[picked.locIndex], locations, 6, seed);
 
@@ -426,14 +472,10 @@ export async function buildPipingPageData(opts) {
   });
 
   // 9. 페이지네이션 (10개)
-  // 링크 대상 페이지도 같은 배정 함수로 계산한다. 페이즈가 다른 페이지를 현재
-  // 페이즈 키워드로 링크하면 없는 URL 이 나온다 (2026-08-24 실측 2.8% 깨짐).
-  const linkTo = (pageNum) => {
-    const t = selectLocationKeyword({
-      siteIndex, requestId: pageNum, slots, keywordsData, locationCount: locations.length,
-    });
-    return pipingPagePath(normalizePipingLocation(locations[t.locIndex], expansions), t.keyword);
-  };
+  // 숫자 URL 이라 페이지 번호가 곧 주소다. 종전 시맨틱 주소에서는 링크 대상의
+  // (지역,키워드)를 같은 배정 함수로 다시 계산해야 했고, 그걸 빠뜨려 2.8% 가
+  // 깨진 적이 있다 (2026-08-24 실측). 이제 그 계산 자체가 없다.
+  const linkTo = (pageNum) => pipingPagePath(pageNum);
 
   const windowSize = 10;
   const startPage = Math.max(1, Math.min(requestId - 4, pageCount - windowSize + 1));
@@ -538,8 +580,8 @@ export async function buildPipingPageData(opts) {
     }),
   };
 
-  const pagePath = pipingPagePath(location, mainKeyword);
-  const filePath = `배관/${pathLocation(location)}/${mainKeyword}.html`;
+  const pagePath = pipingPagePath(requestId);
+  const filePath = `piping/${requestId}.html`;
 
   return {
     title,

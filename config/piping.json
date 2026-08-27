@@ -3,8 +3,8 @@
   "phoneTel": "07071065241",
   "leadApi": "/api/lead",
   "leadProject": "piping-ravi",
-  "basePath": "/배관/",
-  "assetVersion": "piping-v2",
+  "basePath": "/piping/",
+  "assetVersion": "piping-v3",
   "groupKeys": {
     "own": "piping-ravi",
     "shared": "piping-ravi-shared"
@@ -22,8 +22,8 @@
       "수전": 30,
       "누수": 60
     },
-    "urlPattern": "/배관/{구-동}/{메인키워드}",
-    "note": "운영자 확정 2026-08-24: 400만 장, 페이즈 순차 살포(막힘 전체→수전 전체→누수 전체). URL은 이사 movingPagePath 방식 그대로 — 한글 비인코딩, 확장자 없음, 지역은 뒤 2토큰(구-동)"
+    "urlPattern": "/piping/{페이지번호}",
+    "note": "운영자 확정 2026-08-24: 400만 장, 페이즈 순차 살포(막힘 전체→수전 전체→누수 전체). URL은 이사 movingPagePath 방식 그대로 — 한글 비인코딩, 확장자 없음, 지역은 뒤 2토큰(구-동) | 2026-08-25: URL을 숫자로 전환(/piping/1~200). 한글 경로의 dedup 인코딩·MSYS 변조·inode 비용을 없앤다. 이사(/이사/)는 이미 제출돼 있어 그대로 둔다."
   },
   "images": {
     "servedBase": "/img/piping/",

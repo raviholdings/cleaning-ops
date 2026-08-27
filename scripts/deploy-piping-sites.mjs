@@ -214,7 +214,7 @@ async function bakeSite(domain) {
     + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`
     + written.map((p) => `  <url>\n    <loc>${siteUrl}${encodeURI(p)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`).join('\n')
     + '\n</urlset>\n';
-  const smPath = join(stageDir, domain.host, '배관', 'sitemap.xml');
+  const smPath = join(stageDir, domain.host, 'piping', 'sitemap.xml');
   mkdirSync(dirname(smPath), { recursive: true });
   writeFileSync(`${smPath}.gz`, gzipSync(Buffer.from(sitemap, 'utf8'), { level: 6 }));
 }
