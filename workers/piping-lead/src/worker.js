@@ -21,16 +21,66 @@ const SERVICE_TYPE = 'form:piping';
 /** 봇 트래픽. 비콘 수집기(ingest-lead-beacon)와 같은 기준을 쓴다. */
 const BOT_UA = /bot|crawler|spider|slurp|yeti|bingpreview|facebookexternalhit|headlesschrome|python-requests|curl\/|wget/i;
 
-const json = (body, status = 200) => new Response(JSON.stringify(body), {
+/*
+ * 접수는 우리 루트 10개(와 그 서브도메인)에서만 온다. 종전에는
+ * access-control-allow-origin 이 * 라 아무 사이트나 폼을 붙여 쏠 수 있었다.
+ */
+const ROOT_DOMAINS = [
+  'amunsa.com', 'anclose.com', 'daddul.com', 'ddulea.com', 'naoheg.com',
+  'neverfoul.com', 'one-qfast.com', 'oneshot-sewer.com', 'pipe-oneshot.com', 'uloung.com',
+];
+
+function allowedOrigin(request) {
+  const origin = request.headers.get('origin');
+  if (!origin) return null;
+  try {
+    const host = new URL(origin).hostname;
+    const ok = ROOT_DOMAINS.some((r) => host === r || host.endsWith(`.${r}`));
+    return ok ? origin : null;
+  } catch {
+    return null;
+  }
+}
+
+const json = (body, status = 200, origin = null) => new Response(JSON.stringify(body), {
   status,
   headers: {
     'content-type': 'application/json; charset=utf-8',
-    'access-control-allow-origin': '*',
+    ...(origin ? { 'access-control-allow-origin': origin, 'vary': 'Origin' } : {}),
     'access-control-allow-headers': 'content-type',
     'access-control-allow-methods': 'POST, OPTIONS',
     'cache-control': 'no-store',
   },
 });
+
+/*
+ * IP 당 접수 횟수 제한. KV·Durable Object 바인딩 없이 Cache API 로 센다 —
+ * 콜로(엣지 거점)별로 세므로 정확한 전역 카운터는 아니고, 한 곳에서 쏟아지는
+ * 것을 막는 용도다. 정밀한 제어가 필요하면 Cloudflare Rate Limiting 룰을 쓴다.
+ *
+ * 사람은 한 번 접수하면 끝이라 창 안에서 여러 건이면 이미 비정상이다.
+ */
+const RATE_LIMIT = 20;       // 창 안에서 허용할 접수 수 (통신사 NAT 로 한 IP 를 여럿이 쓰는 경우까지 감안)
+const RATE_WINDOW_SEC = 600; // 창 길이(초) = 10분
+
+async function overRateLimit(request, ctx) {
+  const ip = request.headers.get('cf-connecting-ip');
+  if (!ip) return false;
+  const key = new Request(`https://ratelimit.invalid/lead/${encodeURIComponent(ip)}`);
+  const cache = caches.default;
+  let count = 0;
+  try {
+    const hit = await cache.match(key);
+    if (hit) count = Number(await hit.text()) || 0;
+  } catch {
+    return false; // 카운터가 고장 나도 접수를 막지는 않는다
+  }
+  if (count >= RATE_LIMIT) return true;
+  ctx.waitUntil(cache.put(key, new Response(String(count + 1), {
+    headers: { 'cache-control': `max-age=${RATE_WINDOW_SEC}` },
+  })).catch(() => {}));
+  return false;
+}
 
 const digits = (v) => String(v || '').replace(/\D+/g, '');
 const clean = (v, max) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -85,22 +135,33 @@ async function notifyTelegram(env, row) {
 
 export default {
   async fetch(request, env, ctx) {
-    if (request.method === 'OPTIONS') return json({ ok: true });
-    if (request.method !== 'POST') return json({ ok: false, error: 'POST 만 받습니다.' }, 405);
+    const origin = allowedOrigin(request);
+    const reply = (body, status = 200) => json(body, status, origin);
+
+    // Origin 이 붙어 있는데 우리 도메인이 아니면 남의 사이트에서 쏘는 것이다.
+    // (Origin 이 없는 요청은 CORS 헤더 없이 통과시키고 아래 레이트리밋으로 받는다)
+    if (request.headers.get('origin') && !origin) {
+      return json({ ok: false, error: '허용되지 않은 출처입니다.' }, 403);
+    }
+    if (request.method === 'OPTIONS') return reply({ ok: true });
+    if (request.method !== 'POST') return reply({ ok: false, error: 'POST 만 받습니다.' }, 405);
+    if (await overRateLimit(request, ctx)) {
+      return reply({ ok: false, error: '잠시 후 다시 시도해 주세요.' }, 429);
+    }
 
     let payload;
     try {
       payload = await request.json();
     } catch {
-      return json({ ok: false, error: '요청 형식이 올바르지 않습니다.' }, 400);
+      return reply({ ok: false, error: '요청 형식이 올바르지 않습니다.' }, 400);
     }
 
     const ua = request.headers.get('user-agent') || '';
-    if (BOT_UA.test(ua)) return json({ ok: true });
+    if (BOT_UA.test(ua)) return reply({ ok: true });
 
     const checked = validate(payload);
-    if (checked.drop) return json({ ok: true });
-    if (checked.error) return json({ ok: false, error: checked.error }, 400);
+    if (checked.drop) return reply({ ok: true });
+    if (checked.error) return reply({ ok: false, error: checked.error }, 400);
 
     const url = new URL(request.url);
     const row = {
@@ -120,12 +181,12 @@ export default {
       await insertLead(env, row);
     } catch (error) {
       console.error('lead insert 실패', error.message);
-      return json({ ok: false, error: '접수 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.' }, 502);
+      return reply({ ok: false, error: '접수 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.' }, 502);
     }
 
     // 저장이 끝났으면 접수는 성공이다. 알림은 응답을 붙잡지 않고 뒤에서 보낸다.
     ctx.waitUntil(notifyTelegram(env, row).catch((e) => console.error('telegram 실패', e.message)));
 
-    return json({ ok: true });
+    return reply({ ok: true });
   },
 };
