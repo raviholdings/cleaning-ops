@@ -118,6 +118,9 @@ if (args.has('--help') || args.has('-h')) {
 await loadEnvFile(path.join(rootDir, '.env'));
 
 const targetProject = process.env.NAVER_CRAWL_TARGET_PROJECT || 'watermelon-piping';
+// 배관 두 그룹. main() 이 top-level await 로 먼저 돌기 때문에 모듈 아래쪽에서
+// const 로 선언하면 TDZ 에 걸린다 (2026-08-27 실측: 전 계정 ReferenceError).
+const PIPING_PROJECTS = new Set(['piping-ravi', 'piping-ravi-shared']);
 const exposureStatuses = resolveCrawlExposureStatuses({
   project: targetProject,
   configuredStatuses: process.env.NAVER_CRAWL_EXPOSURE_STATUSES,
@@ -1262,7 +1265,6 @@ async function movingGeneratedSitemapUrls(target) {
  * 장수는 DB 의 page_count(= 최종 목표 200)를 쓰면 안 된다. 지금 배포된 만큼만
  * 만들어야 하므로 러너가 NAVER_CRAWL_PIPING_PAGE_COUNT 로 넘겨준다.
  */
-const PIPING_PROJECTS = new Set(['piping-ravi', 'piping-ravi-shared']);
 
 function pipingGeneratedSitemapUrls(target) {
   const raw = Number(process.env.NAVER_CRAWL_PIPING_PAGE_COUNT || 0);
