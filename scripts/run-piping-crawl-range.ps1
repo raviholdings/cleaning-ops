@@ -49,8 +49,11 @@ if ($From -gt $To) {
 }
 
 # 그룹과 계정 범위가 어긋나면 조용히 0건이 된다. 원인을 찾느라 시간을 버리지 않게 막는다.
-if ($Group -eq 'piping-ravi' -and ($From -lt 201 -or $To -gt 300)) {
-	throw "piping-ravi(신규 서브도메인)는 계정 201~300 입니다. 입력값: -From $From -To $To"
+# 신규 배관 계정은 201~300 이지만, 정지된 계정의 도메인은 100번대 여유 순번으로
+# 이관된다(예: 204 정지 -> 106). 그 계정도 배관 도메인을 갖고 있으므로 범위에
+# 넣어야 한다. 101~200 중 배관 도메인이 없는 계정은 그룹 필터에서 0건이 되어 무해하다.
+if ($Group -eq 'piping-ravi' -and ($From -lt 101 -or $To -gt 300)) {
+	throw "piping-ravi(신규 서브도메인)는 계정 201~300(정지 이관분은 101~200) 입니다. 입력값: -From $From -To $To"
 }
 if ($Group -eq 'piping-ravi-shared' -and $To -gt 105) {
 	throw "piping-ravi-shared(기존 서브도메인)는 계정 1~105 입니다. 입력값: -From $From -To $To"
@@ -81,7 +84,9 @@ $env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS = '0'
 $env:NAVER_CRAWL_INCLUDE_GROUPS = $Group
 $env:NAVER_CRAWL_EXCLUDE_GROUPS = ''
 $env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = $Group
-$env:NAVER_CRAWL_SITEMAP_PATH = '/%EB%B0%B0%EA%B4%80/sitemap.xml'
+# 2026-08-27: URL 을 숫자로 바꾸면서 /배관/ -> /piping/ 이 되었다.
+# 옛 경로(%EB%B0%B0%EA%B4%80)로 두면 사이트맵을 못 찾아 조용히 0건이 된다.
+$env:NAVER_CRAWL_SITEMAP_PATH = '/piping/sitemap.xml'
 
 if ($DoneSince) {
 	$cleanDoneSince = $DoneSince.Trim().TrimEnd('\', '"', "'")
