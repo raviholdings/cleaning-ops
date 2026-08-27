@@ -1,0 +1,1019 @@
+{
+  "_note": "배관 서브도메인 IndexNow 파일럿. 키는 공개값이라 비밀이 아니다. 대조군은 키도 제출도 없다.",
+  "_endpoint": "https://searchadvisor.naver.com/indexnow",
+  "group": "piping-ravi",
+  "deployedAt": "2026-08-27T00:43:58.442Z",
+  "pages": 50,
+  "urlsPerHost": 51,
+  "submit": [
+    {
+      "host": "coastwriter.amunsa.com",
+      "key": "110574b168ffc3f60df5d52b632bd36f"
+    },
+    {
+      "host": "olivefield.amunsa.com",
+      "key": "290f0e8b1ba431f10c96de61f4850b61"
+    },
+    {
+      "host": "dolphindelta.amunsa.com",
+      "key": "674507522bf0ef810115195bf9ff7132"
+    },
+    {
+      "host": "lyricarcade.amunsa.com",
+      "key": "12007010b186552cb5eef9353f762515"
+    },
+    {
+      "host": "snowwood.amunsa.com",
+      "key": "b973e9a7d1ce3190539698238c4ec2fa"
+    },
+    {
+      "host": "keencompass.amunsa.com",
+      "key": "1b2b916ee85a6036a20ab0d4203a51d0"
+    },
+    {
+      "host": "merryjewel.amunsa.com",
+      "key": "61acc69182e642c25a304c211cccb7d5"
+    },
+    {
+      "host": "frostdoor.amunsa.com",
+      "key": "e30f73109873277ba40dbacda5d5b656"
+    },
+    {
+      "host": "compassboard.amunsa.com",
+      "key": "f16375cc147a74bddddd4a51662d1c99"
+    },
+    {
+      "host": "solarcamel.amunsa.com",
+      "key": "5f7aa7b74b79f2ce4cae9bcbf5349494"
+    },
+    {
+      "host": "sandcabin.amunsa.com",
+      "key": "97947355b05d747738f55a7aa0c19be2"
+    },
+    {
+      "host": "ebonylark.amunsa.com",
+      "key": "74ec7012ac665c6c727990ecc67155d7"
+    },
+    {
+      "host": "forestochre.amunsa.com",
+      "key": "200dee729f0c6443103eae6aad7866c8"
+    },
+    {
+      "host": "rabbitfish.amunsa.com",
+      "key": "1bdb63b421e1b78a58d00a2f1e4e4a82"
+    },
+    {
+      "host": "purpletiger.amunsa.com",
+      "key": "0ac58bf9f522d7436a8d1bfa243d3842"
+    },
+    {
+      "host": "shieldpebble.amunsa.com",
+      "key": "6ea87790604cf2e8f4f07f21a3c357da"
+    },
+    {
+      "host": "courtyarddeer.amunsa.com",
+      "key": "141e3d91dc1db451047087d7a35b2273"
+    },
+    {
+      "host": "seedowl.amunsa.com",
+      "key": "ab187c8ecb2c34cff824ab59644e4c1c"
+    },
+    {
+      "host": "seedparrot.amunsa.com",
+      "key": "7dafbb521a7e95f7af1d9441d5b3a0d1"
+    },
+    {
+      "host": "weaverbirch.amunsa.com",
+      "key": "e30ef9c2ba43c49cdfdc6d470b26c5fb"
+    },
+    {
+      "host": "molemeadow.anclose.com",
+      "key": "fe8f51d2783c9b40310104a351def840"
+    },
+    {
+      "host": "pearllemur.anclose.com",
+      "key": "c28886f4f346a170a2fb218a641844f3"
+    },
+    {
+      "host": "readytide.anclose.com",
+      "key": "ee9123fce2505fa461867497909d97af"
+    },
+    {
+      "host": "rhythmsea.anclose.com",
+      "key": "f20dfb0e24cc8627e84e101f86333dc5"
+    },
+    {
+      "host": "diamondcastle.anclose.com",
+      "key": "3bffe68cdc36a1761df21f00b7d6e488"
+    },
+    {
+      "host": "whitequartz.anclose.com",
+      "key": "fe4ff8700238d312f43e30e6527d5cc8"
+    },
+    {
+      "host": "calmsea.anclose.com",
+      "key": "245845f0130ce6adfdf30d65f1b194ec"
+    },
+    {
+      "host": "trailwarm.anclose.com",
+      "key": "c409b276e7ce1c3165221324819764a6"
+    },
+    {
+      "host": "prismbadger.anclose.com",
+      "key": "25bf262e0e98bb75136fefedf01139e4"
+    },
+    {
+      "host": "troutcrown.anclose.com",
+      "key": "d632c3ecf3776ca85f7ac63a088b83b8"
+    },
+    {
+      "host": "threadcalm.anclose.com",
+      "key": "4328eb1d706290f36034e49b66f186bc"
+    },
+    {
+      "host": "circlewriter.anclose.com",
+      "key": "691603ba4df8f153bb3dd12a22e15055"
+    },
+    {
+      "host": "birchprime.anclose.com",
+      "key": "e0c8c6fc10b04a7b7f46a5cb32458ed9"
+    },
+    {
+      "host": "palmridge.anclose.com",
+      "key": "3be9f48ec800a087e58e1749d425274d"
+    },
+    {
+      "host": "camelturtle.anclose.com",
+      "key": "f1f35ec8c907ca0006cfc756ffcdae11"
+    },
+    {
+      "host": "aurorarosemary.anclose.com",
+      "key": "847baf8114bc6b4001194f0ff352760e"
+    },
+    {
+      "host": "springflute.anclose.com",
+      "key": "b6edd390d9b4196fba080ffdb75f737f"
+    },
+    {
+      "host": "lotushoney.anclose.com",
+      "key": "cb22aad6d4b6b64a07e20696ab226f84"
+    },
+    {
+      "host": "magentaballet.anclose.com",
+      "key": "319894771be94fa0184abb0cfa69372a"
+    },
+    {
+      "host": "tigermarket.anclose.com",
+      "key": "ce4669344b10116ad5c212452279120e"
+    },
+    {
+      "host": "bookthread.daddul.com",
+      "key": "2fb4c637b933b76ee2b9d0a50e02ffa5"
+    },
+    {
+      "host": "canyonbutterfly.daddul.com",
+      "key": "b75145947172135f34657ae53beb481c"
+    },
+    {
+      "host": "cometazure.daddul.com",
+      "key": "765c8b4f25235c4a404f9961224c334b"
+    },
+    {
+      "host": "doorkeen.daddul.com",
+      "key": "97f34349fe1a664fb4501ba1201f07a7"
+    },
+    {
+      "host": "palmbadger.daddul.com",
+      "key": "46dd83f475397b6db61556c2775b27ab"
+    },
+    {
+      "host": "antready.daddul.com",
+      "key": "040890ddd9d64ad0653fc696c967a6bc"
+    },
+    {
+      "host": "silverred.daddul.com",
+      "key": "58a2b84a357bc7473dc232f5476a7226"
+    },
+    {
+      "host": "woodkeen.daddul.com",
+      "key": "6244ad0ab737422bb544550d2efa75a8"
+    },
+    {
+      "host": "spherezebra.daddul.com",
+      "key": "6c8da9e7364d4be19885c5e48414d884"
+    },
+    {
+      "host": "greendream.daddul.com",
+      "key": "a464489c698965dbd23e38f91e688682"
+    },
+    {
+      "host": "mapleaqua.daddul.com",
+      "key": "8125076ca35e3450389dc34ab79afeeb"
+    },
+    {
+      "host": "olivepiano.daddul.com",
+      "key": "049b6d41f8dadf2d6fcb245ee0915a19"
+    },
+    {
+      "host": "berrylynx.daddul.com",
+      "key": "1ebcc25863a73002ec5a7f8bd0af352d"
+    },
+    {
+      "host": "scarletparrot.daddul.com",
+      "key": "ba631654c39e3c2d6787f6e2d33e3823"
+    },
+    {
+      "host": "fishlion.daddul.com",
+      "key": "46a36560c999eeae734988cfa91722ca"
+    },
+    {
+      "host": "warmproud.daddul.com",
+      "key": "7d6801233e2ff7b28d22f3ecd7ff4832"
+    },
+    {
+      "host": "llamagold.daddul.com",
+      "key": "bc0b3777b5b3ab0f7bd74a13d6b215ad"
+    },
+    {
+      "host": "autumnmouse.daddul.com",
+      "key": "ce8ac0a9bb1c37d56a766c03c233a167"
+    },
+    {
+      "host": "mellowcoral.daddul.com",
+      "key": "fe3456252df2f34bd6571e7cfa2b03bc"
+    },
+    {
+      "host": "fielddove.daddul.com",
+      "key": "9d47f83395c898eca7393d1f1228d4e5"
+    },
+    {
+      "host": "arrowcoral.ddulea.com",
+      "key": "2f9470cbab686db9e63e7db7ba97c41d"
+    },
+    {
+      "host": "sonataorchid.ddulea.com",
+      "key": "6a86cd87021eb9c316d699b6231e149f"
+    },
+    {
+      "host": "sailorherb.ddulea.com",
+      "key": "797eb4c366cd05b41dc416d009d45666"
+    },
+    {
+      "host": "bisonpine.ddulea.com",
+      "key": "1426a8b9cd8e1a5904d719e9da27129a"
+    },
+    {
+      "host": "softrapid.ddulea.com",
+      "key": "c49dbabd34c2ebaa5e3413468340dd4e"
+    },
+    {
+      "host": "shielddragon.ddulea.com",
+      "key": "24627ad5b795d29b72e84e447175506b"
+    },
+    {
+      "host": "keenpanda.ddulea.com",
+      "key": "a923d59a82415bcd7e8816f7dd7e3681"
+    },
+    {
+      "host": "lemurmint.ddulea.com",
+      "key": "63bfd6ac4ff9d8b679a361f743af0d21"
+    },
+    {
+      "host": "shieldpainter.ddulea.com",
+      "key": "20cf933e0b63909bd05fce81d429f96f"
+    },
+    {
+      "host": "groveglade.ddulea.com",
+      "key": "ad004decf411588326f565301f291692"
+    },
+    {
+      "host": "pathsky.ddulea.com",
+      "key": "7c354dd41d7cd8c28591586d1e3bb1c2"
+    },
+    {
+      "host": "lakekoala.ddulea.com",
+      "key": "c9a0e9ff3e9fadd5b87ea4f92620895f"
+    },
+    {
+      "host": "beachrock.ddulea.com",
+      "key": "f983b97ebcc88c047c19af1642326eb4"
+    },
+    {
+      "host": "whiteballet.ddulea.com",
+      "key": "663d1bc2fda6b281e0319b514fc98277"
+    },
+    {
+      "host": "windowbeach.ddulea.com",
+      "key": "145063c04b29c76cb67919e55e24d4ec"
+    },
+    {
+      "host": "pianoreed.ddulea.com",
+      "key": "3d5ea6850f296dc6fd3436438253422d"
+    },
+    {
+      "host": "limecamel.ddulea.com",
+      "key": "72635f9a75a5aa4505c727864073db7f"
+    },
+    {
+      "host": "merryholly.ddulea.com",
+      "key": "2dbdf8835eb30966306c023702de7213"
+    },
+    {
+      "host": "navymoon.ddulea.com",
+      "key": "d7962e74e2d6922d2f2d5390f37cba53"
+    },
+    {
+      "host": "ivyround.ddulea.com",
+      "key": "095041b05793bef53f308b20da23e625"
+    },
+    {
+      "host": "hazelflute.naoheg.com",
+      "key": "6ed6834f79ed06e0ffd858e2a74810f0"
+    },
+    {
+      "host": "quailrock.naoheg.com",
+      "key": "cbc91d6cd412abc1c2f6a67795f6985c"
+    },
+    {
+      "host": "springant.naoheg.com",
+      "key": "831d23edfc3ba36f86f3420afbe11f09"
+    },
+    {
+      "host": "roundgoat.naoheg.com",
+      "key": "236004dfd445aaee21be26aed6418644"
+    },
+    {
+      "host": "courtyardcompass.naoheg.com",
+      "key": "3b673045c62214a8281d02e8a70f948e"
+    },
+    {
+      "host": "atlaskey.naoheg.com",
+      "key": "f554eea7c07fae12cf2ca0025a876d67"
+    },
+    {
+      "host": "geckosolar.naoheg.com",
+      "key": "a0416fb490c0fc5fc17f280f81407862"
+    },
+    {
+      "host": "quailmole.naoheg.com",
+      "key": "07b682cdb53e90d7576251c065f4c129"
+    },
+    {
+      "host": "reedclear.naoheg.com",
+      "key": "5511694789fb583668e60c6e41505bf6"
+    },
+    {
+      "host": "grandbronze.naoheg.com",
+      "key": "357dad50b6f0e04741bb717cb91a82fb"
+    },
+    {
+      "host": "noblewave.naoheg.com",
+      "key": "3b8bed3df75a30bd743673a70807e6b2"
+    },
+    {
+      "host": "cosmospenguin.naoheg.com",
+      "key": "f9c3e7648fb3b9c076262f4a01218d3a"
+    },
+    {
+      "host": "studiofast.naoheg.com",
+      "key": "7757536581da0d7c96621c2aef896771"
+    },
+    {
+      "host": "wolfbridge.naoheg.com",
+      "key": "6785f0b3dbbf94c413bdcacee4227778"
+    },
+    {
+      "host": "groovestream.naoheg.com",
+      "key": "6f0df4a80db67aff3b275d1206e2b4b3"
+    },
+    {
+      "host": "wheelred.naoheg.com",
+      "key": "fdfbb9297276095522c78d0c1d95f35e"
+    },
+    {
+      "host": "meteorfeather.naoheg.com",
+      "key": "1dafd40f4c9043d07dfd459578223f22"
+    },
+    {
+      "host": "chimeproud.naoheg.com",
+      "key": "422efa7aba94f5e4c52728646a55ff95"
+    },
+    {
+      "host": "tigerflora.naoheg.com",
+      "key": "d916307ed12a0aaee8c183841125890b"
+    },
+    {
+      "host": "pathmild.naoheg.com",
+      "key": "33b85c4357f7c823a4406c5b18cd52ff"
+    },
+    {
+      "host": "aloeochre.neverfoul.com",
+      "key": "868a429ba915ca5ce6e4c19d3007c9d6"
+    },
+    {
+      "host": "foxbirch.neverfoul.com",
+      "key": "5ecc368bf5826217800da637b07fc9cd"
+    },
+    {
+      "host": "feathercalm.neverfoul.com",
+      "key": "f37e9324fa5de322001430bd4052f619"
+    },
+    {
+      "host": "shieldnote.neverfoul.com",
+      "key": "a171a050f2aeaeea3d486ba769a2176d"
+    },
+    {
+      "host": "creamibis.neverfoul.com",
+      "key": "839c0cb278d64f4a9d48f035f66e0183"
+    },
+    {
+      "host": "twilightorange.neverfoul.com",
+      "key": "fcbf426b997964f35151f4c9614ee7ae"
+    },
+    {
+      "host": "ebonyspark.neverfoul.com",
+      "key": "3127a7c55cce6f324c941b285620dd2a"
+    },
+    {
+      "host": "keenocean.neverfoul.com",
+      "key": "e6fc046d8d9d8d3d5a6180dfffc9794b"
+    },
+    {
+      "host": "harpclever.neverfoul.com",
+      "key": "3ba0e9accb1b3b47d3fcf5054e3a166a"
+    },
+    {
+      "host": "swiftteal.neverfoul.com",
+      "key": "7b10c659ee64eded8fb5f1a202e9289e"
+    },
+    {
+      "host": "lakeacorn.neverfoul.com",
+      "key": "c4efa8b5708ea11ba3551e6412fe7aa4"
+    },
+    {
+      "host": "velvetrose.neverfoul.com",
+      "key": "24d03cf736feace9fce70be00eadc88d"
+    },
+    {
+      "host": "seedcamel.neverfoul.com",
+      "key": "b0cab8a8f5e31fb99c016273e1f91e51"
+    },
+    {
+      "host": "winggray.neverfoul.com",
+      "key": "ecccb23baf14272a7a5f04342f5a6479"
+    },
+    {
+      "host": "melodyacoustic.neverfoul.com",
+      "key": "8a7850c9faf062dd442295429be136a4"
+    },
+    {
+      "host": "honeycliff.neverfoul.com",
+      "key": "ce60d1dbb4de32109b4401c7a2262910"
+    },
+    {
+      "host": "warmlake.neverfoul.com",
+      "key": "e6077f45afddc70783dc56f2c931d758"
+    },
+    {
+      "host": "bronzedeer.neverfoul.com",
+      "key": "41240c9531431b8d6cdaaca5080e5161"
+    },
+    {
+      "host": "brightraven.neverfoul.com",
+      "key": "44deffa10214aab20c80685cfb497c25"
+    },
+    {
+      "host": "mintaurora.neverfoul.com",
+      "key": "f0c6e8b0bffb19596d6af28c287b7e79"
+    },
+    {
+      "host": "planetindigo.one-qfast.com",
+      "key": "66532892b5bd23674136a2501f872236"
+    },
+    {
+      "host": "apricotdoor.one-qfast.com",
+      "key": "afca0a2af4b2be074a549a50cc5ece85"
+    },
+    {
+      "host": "magentahappy.one-qfast.com",
+      "key": "d38fe649dbf17b8d0c7da72c3c1010de"
+    },
+    {
+      "host": "whalegold.one-qfast.com",
+      "key": "b2e60e221a7abbe5f977c4f6498b8775"
+    },
+    {
+      "host": "meadowpond.one-qfast.com",
+      "key": "09e668efbf4c5990955b5d3c7a0cc41c"
+    },
+    {
+      "host": "orchidwhite.one-qfast.com",
+      "key": "f046ef1f8aec94fb51d6d3b34ad58e26"
+    },
+    {
+      "host": "flutenavy.one-qfast.com",
+      "key": "a472c944da6cddeee0c272b37b05981f"
+    },
+    {
+      "host": "nobleglade.one-qfast.com",
+      "key": "d2a849ab19beecc87b9fb0b97b00335c"
+    },
+    {
+      "host": "primewhale.one-qfast.com",
+      "key": "1be37a305315fb2e09581a09e713cc9e"
+    },
+    {
+      "host": "mildmerry.one-qfast.com",
+      "key": "150f16c9a2aaa29873c567f61396e4e7"
+    },
+    {
+      "host": "lotuslime.one-qfast.com",
+      "key": "b862e38f0873ecb0fde2b89203be940b"
+    },
+    {
+      "host": "anchorbutterfly.one-qfast.com",
+      "key": "6b1f5dd3e4cf3e9f8af8b6d41d33a79a"
+    },
+    {
+      "host": "honeygreen.one-qfast.com",
+      "key": "045311ba960c563317a19b93151bc016"
+    },
+    {
+      "host": "lilacporch.one-qfast.com",
+      "key": "6fe4449425380f8d087096ae880cb163"
+    },
+    {
+      "host": "calmlime.one-qfast.com",
+      "key": "0d32511abc21c42af0e9307a274b3ceb"
+    },
+    {
+      "host": "vesselarcade.one-qfast.com",
+      "key": "532ac5a3617d5f7ae500aab68536a446"
+    },
+    {
+      "host": "badgepuma.one-qfast.com",
+      "key": "e3c9d3970abd920ffb0e2856b12a89b4"
+    },
+    {
+      "host": "beaconsand.one-qfast.com",
+      "key": "2a0f330d89873b78a9283da06b1f9a8d"
+    },
+    {
+      "host": "antpeak.one-qfast.com",
+      "key": "469bae6d59979eb974bce73fb94fd156"
+    },
+    {
+      "host": "irisdolphin.one-qfast.com",
+      "key": "3fec0896ea1a0560a7d626ecb93d24d4"
+    },
+    {
+      "host": "violetwing.oneshot-sewer.com",
+      "key": "4527dca7733ace06b5b51f3446dae9bc"
+    },
+    {
+      "host": "coppertan.oneshot-sewer.com",
+      "key": "8dde12509938a92153761d0cc54f260c"
+    },
+    {
+      "host": "freshsummer.oneshot-sewer.com",
+      "key": "ed3f69a2dd047fb5bd68a57db37aa29d"
+    },
+    {
+      "host": "yellowcastle.oneshot-sewer.com",
+      "key": "fb48776bdab3e42fe25307d07b91c82d"
+    },
+    {
+      "host": "canarywolf.oneshot-sewer.com",
+      "key": "cd7078e8e2785e238f8919a3e3e3f380"
+    },
+    {
+      "host": "mossbee.oneshot-sewer.com",
+      "key": "dbc24f18b5929964324b631377e7d25d"
+    },
+    {
+      "host": "craneapple.oneshot-sewer.com",
+      "key": "8495fb64632526e05965059d8aaa0112"
+    },
+    {
+      "host": "spherebubble.oneshot-sewer.com",
+      "key": "348bb663a07e9f636ee3f660c52886e2"
+    },
+    {
+      "host": "lemurflame.oneshot-sewer.com",
+      "key": "9ac075034237b6f6897d038f6c2eed06"
+    },
+    {
+      "host": "sailorparrot.oneshot-sewer.com",
+      "key": "312537a75b9bf67859ccd65f49fb5d76"
+    },
+    {
+      "host": "ravenmerry.oneshot-sewer.com",
+      "key": "3b01d9aac79c9067d666eec2bed54333"
+    },
+    {
+      "host": "acornbrook.oneshot-sewer.com",
+      "key": "188861520e79257c8dd5b78af7e7b6eb"
+    },
+    {
+      "host": "gentlemarble.oneshot-sewer.com",
+      "key": "9fc250d61820272cce7864888f7b96a3"
+    },
+    {
+      "host": "balconynova.oneshot-sewer.com",
+      "key": "c732e4b193dd1984ae53df43e7542916"
+    },
+    {
+      "host": "cometbirch.oneshot-sewer.com",
+      "key": "8bce1ab202bda25881898b210247d4ba"
+    },
+    {
+      "host": "laurelcastle.oneshot-sewer.com",
+      "key": "50b114e948981db8c7f238472152feab"
+    },
+    {
+      "host": "canarypenguin.oneshot-sewer.com",
+      "key": "dda4ff1c98b66f49f84e70c3fa1006df"
+    },
+    {
+      "host": "creekglade.oneshot-sewer.com",
+      "key": "73e5d2271e0fa3d72512e740a228d6a8"
+    },
+    {
+      "host": "glasslemon.oneshot-sewer.com",
+      "key": "ce2f40bb69f112b395b51137afeaa68a"
+    },
+    {
+      "host": "sealolive.oneshot-sewer.com",
+      "key": "a54ed0c0cb3249aeba0e43929a9288c7"
+    },
+    {
+      "host": "safealder.pipe-oneshot.com",
+      "key": "1827c3cf6d61177f9c80e6d238beddec"
+    },
+    {
+      "host": "eagercream.pipe-oneshot.com",
+      "key": "8603d36a978e8793f57702a29cd56d21"
+    },
+    {
+      "host": "canvasmoose.pipe-oneshot.com",
+      "key": "e1f6ade9bd004cd953c9799934816f20"
+    },
+    {
+      "host": "jadespruce.pipe-oneshot.com",
+      "key": "16cf575eb82fc1c231a435d7c3a5ae68"
+    },
+    {
+      "host": "wheelpaper.pipe-oneshot.com",
+      "key": "90b28ddbff003bf21aa15ad14768d65f"
+    },
+    {
+      "host": "herbdaylight.pipe-oneshot.com",
+      "key": "a8522571de4c388dee053cafd69ce1a6"
+    },
+    {
+      "host": "ringquiet.pipe-oneshot.com",
+      "key": "a1a26c5950860943c3b2967436b199a4"
+    },
+    {
+      "host": "pandasphere.pipe-oneshot.com",
+      "key": "4c224c41f856463c0c4e2a0025d0b43d"
+    },
+    {
+      "host": "calmcreek.pipe-oneshot.com",
+      "key": "553f90ab0a85c3659142e3b5f185acc2"
+    },
+    {
+      "host": "hammockcotton.pipe-oneshot.com",
+      "key": "c6614dc8fa226cd6a4218bc28a1a0b94"
+    },
+    {
+      "host": "compasswillow.pipe-oneshot.com",
+      "key": "7fadd6647f47bbd873173e500ff44424"
+    },
+    {
+      "host": "jayraven.pipe-oneshot.com",
+      "key": "ecfc208faf30360990829a2138fb0966"
+    },
+    {
+      "host": "iristrout.pipe-oneshot.com",
+      "key": "d913c809bc5e4ce4674aba950d0ed072"
+    },
+    {
+      "host": "cabinpainter.pipe-oneshot.com",
+      "key": "8bfc1c8258900036b0e09926ee458bca"
+    },
+    {
+      "host": "laurelearth.pipe-oneshot.com",
+      "key": "5dc93d463381b77fbdd115acb1a370c1"
+    },
+    {
+      "host": "windowteal.pipe-oneshot.com",
+      "key": "dd2e777e347f7756292c5fb821525455"
+    },
+    {
+      "host": "pumasnow.pipe-oneshot.com",
+      "key": "855b2f946a2a4444070f6419b92b1b9a"
+    },
+    {
+      "host": "jasmineeagle.pipe-oneshot.com",
+      "key": "673137ea0fe07ee80498ee3d5ee7703d"
+    },
+    {
+      "host": "primeglobe.pipe-oneshot.com",
+      "key": "caa7422aeb5c4ed9588c45786bd090c1"
+    },
+    {
+      "host": "finchspring.pipe-oneshot.com",
+      "key": "d90a7954c44bf4a11bc3c8608eae1c4c"
+    },
+    {
+      "host": "cabinbridge.uloung.com",
+      "key": "4a9ab9a7e5ff04a9a5ace54f2cc7dcca"
+    },
+    {
+      "host": "ivypuma.uloung.com",
+      "key": "72005455d0b7b723d1809dc65f3cff8b"
+    },
+    {
+      "host": "melodycalm.uloung.com",
+      "key": "a56bef44c435102864767cb03d04e939"
+    },
+    {
+      "host": "silverleafiris.uloung.com",
+      "key": "b0a218a8af14a868f469c560ff1ea663"
+    },
+    {
+      "host": "cobrasky.uloung.com",
+      "key": "166a55492d53facf9143087031bece1b"
+    },
+    {
+      "host": "fieldalder.uloung.com",
+      "key": "6c41d89ddb8ca20d11db12e328adeea2"
+    },
+    {
+      "host": "palmsummit.uloung.com",
+      "key": "c79dd549062b15afe29c125ea3efb88f"
+    },
+    {
+      "host": "ravenjuniper.uloung.com",
+      "key": "a4ab8e221d1c9b149d23e4cc8d0f6fd4"
+    },
+    {
+      "host": "proudcanary.uloung.com",
+      "key": "abe3abe308bc3731b4fcfe8deaa16d27"
+    },
+    {
+      "host": "meteorraven.uloung.com",
+      "key": "185e547a5b7e350d07c2e2052deb1abe"
+    },
+    {
+      "host": "summitfinch.uloung.com",
+      "key": "65d0c388777009cabcbf1f661fa3d926"
+    },
+    {
+      "host": "penguinfinch.uloung.com",
+      "key": "16607ba99a92619dff034cccd0a20772"
+    },
+    {
+      "host": "bunnysea.uloung.com",
+      "key": "83e686ef6394a3ba93aa12aa4043ed25"
+    },
+    {
+      "host": "plumshark.uloung.com",
+      "key": "ab3b0caa721f2b297c34bd1cd9024dec"
+    },
+    {
+      "host": "vinehammock.uloung.com",
+      "key": "e70ef2dad83a137b910831e2d2232d61"
+    },
+    {
+      "host": "rhythmzebra.uloung.com",
+      "key": "8ac0a174be272c65b37a6907fcd3264b"
+    },
+    {
+      "host": "lilyvelvet.uloung.com",
+      "key": "972ee3fc0eb97a129387b81410658299"
+    },
+    {
+      "host": "stormcrisp.uloung.com",
+      "key": "7e763778ffe72c57e757e01413dccc97"
+    },
+    {
+      "host": "purplefrost.uloung.com",
+      "key": "c2507563197ce16f1f166ccf25babc0d"
+    },
+    {
+      "host": "windowmanta.uloung.com",
+      "key": "1c5994459c4b9ed643ef97ae93d80369"
+    }
+  ],
+  "control": [
+    "notebee.amunsa.com",
+    "geckoswift.amunsa.com",
+    "feathersky.amunsa.com",
+    "hollydawn.amunsa.com",
+    "coppergentle.amunsa.com",
+    "harborsummit.amunsa.com",
+    "livelyplate.amunsa.com",
+    "nebulapeak.amunsa.com",
+    "copperquartz.amunsa.com",
+    "pinequartz.amunsa.com",
+    "whalebronze.amunsa.com",
+    "rabbitvelvet.amunsa.com",
+    "poppygrove.amunsa.com",
+    "lotusrich.amunsa.com",
+    "bakerharmony.amunsa.com",
+    "ivoryflora.amunsa.com",
+    "bloomcomet.amunsa.com",
+    "streamlake.amunsa.com",
+    "floraready.amunsa.com",
+    "beachcosmic.amunsa.com",
+    "seedlilac.anclose.com",
+    "wonderkind.anclose.com",
+    "ivykoala.anclose.com",
+    "ottercloud.anclose.com",
+    "irisarrow.anclose.com",
+    "trailvelvet.anclose.com",
+    "nebulaverse.anclose.com",
+    "yarrowpiano.anclose.com",
+    "warmrocket.anclose.com",
+    "canvassaffron.anclose.com",
+    "seedmeadow.anclose.com",
+    "melodyflame.anclose.com",
+    "daisylion.anclose.com",
+    "hazelprime.anclose.com",
+    "noterock.anclose.com",
+    "sparrowzenith.anclose.com",
+    "globefresh.anclose.com",
+    "redrosemary.anclose.com",
+    "fancygallery.anclose.com",
+    "creekelm.anclose.com",
+    "crowndragon.daddul.com",
+    "proudmoss.daddul.com",
+    "swiftviolet.daddul.com",
+    "yarrowvine.daddul.com",
+    "rosemaryquartz.daddul.com",
+    "gardenfresh.daddul.com",
+    "quailavenue.daddul.com",
+    "canyonred.daddul.com",
+    "badgeraqua.daddul.com",
+    "dahliabison.daddul.com",
+    "groovemole.daddul.com",
+    "bambooquail.daddul.com",
+    "moosefalcon.daddul.com",
+    "daisyglade.daddul.com",
+    "foxgate.daddul.com",
+    "shieldbirch.daddul.com",
+    "chimeduck.daddul.com",
+    "compasssummit.daddul.com",
+    "lightclear.daddul.com",
+    "crowgrove.daddul.com",
+    "penguinwhale.ddulea.com",
+    "sprucefine.ddulea.com",
+    "rocketbay.ddulea.com",
+    "llamareed.ddulea.com",
+    "forestbell.ddulea.com",
+    "finebunny.ddulea.com",
+    "palmchime.ddulea.com",
+    "yellowstellar.ddulea.com",
+    "crystalsparrow.ddulea.com",
+    "crayonmelody.ddulea.com",
+    "rockember.ddulea.com",
+    "orbitbasil.ddulea.com",
+    "olivereed.ddulea.com",
+    "antpurple.ddulea.com",
+    "molehoney.ddulea.com",
+    "honeyavenue.ddulea.com",
+    "mirrorplate.ddulea.com",
+    "geckoorbit.ddulea.com",
+    "lionpenguin.ddulea.com",
+    "kindrhythm.ddulea.com",
+    "magentabell.naoheg.com",
+    "swancanyon.naoheg.com",
+    "fancykind.naoheg.com",
+    "seabison.naoheg.com",
+    "arcadecrane.naoheg.com",
+    "lemurcrisp.naoheg.com",
+    "keenelm.naoheg.com",
+    "seallagoon.naoheg.com",
+    "cometpine.naoheg.com",
+    "rainmeteor.naoheg.com",
+    "roundlucky.naoheg.com",
+    "mintnova.naoheg.com",
+    "globewolf.naoheg.com",
+    "easypond.naoheg.com",
+    "cedarbadge.naoheg.com",
+    "kitealder.naoheg.com",
+    "ringbison.naoheg.com",
+    "noteparrot.naoheg.com",
+    "lemonaspen.naoheg.com",
+    "otterazure.naoheg.com",
+    "basilcliff.neverfoul.com",
+    "crispcrane.neverfoul.com",
+    "tanpeak.neverfoul.com",
+    "notesilverleaf.neverfoul.com",
+    "aquagrand.neverfoul.com",
+    "choruscircle.neverfoul.com",
+    "deltarain.neverfoul.com",
+    "gallerycrystal.neverfoul.com",
+    "dragonclear.neverfoul.com",
+    "geckoglobe.neverfoul.com",
+    "lyricwonder.neverfoul.com",
+    "camelaspen.neverfoul.com",
+    "pathlemur.neverfoul.com",
+    "penguinprime.neverfoul.com",
+    "sunduck.neverfoul.com",
+    "lilyeasy.neverfoul.com",
+    "clocksail.neverfoul.com",
+    "rocketcream.neverfoul.com",
+    "lemonvelvet.neverfoul.com",
+    "lemoncedar.neverfoul.com",
+    "beaverclock.one-qfast.com",
+    "birdcanyon.one-qfast.com",
+    "badgersolar.one-qfast.com",
+    "herbblossom.one-qfast.com",
+    "circlewarm.one-qfast.com",
+    "grandmorning.one-qfast.com",
+    "pondwind.one-qfast.com",
+    "builderreed.one-qfast.com",
+    "whalebamboo.one-qfast.com",
+    "glassbuilder.one-qfast.com",
+    "grovequiet.one-qfast.com",
+    "camelcabin.one-qfast.com",
+    "marketcoral.one-qfast.com",
+    "duckclear.one-qfast.com",
+    "seeddahlia.one-qfast.com",
+    "archbronze.one-qfast.com",
+    "zenithgreen.one-qfast.com",
+    "dreamgrove.one-qfast.com",
+    "canvasholly.one-qfast.com",
+    "floradaylight.one-qfast.com",
+    "peakgrove.oneshot-sewer.com",
+    "gentleforest.oneshot-sewer.com",
+    "dawnchime.oneshot-sewer.com",
+    "molemaker.oneshot-sewer.com",
+    "calmeagle.oneshot-sewer.com",
+    "maroonfair.oneshot-sewer.com",
+    "tigersolid.oneshot-sewer.com",
+    "bubblebadge.oneshot-sewer.com",
+    "sheepplanet.oneshot-sewer.com",
+    "autumnanchor.oneshot-sewer.com",
+    "ivyisland.oneshot-sewer.com",
+    "pearlbalcony.oneshot-sewer.com",
+    "dolphincircle.oneshot-sewer.com",
+    "mirrorclear.oneshot-sewer.com",
+    "finchspark.oneshot-sewer.com",
+    "windwren.oneshot-sewer.com",
+    "lemonrobin.oneshot-sewer.com",
+    "softfresh.oneshot-sewer.com",
+    "moosewinter.oneshot-sewer.com",
+    "bridgesignal.oneshot-sewer.com",
+    "honeyplate.pipe-oneshot.com",
+    "navyverse.pipe-oneshot.com",
+    "oceancave.pipe-oneshot.com",
+    "cosmosgecko.pipe-oneshot.com",
+    "tidylemur.pipe-oneshot.com",
+    "ibisstudio.pipe-oneshot.com",
+    "graytrout.pipe-oneshot.com",
+    "solidthread.pipe-oneshot.com",
+    "tulippiano.pipe-oneshot.com",
+    "cobracompass.pipe-oneshot.com",
+    "bluequartz.pipe-oneshot.com",
+    "sailorsnow.pipe-oneshot.com",
+    "frostfig.pipe-oneshot.com",
+    "sonataprime.pipe-oneshot.com",
+    "jewelant.pipe-oneshot.com",
+    "pondlotus.pipe-oneshot.com",
+    "luckybaker.pipe-oneshot.com",
+    "chimegreen.pipe-oneshot.com",
+    "lemonlaurel.pipe-oneshot.com",
+    "courtyardmerry.pipe-oneshot.com",
+    "turtlefern.uloung.com",
+    "quartzcrystal.uloung.com",
+    "cranebeaver.uloung.com",
+    "comettan.uloung.com",
+    "denimmeadow.uloung.com",
+    "reedkeen.uloung.com",
+    "bluekey.uloung.com",
+    "birdnavy.uloung.com",
+    "eaglemanta.uloung.com",
+    "balconyhazel.uloung.com",
+    "birdfeather.uloung.com",
+    "juniperfalcon.uloung.com",
+    "compassfox.uloung.com",
+    "hillcotton.uloung.com",
+    "linenpearl.uloung.com",
+    "arcadedune.uloung.com",
+    "waveorbit.uloung.com",
+    "calmtempo.uloung.com",
+    "blossomsun.uloung.com",
+    "readerquartz.uloung.com"
+  ],
+  "submittedAt": "2026-08-27T08:23:29.412Z",
+  "submitResult": {
+    "ok": 200,
+    "keyFail": 0,
+    "httpFail": 0,
+    "total": 200
+  }
+}
