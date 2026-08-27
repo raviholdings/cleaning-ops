@@ -170,7 +170,7 @@ const options = {
    * 적용된다. 이후의 기록은 그대로 dedup 되므로 회차 안에서 이중 제출은 없다.
    * ISO 예: 2026-08-23T00:00:00+09:00. 다음 회차는 날짜만 다시 올리면 된다.
    */
-  doneSince: process.env.NAVER_CRAWL_DONE_SINCE || '',
+  doneSince: (process.env.NAVER_CRAWL_DONE_SINCE || '').replace(/[\\'"\s]+$/g, '').trim(),
   submitMode: normalizeSubmitMode(process.env.NAVER_CRAWL_SUBMIT_MODE || process.env.NAVER_CRAWL_MODE || 'api'),
   apiFallback: process.env.NAVER_CRAWL_API_FALLBACK !== '0',
   apiTimeoutMs: readInt(process.env.NAVER_CRAWL_API_TIMEOUT_MS, 20000),

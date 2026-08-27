@@ -8,6 +8,8 @@
   "scripts": {
     "dev:admin": "npm --workspace=apps/cleaning-admin run dev",
     "build:admin": "npm --workspace=apps/cleaning-admin run build",
+    "start:admin": "npm --workspace=apps/cleaning-admin run preview",
+    "preview:admin": "npm --workspace=apps/cleaning-admin run preview",
     "dev:ravi": "npm --workspace=apps/cleaning-ravi run dev",
     "build:ravi": "npm --workspace=apps/cleaning-ravi run build",
     "db:migrate": "node scripts/apply-migrations.mjs",
