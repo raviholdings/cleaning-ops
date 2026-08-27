@@ -27,11 +27,13 @@ export function buildYetiAwk(roots) {
     '  b = index($0, "[");',
     '  d = b ? substr($0, b + 1, 11) : "?";',
     // 루트 판별은 정규식이 아니라 배열 조회다 — 점을 이스케이프할 일이 없다.
-    '  if (host in isRoot) { apex[host " " d]++; na_seen = 1; next }',
+    '  total++;',
+    '  if (host in isRoot) { apex[host " " d]++; n_apex++; next }',
     '  m = split(host, p, ".");',
-    // 마지막 조각이 문자로 시작할 때만 도메인으로 본다 (IP 필드가 섞인 줄 제외).
-    '  if (m > 2 && p[m] ~ /^[a-z]/) subs[p[m-1] "." p[m]]++;',
-    '  other++;',
+    '  if (m > 2 && p[m] ~ /^[a-z]/) { subs[p[m-1] "." p[m]]++; n_sub++; next }',
+    // 마지막 따옴표 필드가 호스트가 아닌 줄(로그 형식이 다른 요청). 표본만 남긴다.
+    '  n_unknown++;',
+    '  if (n_samp < 5 && !(host in seen)) { seen[host] = 1; samp[++n_samp] = host }',
     '}',
     'END {',
     '  print "=== apex 루트 (서브도메인 제외) ===";',
@@ -56,7 +58,20 @@ export function buildYetiAwk(roots) {
     '    sk[j+1] = kk;',
     '  }',
     '  for (i = 1; i <= ns; i++) printf "  %8d  %s\\n", subs[sk[i]], sk[i];',
-    '  printf "\\n  %8d  %s\\n", other, "서브도메인 합계";',
+    '  print "";',
+    '  print "=== 합계 ===";',
+    '  printf "  %8d  apex 루트\\n", n_apex + 0;',
+    '  printf "  %8d  서브도메인\\n", n_sub + 0;',
+    // 8/25 이전 회전 로그는 log_format 에 $host 가 없어 마지막 필드가 XFF(IP)다.
+    // 그 줄들은 어느 호스트로 온 요청인지 알 방법이 없다 — 0 으로 세면 안 되고,
+    // 세지 못했다고 밝혀야 한다.
+    '  printf "  %8d  호스트 미상 (옛 log_format — $host 없음, 집계 불가)\\n", n_unknown + 0;',
+    '  printf "  %8d  Yeti 요청 전체\\n", total + 0;',
+    '  if (n_samp > 0) {',
+    '    print "";',
+    '    print "  호스트 미상 표본 (XFF IP 가 마지막 필드):";',
+    '    for (i = 1; i <= n_samp; i++) printf "    %s\\n", samp[i];',
+    '  }',
     '}',
   ].join('\n');
 }

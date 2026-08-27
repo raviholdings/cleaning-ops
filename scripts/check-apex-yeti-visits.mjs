@@ -53,9 +53,12 @@ const awkProgram = buildYetiAwk(ROOTS);
 
 // 로그는 매일 00:00 UTC 에 access.log-YYYYMMDD.gz 로 회전한다. 현재 파일만 보면
 // 자정 직후에는 몇 분치밖에 없어서 0 이 나온다 — 회전분을 최신순으로 함께 본다.
+// ⚠ 글로브에 .gz 를 붙이지 말 것. logrotate 가 delaycompress 라 **가장 최근
+// 회전분은 압축이 안 되어 있다**(access.log-20260827 처럼). .gz 만 잡으면 바로
+// 어제치를 통째로 빠뜨린다 — IndexNow 제출 당일을 못 보고 0 이라고 답했던 이유다.
 const pickRotated = scanAll
-  ? 'ls -1t /var/log/nginx/access.log-*.gz 2>/dev/null'
-  : `ls -1t /var/log/nginx/access.log-*.gz 2>/dev/null | head -${days}`;
+  ? 'ls -1t /var/log/nginx/access.log-* 2>/dev/null'
+  : `ls -1t /var/log/nginx/access.log-* 2>/dev/null | head -${days}`;
 
 const remote = [
   '{',
@@ -67,6 +70,7 @@ const remote = [
   // 정렬은 awk 안에서 끝난다. 여기에 sort 를 붙이지 말 것 — nginx 를 죽인 게 그것이다.
   `  | nice -n 19 awk ${shq(awkProgram)};`,
   'echo;',
+  // 원문 그대로 두고 아래에서 읽기 좋게 다시 쓴다 (셸 인용을 늘리지 않으려고).
   'free -m | grep -i mem;',
   'date -u;',
   '} | base64 -w0',
@@ -95,5 +99,20 @@ if (!out) throw new Error('SSM 응답 시간 초과');
 console.log(`=== apex 루트 Yeti 방문 (${scanAll ? '전체 이력' : `최근 ${days}일`}) ===`);
 // --output text 는 "Success\t<base64>\n" 로 온다. 끝의 빈 조각을 걷어내야 한다.
 const payload = out.split(/\s+/).filter(Boolean).pop();
-console.log(Buffer.from(payload, 'base64').toString('utf8'));
+const text = Buffer.from(payload, 'base64').toString('utf8');
+
+/*
+ * free -m 원문은 숫자만 여섯 개라 읽을 수가 없다. 사람이 읽는 문장으로 바꾼다.
+ *   Mem:  총계  사용  유휴  공유  버프/캐시  가용
+ * 판단 기준은 "유휴" 가 아니라 "가용" 이다 — 버프/캐시는 필요하면 회수된다.
+ */
+const memLine = text.split('\n').find((l) => /^Mem:/i.test(l.trim()));
+const pretty = memLine ? (() => {
+  const [total, used, , , , avail] = memLine.trim().split(/\s+/).slice(1).map(Number);
+  const pct = Math.round((avail / total) * 100);
+  const warn = avail < 300 ? '  ⚠ 여유가 없다 — 무거운 작업 금지' : '';
+  return `메모리: ${used}MB 사용 / ${total}MB · 가용 ${avail}MB (${pct}%)${warn}`;
+})() : null;
+
+console.log(pretty ? text.replace(memLine, pretty) : text);
 console.log('기준선(2026-08-26 11:58 UTC): apex 전부 0회. 0 에서 움직였으면 IndexNow 가 먹힌 것.');
