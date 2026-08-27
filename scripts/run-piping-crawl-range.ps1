@@ -31,6 +31,9 @@ param(
 	[Parameter(Mandatory = $true)][ValidateSet('piping-ravi', 'piping-ravi-shared')][string]$Group,
 	[Parameter(Mandatory = $true)][int]$From,
 	[Parameter(Mandatory = $true)][int]$To,
+	# 지금 배포된 사이트당 장수. 사이트맵을 못 읽는 호스트(HaiIP 가 막는 fast 도메인)에서
+	# URL 을 생성할 때 쓴다. DB 의 page_count 는 최종 목표(200)라 그대로 쓰면 안 된다.
+	[int]$Pages = 50,
 	[switch]$DryRun,
 	[switch]$NoHaiIp,
 	# 재수집 기준선 — 청소·이사와 동일. 예: -DoneSince 2026-08-25T00:00:00+09:00
@@ -83,10 +86,22 @@ $env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS = '0'
 # 배관 전용 — 그룹 고정 + 사이트맵 모드 + 배관 사이트맵 경로
 $env:NAVER_CRAWL_INCLUDE_GROUPS = $Group
 $env:NAVER_CRAWL_EXCLUDE_GROUPS = ''
-$env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = $Group
-# 2026-08-27: URL 을 숫자로 바꾸면서 /배관/ -> /piping/ 이 되었다.
-# 옛 경로(%EB%B0%B0%EA%B4%80)로 두면 사이트맵을 못 찾아 조용히 0건이 된다.
-$env:NAVER_CRAWL_SITEMAP_PATH = '/piping/sitemap.xml'
+# 신규 도메인(piping-ravi)은 DB 카탈로그로 URL 을 만든다 — post_url_pattern 이
+# /piping/{postId} 라 사이트맵을 읽을 필요가 없다. HaiIP 가 막는 fast 도메인
+# (one-qfast.com) 문제도 여기서 원인째 사라진다.
+#
+# 차용분(piping-ravi-shared)은 청소 도메인을 빌려 쓰는데 그 행의 page_count·
+# post_url_pattern 은 청소 것(131장)이라 쓸 수 없다. 그래서 사이트맵 모드를 유지하고,
+# 못 읽는 호스트는 NAVER_CRAWL_PIPING_PAGE_COUNT 로 URL 을 생성한다.
+if ($Group -eq 'piping-ravi-shared') {
+	$env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = $Group
+	$env:NAVER_CRAWL_SITEMAP_PATH = '/piping/sitemap.xml'
+	$env:NAVER_CRAWL_PIPING_PAGE_COUNT = $Pages
+} else {
+	$env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = ''
+	$env:NAVER_CRAWL_SITEMAP_PATH = ''
+	$env:NAVER_CRAWL_PIPING_PAGE_COUNT = $Pages
+}
 
 if ($DoneSince) {
 	$cleanDoneSince = $DoneSince.Trim().TrimEnd('\', '"', "'")

@@ -19,6 +19,8 @@ interface CrawlRequestTabProps {
 const PROJECTS = [
   { key: 'cleaning-ravi', label: '청소', accent: '#818cf8', bg: 'rgba(99, 102, 241, 0.12)' },
   { key: 'moving-ravi', label: '이사', accent: '#67e8f9', bg: 'rgba(6, 182, 212, 0.12)' },
+  { key: 'piping-ravi', label: '배관', accent: '#fbbf24', bg: 'rgba(245, 158, 11, 0.12)' },
+  { key: 'piping-ravi-shared', label: '배관(공유)', accent: '#fb923c', bg: 'rgba(249, 115, 22, 0.12)' },
 ];
 
 function Metric({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {

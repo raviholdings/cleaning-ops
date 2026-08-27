@@ -1152,7 +1152,8 @@ async function loadTargetSitemapTasks(accountId, target) {
   const sitemapUrl = joinOriginPath(target.siteUrl, options.sitemapPath);
   let urls;
   try {
-    urls = await fetchSitemapUrls(sitemapUrl, target.siteUrl);
+    const hasFallback = crawlDb.targetProject === 'moving-ravi' || PIPING_PROJECTS.has(crawlDb.targetProject);
+    urls = await fetchSitemapUrls(sitemapUrl, target.siteUrl, { hasFallback });
   } catch (error) {
     if (options.dbUrlSource === 'sitemap' || requiresSitemapDbQueue()) {
       /*
@@ -1165,6 +1166,14 @@ async function loadTargetSitemapTasks(accountId, target) {
         try {
           urls = await movingGeneratedSitemapUrls(target);
           console.warn(`[crawl:db] sitemap fetch failed for ${target.host}; generated ${urls.length} urls from catalog (${error.message})`);
+        } catch (fallbackError) {
+          console.warn(`[crawl:db] sitemap fetch skipped for ${target.host}: ${error.message} / 생성 폴백 실패: ${fallbackError.message}`);
+          return [];
+        }
+      } else if (PIPING_PROJECTS.has(crawlDb.targetProject)) {
+        try {
+          urls = pipingGeneratedSitemapUrls(target);
+          console.warn(`[crawl:db] sitemap fetch failed for ${target.host}; generated ${urls.length} urls (${error.message})`);
         } catch (fallbackError) {
           console.warn(`[crawl:db] sitemap fetch skipped for ${target.host}: ${error.message} / 생성 폴백 실패: ${fallbackError.message}`);
           return [];
@@ -1235,6 +1244,36 @@ async function movingGeneratedSitemapUrls(target) {
   });
 }
 
+/*
+ * 배관 URL 생성기. 사이트맵 fetch 가 막혔을 때 쓰는 폴백이다.
+ *
+ * HaiIP 를 켜면 이름에 fast 가 들어간 도메인(one-qfast.com)이 접속되지 않는다.
+ * 수집요청 러너는 HaiIP 가 필수라 그 루트의 사이트맵을 영영 못 읽는다
+ * (2026-08-27 실측: 계정당 100개 중 10개 실패 = 제출 4,500/5,000).
+ * 제출 자체는 searchadvisor.naver.com 으로 가므로 막히지 않는다 — 우리 도메인에서
+ * XML 을 읽어오는 단계만 문제다. 청소가 안 걸리는 것은 postId 방식이라 사이트맵을
+ * 아예 안 읽기 때문이다.
+ *
+ * 배관 URL 은 2026-08-27 숫자 전환으로 /piping/{1..N} 이라 범위만 만들면 된다.
+ * 다만 문자열이 배포 산출물과 완전히 같아야 한다 — dedup 이 문자열 일치라 한 글자만
+ * 달라도 같은 페이지에 할당량을 두 번 태운다.
+ * 배포 쪽 진실은 scripts/lib/piping-page-data.mjs 의 pipingPagePath(requestId) 다.
+ *
+ * 장수는 DB 의 page_count(= 최종 목표 200)를 쓰면 안 된다. 지금 배포된 만큼만
+ * 만들어야 하므로 러너가 NAVER_CRAWL_PIPING_PAGE_COUNT 로 넘겨준다.
+ */
+const PIPING_PROJECTS = new Set(['piping-ravi', 'piping-ravi-shared']);
+
+function pipingGeneratedSitemapUrls(target) {
+  const raw = Number(process.env.NAVER_CRAWL_PIPING_PAGE_COUNT || 0);
+  const pageCount = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+  if (!pageCount) {
+    throw new Error('NAVER_CRAWL_PIPING_PAGE_COUNT 가 비어 있다 (run-piping-crawl-range.ps1 -Pages 로 배포 장수를 넘겨라)');
+  }
+  const base = String(target.siteUrl || `https://${target.host}`).replace(/\/+$/, '');
+  return Array.from({ length: pageCount }, (_, k) => `${base}/piping/${k + 1}`);
+}
+
 function loadPageCountTasks(accountId, target) {
   const pageCount = Math.max(0, Number(target.pageCount || 0));
   const tasks = [];
@@ -1283,7 +1322,7 @@ function loadPageCountTasks(accountId, target) {
   return tasks;
 }
 
-async function fetchSitemapUrls(sitemapUrl, siteUrl) {
+async function fetchSitemapUrls(sitemapUrl, siteUrl, { hasFallback = false } = {}) {
   /*
    * HaiIP 로 IP 를 바꾼 직후에는 Cloudflare 접속이 한동안 안 열리기도 한다.
    * 2026-08-20 VM1 에서 첫 사이트맵 fetch 가 connect timeout 으로 죽어
@@ -1291,16 +1330,23 @@ async function fetchSitemapUrls(sitemapUrl, siteUrl) {
    */
   let response;
   let lastError;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  /*
+   * 생성 폴백이 있으면 오래 붙잡지 않는다. HaiIP 가 막는 fast 도메인은 3회 x 15초 +
+   * 백오프로 호스트당 54초를 버리는데, 어차피 폴백으로 갈 것이라 낭비다
+   * (2026-08-27 실측: 계정당 10개 x 54초 = 9분). 폴백이 없는 청소는 그대로 둔다.
+   */
+  const maxAttempts = hasFallback ? 1 : 3;
+  const attemptTimeoutMs = hasFallback ? 8000 : 15000;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       response = await fetch(sitemapUrl, {
         headers: { accept: 'application/xml,text/xml,*/*;q=0.8' },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(attemptTimeoutMs),
       });
       break;
     } catch (error) {
       lastError = error;
-      if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 3000));
+      if (attempt < maxAttempts) await new Promise((r) => setTimeout(r, attempt * 3000));
     }
   }
   if (!response) throw lastError;
