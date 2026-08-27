@@ -22,6 +22,9 @@ import { existsSync, readFileSync, readdirSync, statSync, mkdtempSync, writeFile
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadLocalEnv } from './lib/local-env.mjs';
+
+loadLocalEnv();  // R2_* 자격증명
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

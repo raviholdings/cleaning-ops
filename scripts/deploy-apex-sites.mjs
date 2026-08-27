@@ -18,6 +18,9 @@ import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepareOriginSsh } from './lib/origin-ssh.mjs';
+import { loadLocalEnv } from './lib/local-env.mjs';
+
+loadLocalEnv();  // AWS 자격증명·ORIGIN_SSH_KEY
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);

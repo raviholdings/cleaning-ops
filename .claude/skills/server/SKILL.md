@@ -6,8 +6,30 @@ description: EC2 오리진 서버(SSM·SSH·nginx) 운영 절차. nginx 설정 �
 # 서버 (EC2 · SSM · nginx)
 
 - 인스턴스: `i-039361b55ae33808b` (ap-northeast-2), `AWS_PROFILE=cleaning-ops`
+- **사양: t3.small — 메모리 2GB, 스왑 없음.** 여유가 항상 좁다
 - 웹루트: `/srv/group-page-origin/sites/<host>/`
 - nginx: `/etc/nginx/conf.d/cleaning-sites.conf` — server 블록 2개(80/443), 항상 둘 다 고칠 것
+
+## ⛔ 로그·대용량 처리는 메모리를 먼저 생각한다
+
+**2026-08-27 09:13 KST, 로그 집계 한 줄이 전 사이트를 내렸다.**
+`check-apex-yeti-visits.mjs` 가 접근 로그 180만 줄을 `sort | uniq -c` 에 물렸고,
+`sort` 가 1.76GB 를 잡자 커널이 OOM 킬러를 돌려 **nginx · systemd-resolve ·
+systemd-logind · systemd-network · agetty** 를 죽였다. 전 도메인 HTTP 521.
+복구는 `systemctl start nginx`.
+
+접근 로그는 하루 수십 MB(압축), 열흘치면 비압축 수백 MB다. 규칙:
+
+- **큰 입력에 `sort` 를 물리지 않는다.** 집계는 `awk` 연관배열로 한 번에 —
+  키가 호스트·날짜 수십 개면 입력이 아무리 커도 메모리가 상수다
+- `sort` 가 꼭 필요하면 이미 줄어든 출력에만, `-S 16M` 상한과 함께
+- 중간 파일(`> /tmp/…`)로 원본 크기를 그대로 떨구지 않는다. 스트리밍으로 줄인다
+- `nice -n 19` 로 돌려 nginx 를 굶기지 않는다
+- 기본 조회 범위를 좁게 둔다(최근 N일). 전체 이력은 명시적 플래그로만
+- 서버에 던지기 전에 **로컬 합성 로그로 먼저 돌려본다**
+
+본보기: `scripts/lib/yeti-log-awk.mjs` + `scripts/check-apex-yeti-visits.mjs`.
+600k줄/98MB 를 5.7초, 키 11개로 처리한다.
 
 ## 원격 실행 (SSM)
 
