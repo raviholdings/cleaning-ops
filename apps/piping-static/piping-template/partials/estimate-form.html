@@ -15,9 +15,29 @@
     </div>
     <label>문의내용<textarea name="message" rows="4" placeholder="-문의 내용을 입력해주세요"></textarea></label>
     <input class="lead-honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
-    <label class="estimate-check"><input type="checkbox" name="consent" value="true"> 개인정보 수집 및 이용에 동의합니다 <a href="#top">약관보기</a></label>
+    <label class="estimate-check"><input type="checkbox" name="consent" value="true" checked> 개인정보 수집 및 이용에 동의합니다 <a href="#" class="estimate-terms-link" data-terms-open>약관보기</a></label>
     <small>※ 미동의 시 상담 신청을 하실 수 없습니다.</small>
     <button type="submit" data-lead-submit>신청하기</button>
     <p class="lead-form-status" data-lead-status aria-live="polite"></p>
   </div>
 </form>
+
+<!-- 개인정보 수집·이용 동의 전문. 체크박스 옆 "약관보기" 가 연다. -->
+<dialog class="terms-modal" data-terms-modal aria-label="개인정보 수집 및 이용 동의">
+  <div class="terms-modal-body">
+    <h3>개인정보 수집 및 이용 동의</h3>
+    <dl>
+      <dt>개인정보 수집항목</dt>
+      <dd>이름, 연락처, IP 등을 포함한 고객이 입력한 정보</dd>
+      <dt>개인정보 수집·이용목적</dt>
+      <dd>전화, SMS를 통한 상품안내 및 상담</dd>
+      <dt>개인정보 보유·이용기간</dt>
+      <dd>수집일로부터 1년 (고객 동의 철회 시 지체 없이 파기)</dd>
+      <dt>개인정보의 취급 위탁</dt>
+      <dd>당사는 서비스 이행 및 향상을 위해 개인정보 취급업무를 전문업체에 위탁 운영하고 있습니다.
+        또한 개인정보를 안전하게 처리하기 위하여 필요한 사항 등을 명확히 규정하고 있으며,
+        당해 계약 내용을 서면 또는 전자적으로 보관하고 있습니다.</dd>
+    </dl>
+    <button type="button" class="terms-modal-close" data-terms-close>닫기</button>
+  </div>
+</dialog>

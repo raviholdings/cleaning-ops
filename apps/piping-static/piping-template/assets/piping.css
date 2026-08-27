@@ -129,3 +129,15 @@ a{color:inherit} img{max-width:100%}.d-none{display:none!important}
   .post-resource-thumb{width:86px;height:72px}
   .post-resource-title{font-size:14px;line-height:19.6px}
 }
+
+/* 개인정보 동의 전문 모달 (약관보기) */
+.estimate-terms-link{background:none;border:0;padding:0;margin-left:2px;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.terms-modal{border:0;border-radius:12px;padding:0;max-width:560px;width:calc(100% - 32px);box-shadow:0 18px 48px rgba(0,0,0,.28)}
+.terms-modal::backdrop{background:rgba(0,0,0,.5)}
+.terms-modal-body{padding:24px 24px 20px;max-height:70vh;overflow-y:auto;line-height:1.6}
+.terms-modal-body h3{margin:0 0 16px;font-size:1.05rem}
+.terms-modal-body dl{margin:0}
+.terms-modal-body dt{margin-top:14px;font-weight:700;font-size:.9rem}
+.terms-modal-body dt:first-child{margin-top:0}
+.terms-modal-body dd{margin:4px 0 0;font-size:.88rem;color:#444}
+.terms-modal-close{margin-top:20px;width:100%;padding:11px 0;border:0;border-radius:8px;background:#222;color:#fff;font-size:.92rem;cursor:pointer}

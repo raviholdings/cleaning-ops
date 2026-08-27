@@ -144,3 +144,22 @@
     }
   });
 })();
+
+/* 개인정보 동의 전문 모달. <dialog> 를 못 쓰는 브라우저에서는 그냥 열리지 않는다
+   — 동의 자체는 체크박스로 이뤄지므로 접수는 막히지 않는다. */
+(function(){
+  var modal=document.querySelector("[data-terms-modal]");
+  if(!modal) return;
+  document.addEventListener("click",function(e){
+    var open=e.target.closest?e.target.closest("[data-terms-open]"):null;
+    if(open){
+      e.preventDefault();
+      e.stopPropagation();           // <label> 안에 있어 체크박스가 토글되지 않게
+      if(modal.showModal) modal.showModal();
+      return;
+    }
+    if(e.target.closest&&e.target.closest("[data-terms-close]")) modal.close();
+  });
+  // 배경(백드롭) 클릭으로 닫기
+  modal.addEventListener("click",function(e){ if(e.target===modal) modal.close(); });
+})();
