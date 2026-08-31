@@ -24,6 +24,16 @@
  *
  * ⛔ 반드시 그 계정을 돌릴 기계에서 실행할 것. 다른 기계에서 잡으면 그 기계는
  *    그 IP 를 못 만들어서 아무 소용이 없다.
+ *
+ * ⛔⛔ 세션 재캡처(capture-naver-session.mjs) 앞에 쓰지 말 것.
+ *     이 스크립트는 수집요청용이다. 수집요청은 저장된 세션을 그대로 쓰므로
+ *     새 로그인이 없고, IP 를 옮겨도 네이버가 볼 일이 없다.
+ *     반면 캡처는 새로 로그인한다. 캡처의 "배정 IP 로 못 가면 중단" 은 불편한
+ *     제약이 아니라, 그 계정이 안 써본 IP 에서 로그인하는 걸 막는 안전장치다.
+ *     이걸로 배정 IP 를 갈아끼워 그 검사를 통과시키면 보호조치가 걸린다
+ *     (2026-08-31 #285 mh5o58o1cl8ezzrz4g 에서 실제로 걸렸다).
+ *     캡처에서 IP 를 못 잡으면 capture-naver-session.mjs --allow-new-ip 를 쓸 것 —
+ *     같은 /24 -> /16 순으로 가까운 IP 를 찾고, 성공한 뒤에만 DB 에 기록한다.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
