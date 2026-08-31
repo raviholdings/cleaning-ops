@@ -113,6 +113,7 @@ const templates = {
   ...optional('post.html', 'post'),
   ...optional('blog-index.html', 'blogIndex'),
   ...optional('blog-hub.html', 'blogHub'),
+  ...optional('privacy.html', 'privacy'),
 };
 
 /* ────────────────────────────────────────────────────────────
@@ -899,6 +900,21 @@ urls.push(page({
     })),
   }),
 }));
+
+/* ── /privacy/ ──
+   접수폼을 받는 이상 별도 페이지가 있어야 한다. 문구는 배관 프로젝트에서
+   쓰던 것을 그대로 가져왔다 — 새로 지으면 어느 쪽이 맞는지 알 수 없게 된다. */
+if (templates.privacy) {
+  urls.push(page({
+    path: '/privacy/',
+    kind: 'privacy',
+    crumbs: [{ name: '홈', href: '/' }, { name: '개인정보 수집 및 이용 동의' }],
+    title: `개인정보 수집 및 이용 동의 — ${site.brand}`,
+    description: `${site.brand} 개인정보 수집항목·이용목적·보유기간 안내.`,
+    jsonLd: orgLd,
+    main: renderTemplate(templates.privacy, { ...base }),
+  }));
+}
 
 /* ── 시군구 × 256 ── */
 const DONG_LIMIT = 60;   // 레퍼런스(하림배관)가 한 페이지에 62조합을 쓴다

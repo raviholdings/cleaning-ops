@@ -467,3 +467,11 @@ a.brow:hover .bc-t{color:var(--accent)}
 .bp.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .bp-e{color:var(--mute);font-weight:400}
 @media(max-width:640px){.bp{min-width:34px;height:34px;font-size:13.5px}}
+
+/* 개인정보 방침 — 푸터 링크와 본문 */
+footer .fpv{width:100%;margin-top:12px}
+footer .fpv a{text-decoration:underline;text-underline-offset:3px}
+.terms-page{max-width:760px;margin:0 auto;padding:8px 0 clamp(30px,5vw,60px)}
+.terms-page dt{font-size:12.5px;letter-spacing:.14em;font-weight:700;margin-top:26px}
+.terms-page dt:first-child{margin-top:0}
+.terms-page dd{margin:8px 0 0;font-size:16.5px;line-height:1.9}
