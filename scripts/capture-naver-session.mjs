@@ -6,6 +6,9 @@
  *   node scripts/capture-naver-session.mjs --account lguxp4nlw
  *   node scripts/capture-naver-session.mjs --accounts 1-10
  *   node scripts/capture-naver-session.mjs --account lguxp4nlw --dry-run
+ *   node scripts/capture-naver-session.mjs --account lguxp4nlw --allow-new-ip
+ *     배정 IP 가 HaiIP 풀에서 사라졌을 때만. 같은 /24 -> /16 순으로 빈 IP 를 찾는다.
+ *     낯선 IP 로그인은 보호조치를 부르므로 기본값은 꺼져 있다.
  *
  * 흐름 (사람이 하는 건 5번뿐)
  *   1. DB 에서 계정·비밀번호·배정 IP 조회
@@ -51,6 +54,22 @@ const LOGIN_TIMEOUT_MS = Number(options.loginTimeoutMs || 300_000);
 // 값만 채우고 로그인 버튼은 사람이 누른다. IP보안·로그인유지를 직접 고를 수 있고,
 // 반복 자동 로그인으로 추가 인증이 걸리는 것도 줄어든다.
 const noAutoClick = Boolean(options.noAutoClick);
+/*
+ * 배정 IP 를 HaiIP 가 못 만들 때 새 IP 로 캡처를 진행할지.
+ *
+ * 기본은 꺼져 있다 — 배정 IP 검사는 불편한 제약이 아니라 안전장치다. 그 계정이
+ * 한 번도 써본 적 없는 IP 에서 자동화 브라우저로 로그인하면 네이버가 보호조치를
+ * 건다 (2026-08-31 #285 mh5o58o1cl8ezzrz4g 에서 실제로 걸렸다).
+ *
+ * 그래도 유동 IP 라 배정 IP 가 풀에서 사라지면 재캡처 자체가 불가능해지므로,
+ * 명시적으로 켤 수 있게 둔다. 켜면 아래 순서로 최대한 가까운 IP 를 찾는다.
+ *   같은 /24  -> 즉시 채택 (원래 IP 와 사실상 같은 대역)
+ *   같은 /16  -> 채택 (같은 통신사·지역대)
+ *   그 외     -> 시도를 다 쓴 뒤에만, 경고를 찍고 채택
+ * 어느 경우든 다른 계정이 쓰는 IP 는 건너뛴다.
+ */
+const allowNewIp = Boolean(options.allowNewIp);
+const newIpAttempts = Math.max(1, Number(options.newIpAttempts || 6));
 
 /*
  * 아래 상수들은 반드시 최상위 실행 블록(try { ... captureOne ... })보다 위에 있어야 한다.
@@ -693,23 +712,93 @@ async function verifySearchAdvisor(statePath) {
   }
 }
 
+const netOf = (ip, parts) => String(ip).split('.').slice(0, parts).join('.');
+
+/** 이 IP 를 다른 계정이 물고 있나. 물고 있으면 그 계정 목록을 준다. */
+async function ipOwners(accountId, ip) {
+  const { rows } = await client.query(
+    `select account_id from public.naver_searchadvisor_accounts
+      where account_id <> $1
+        and (host(searchadvisor_session_validated_public_ip) = $2
+             or host(searchadvisor_session_saved_public_ip) = $2)`,
+    [accountId, ip],
+  );
+  return rows.map((r) => r.account_id);
+}
+
+function haiIpChange(extraArgs = []) {
+  const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', haiIpScript,
+    '-Command', 'change', '-RequireChanged', ...extraArgs];
+  execFileSync('powershell.exe', args, { stdio: 'pipe', timeout: 180_000 });
+}
+
+/**
+ * 배정 IP 를 못 잡았을 때 그나마 가까운 빈 IP 를 찾는다 (--allow-new-ip 전용).
+ * 원래 IP 와 대역이 가까울수록 네이버가 보기에 자연스럽다.
+ */
+async function findNearbyFreeIp(account, preferred) {
+  let fallback = '';
+  for (let attempt = 1; attempt <= newIpAttempts; attempt += 1) {
+    haiIpChange();
+    const ip = await currentPublicIp();
+    const owners = await ipOwners(account.account_id, ip);
+    if (owners.length) {
+      console.log(`  [${attempt}/${newIpAttempts}] ${ip} — ${owners.join(', ')} 가 쓰는 중, 건너뜁니다.`);
+      continue;
+    }
+    if (netOf(ip, 3) === netOf(preferred, 3)) {
+      console.log(`  [${attempt}/${newIpAttempts}] ${ip} — 원래 IP 와 같은 /24 입니다. 채택합니다.`);
+      return ip;
+    }
+    if (netOf(ip, 2) === netOf(preferred, 2)) {
+      console.log(`  [${attempt}/${newIpAttempts}] ${ip} — 원래 IP 와 같은 /16 입니다. 채택합니다.`);
+      return ip;
+    }
+    console.log(`  [${attempt}/${newIpAttempts}] ${ip} — 대역이 다릅니다 (원래 ${netOf(preferred, 2)}.x). 더 찾아봅니다.`);
+    if (!fallback) fallback = ip;
+  }
+  if (!fallback) throw new Error(`빈 IP 를 ${newIpAttempts}번 안에 못 찾았습니다.`);
+  // 마지막 후보로 되돌린다. 못 돌아가면 현재 IP 가 비었는지만 다시 본다.
+  haiIpChange(['-PreferredIp', fallback, '-CheckPreferredResult']);
+  const now = await currentPublicIp();
+  const target = now === fallback ? fallback : now;
+  if ((await ipOwners(account.account_id, target)).length) {
+    throw new Error(`빈 IP 를 못 찾았습니다 (마지막 ${target}).`);
+  }
+  console.log(`  ⚠ ${target} — 원래 IP(${preferred})와 다른 대역입니다. 네이버가 낯선 접속으로 볼 수 있습니다.`);
+  return target;
+}
+
 async function ensureIpForAccount(account, currentIp) {
   const preferred = account.validated_ip;
-  const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', haiIpScript, '-Command', 'change', '-RequireChanged'];
-  if (preferred) {
-    if (preferred === currentIp) {
-      console.log(`  배정 IP ${preferred} 에 이미 있습니다.`);
-      return currentIp;
-    }
-    console.log(`  배정 IP ${preferred} 로 전환합니다.`);
-    args.push('-PreferredIp', preferred, '-CheckPreferredResult');
-  } else {
+  if (!preferred) {
     console.log('  배정 IP 가 없어 무작위로 바꾸고 그 IP 를 배정합니다.');
+    haiIpChange();
+    return currentPublicIp();
   }
-  execFileSync('powershell.exe', args, { stdio: 'pipe', timeout: 180_000 });
+  if (preferred === currentIp) {
+    console.log(`  배정 IP ${preferred} 에 이미 있습니다.`);
+    return currentIp;
+  }
+
+  console.log(`  배정 IP ${preferred} 로 전환합니다.`);
+  haiIpChange(['-PreferredIp', preferred, '-CheckPreferredResult']);
   const next = await currentPublicIp();
-  if (preferred && next !== preferred) throw new Error(`배정 IP ${preferred} 로 못 갔습니다 (현재 ${next}).`);
-  return next;
+  if (next === preferred) return next;
+
+  if (!allowNewIp) {
+    throw new Error(`배정 IP ${preferred} 로 못 갔습니다 (현재 ${next}). `
+      + '유동 IP 라 그 IP 가 풀에서 빠졌을 수 있습니다. 새 IP 로 캡처하려면 --allow-new-ip '
+      + '(그 계정이 안 써본 IP 에서 로그인하면 보호조치가 걸릴 수 있습니다).');
+  }
+
+  console.log(`  배정 IP ${preferred} 를 못 잡았습니다 (현재 ${next}). --allow-new-ip 이므로 가까운 빈 IP 를 찾습니다.`);
+  // 지금 IP 가 이미 쓸 만하면 더 돌리지 않는다 — 변경 횟수 자체가 위험이다.
+  if (netOf(next, 2) === netOf(preferred, 2) && !(await ipOwners(account.account_id, next)).length) {
+    console.log(`  ${next} — 원래 IP 와 같은 /16 이고 비어 있습니다. 채택합니다.`);
+    return next;
+  }
+  return findNearbyFreeIp(account, preferred);
 }
 
 /**
