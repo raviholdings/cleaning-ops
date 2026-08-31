@@ -1,0 +1,27 @@
+<div class="wrap">
+  <div class="rsign dbl">
+    {{#caseArea}}<span class="place">{{caseArea}}</span>{{/caseArea}}
+    <h1>{{caseTitle}}</h1>
+    <p class="say">{{caseBody}}</p>
+  </div>
+  <div class="plaques">{{#detail}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/detail}}</div>
+</div>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="mark">현 장</p>
+  <h2>사진</h2>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+{{{estimateForm}}}
+
+<section id="others"><div class="wrap">
+  <p class="mark">그 밖 에</p>
+  <h2>이런 일도 있었습니다</h2>
+  <div class="names">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+  <p class="aside"><a href="{{casesHref}}">겪은 일 전체 보기</a></p>
+</div></section>

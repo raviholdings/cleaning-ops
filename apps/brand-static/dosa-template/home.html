@@ -1,0 +1,68 @@
+<div class="wrap">
+  <div class="sign dbl">
+    {{#heroBg}}<div class="herobg"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" fetchpriority="high" decoding="async"></div>{{/heroBg}}
+    
+    <span class="seal">道</span>
+    <h1>{{h1a}} <span class="d">{{h1b}}</span></h1>
+    <p class="say">{{h1sub}}</p>
+    <div class="acts">
+      <a class="btn btn-d" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  <div class="plaques">{{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}</div>
+</div>
+
+<section id="service"><div class="wrap">
+  <p class="mark">시 술</p>
+  <h2>{{{serviceHeading}}}</h2>
+  <p class="lede">{{serviceLede}}</p>
+  <div class="panes">
+    {{#jobs}}<div class="pane"><p class="num">{{no}}</p><h3>{{title}}</h3><p>{{body}}</p></div>{{/jobs}}
+  </div>
+  <div class="names">{{#serviceLinks}}<a href="{{href}}">{{label}}</a>{{/serviceLinks}}</div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <p class="mark">문 답</p>
+  <h2>{{{faqHeading}}}</h2>
+  <div class="dialog">
+    {{#faq}}<div class="dlg"><p class="ask">{{q}}</p><p class="ans">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+<section id="cause"><div class="wrap">
+  <p class="mark">진 단</p>
+  <h2>{{{causeHeading}}}</h2>
+  <p class="lede">{{causeLede}}</p>
+  <div class="panes">
+    {{#causes}}<div class="pane"><p class="num">{{sym}}</p><h3>{{title}}</h3><p>{{body}}</p></div>{{/causes}}
+  </div>
+</div></section>
+
+
+
+<section id="shot"><div class="wrap">
+  <p class="mark">현 장</p>
+  <h2>일하는 자리</h2>
+  <div class="shots">
+    {{#homeShots}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/homeShots}}
+  </div>
+</div></section>
+
+<section id="case"><div class="wrap">
+  <p class="mark">기 록</p>
+  <h2>{{{caseHeading}}}</h2>
+  <div class="panes">
+    {{#cases}}<div class="pane"><p class="num">{{id}}</p><h3>{{title}}</h3><p>{{body}}</p></div>{{/cases}}
+  </div>
+</div></section>
+
+<section id="price"><div class="wrap">
+  <p class="mark">비 용</p>
+  <h2>{{{priceHeading}}}</h2>
+  <div class="ledger">{{#price}}<div><b>{{item}}</b><i></i><span>{{basis}}</span></div>{{/price}}</div>
+  <p class="aside">{{priceNote}}</p>
+</div></section>
+
+{{{estimateForm}}}

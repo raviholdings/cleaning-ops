@@ -1,0 +1,132 @@
+<div class="wrap">
+  <div class="rtop">
+    <span class="where">{{sidoLabel}} 출동</span>
+    <h1>{{{regionH1}}}</h1>
+    <p class="rsub">{{sigunguLabel}} <span class="c">{{regionTagline}}</span></p>
+    <p class="say">{{regionLede}}</p>
+    <div class="acts" style="margin-top:26px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+      <a class="btn b1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn b2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  <div class="notes">
+    <div><b>{{dongCount}}곳</b><span>{{sigunguLabel}} 동 단위</span></div>
+    {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+  </div>
+</div>
+
+<section id="keyword"><div class="wrap">
+  <span class="tag">이런 전화</span>
+  <h2>{{{keywordHeading}}}</h2>
+  <p class="say2">{{keywordLede}}</p>
+  <div class="cards">
+    {{#keywordBlurbs}}<div class="card"><div class="ic">{{kw}}</div><h3>{{h}}</h3><p>{{body}}</p></div>{{/keywordBlurbs}}
+  </div>
+</div></section>
+
+<section id="dong"><div class="wrap">
+  <span class="tag">{{sigunguLabel}} 동네</span>
+  <h2>{{{dongHeading}}}</h2>
+  <p class="say2">{{dongLede}}</p>
+  <div class="hoods">
+    {{#dongs}}<div class="hoodz"><b>{{name}}</b><span>{{kw}}</span></div>{{/dongs}}
+  </div>
+</div></section>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <span class="tag">현장</span>
+  <h2>{{{photoHeading}}}</h2>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="case"><div class="wrap">
+  <span class="tag">다녀온 곳</span>
+  <h2>{{{caseHeading}}}</h2>
+  <div class="cards">
+    {{#cases}}<div class="card"><div class="ic">{{id}}</div><h3>{{title}}</h3><p>{{body}}</p></div>{{/cases}}
+  </div>
+</div></section>
+
+<section id="cause"><div class="wrap">
+  <span class="tag">증상 살펴보기</span>
+  <h2>{{{causeHeading}}}</h2>
+  <p class="say2">{{causeLede}}</p>
+  <div class="cards">
+    {{#causes}}<div class="card"><div class="ic">{{sym}}</div><h3>{{title}}</h3><p>{{body}}</p></div>{{/causes}}
+  </div>
+</div></section>
+
+<section id="building"><div class="wrap">
+  <span class="tag">집 종류</span>
+  <h2>{{{buildingHeading}}}</h2>
+  <p class="say2">{{buildingLede}}</p>
+  <div class="cards">
+    {{#building}}<div class="card"><div class="ic">{{t}}</div><p>{{b}}</p></div>{{/building}}
+  </div>
+</div></section>
+
+<section id="service"><div class="wrap">
+  <span class="tag">이런 걸 합니다</span>
+  <h2>{{{serviceHeading}}}</h2>
+  <p class="say2">{{serviceLede}}</p>
+  <div class="cards">
+    {{#jobs}}<div class="card"><div class="ic">{{no}}</div><h3>{{title}}</h3><p>{{body}}</p></div>{{/jobs}}
+  </div>
+  <div class="pills">{{#serviceLinks}}<a href="{{href}}">{{label}}</a>{{/serviceLinks}}</div>
+</div></section>
+
+<section id="prevent"><div class="wrap">
+  <span class="tag">이렇게 해보세요</span>
+  <h2>{{{preventHeading}}}</h2>
+  <p class="say2">{{preventLede}}</p>
+  <div class="cards">
+    {{#prevent}}<div class="card"><div class="ic">✓</div><h3>{{t}}</h3><p>{{b}}</p></div>{{/prevent}}
+  </div>
+</div></section>
+
+<section id="season"><div class="wrap">
+  <span class="tag">철마다</span>
+  <h2>{{{seasonHeading}}}</h2>
+  <div class="cards">
+    {{#season}}<div class="card"><div class="ic">{{t}}</div><p>{{b}}</p></div>{{/season}}
+  </div>
+</div></section>
+
+<section id="method"><div class="wrap">
+  <span class="tag">쓰는 연장</span>
+  <h2>{{{methodHeading}}}</h2>
+  <p class="say2">{{methodLede}}</p>
+  <div class="cards">
+    {{#method}}<div class="card"><div class="ic">{{t}}</div><p>{{b}}</p></div>{{/method}}
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <span class="tag">궁금한 것</span>
+  <h2>{{{faqHeading}}}</h2>
+  <div class="qas">
+    {{#faq}}<div class="qa"><p class="q">{{q}}</p><p class="a">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+<section id="before"><div class="wrap">
+  <span class="tag">전화 주실 때</span>
+  <h2>{{{beforeHeading}}}</h2>
+  <p class="say2">{{beforeLede}}</p>
+  <div class="hoods">
+    {{#before}}<div class="hoodz"><b>{{text}}</b></div>{{/before}}
+  </div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="near"><div class="wrap">
+  <span class="tag">이웃 지역</span>
+  <h2>{{{nearHeading}}}</h2>
+  <div class="pills">{{#near}}<a href="{{href}}">{{label}}</a>{{/near}}</div>
+  <p class="note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

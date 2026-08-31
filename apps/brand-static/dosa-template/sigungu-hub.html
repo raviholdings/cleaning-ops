@@ -1,0 +1,44 @@
+<div class="wrap">
+  <div class="rsign dbl">
+    <span class="place"><a href="{{sidoHref}}">{{sidoLabel}}</a></span>
+    <h1>{{sigunguLabel}}하수구막힘 {{sigunguLabel}} 변기막힘 싱크대막힘</h1>
+    <p class="rsub">동네 <span class="d">{{dongCount}}</span>곳 · {{sidoLabel}} {{sigunguLabel}}</p>
+    <p class="say">{{regionLede}}</p>
+  </div>
+</div>
+
+<section id="kw"><div class="wrap">
+  <p class="mark">01 — 무엇 때문에</p>
+  <h2>{{kwHeading}}</h2>
+  <div class="panes">{{#kws}}<div class="pane"><p class="num">{{what}}</p><h3><a href="{{href}}">{{label}}</a></h3></div>{{/kws}}</div>
+</div></section>
+
+<section id="dong"><div class="wrap">
+  <p class="mark">02 — 동네</p>
+  <h2>{{{dongHeading}}}</h2>
+  <p class="lede">{{dongLede}}</p>
+  <div class="hoods">{{#dongs}}<div class="hoodz"><b>{{name}}</b></div>{{/dongs}}</div>
+</div></section>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="mark">03 — 현장</p>
+  <h2>다녀온 자리</h2>
+  <div class="shots">{{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}</div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="price"><div class="wrap">
+  <p class="mark">04 — 값</p>
+  <h2>{{{priceHeading}}}</h2>
+  <div class="ledger">{{#price}}<div><b>{{item}}</b><i></i><span>{{basis}}</span></div>{{/price}}</div>
+  <p class="aside">{{priceNote}}</p>
+</div></section>
+
+<section id="near"><div class="wrap">
+  <p class="mark">05 — 인근</p>
+  <h2>{{nearHeading}}</h2>
+  <div class="names">{{#near}}<a href="{{href}}">{{label}}</a>{{/near}}</div>
+</div></section>
+
+{{{estimateForm}}}

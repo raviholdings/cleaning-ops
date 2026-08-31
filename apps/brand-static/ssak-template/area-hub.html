@@ -1,0 +1,14 @@
+<div class="wrap">
+  <div class="flyer">
+    <span class="top">출동 지역</span>
+    <h1>{{{hubHeading}}}</h1>
+    <p class="say">{{hubLede}}</p>
+  </div>
+  {{#sido}}
+  <div class="grp">
+    <h3>{{label}}<em>{{count}}곳</em></h3>
+    <div class="tags">{{#items}}<a href="{{href}}">{{label}}</a>{{/items}}</div>
+  </div>
+  {{/sido}}
+  <div style="height:34px"></div>
+</div>

@@ -1,0 +1,31 @@
+<div class="wrap">
+  <div class="rhead">
+    <span class="where">{{sidoLabel}}</span>
+    <h1>{{sidoLabel}} <span class="b">전 지역</span> 출동합니다</h1>
+    <p class="sub">{{sidoLede}}</p>
+    <div class="acts" style="margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn btn-2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+</div>
+<div class="stats">
+  <div><b>{{sidoCount}}곳</b><span>{{sidoLabel}} 시·군·구</span></div>
+  {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+</div>
+
+<section id="list"><div class="wrap">
+  <p class="kicker">{{sidoLabel}}</p>
+  <h2>어느 지역이신가요</h2>
+  <p class="lead">시·군·구를 누르시면 그 지역에서 저희가 가는 동네가 나옵니다.</p>
+  <div class="chips">{{#items}}<a href="{{href}}">{{label}}</a>{{/items}}</div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="others" class="ink"><div class="wrap">
+  <p class="kicker">다른 지역</p>
+  <h2>{{sidoLabel}} 밖이신가요</h2>
+  <div class="chips">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+  <p class="foot-note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

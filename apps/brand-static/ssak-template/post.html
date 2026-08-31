@@ -1,0 +1,49 @@
+<div class="wrap">
+  <article class="post">
+    <header class="ph">
+      <p class="pk">{{sidoLabel}} {{sigunguLabel}} · {{kwLabel}}<time class="pdate" datetime="{{postedAtISO}}">{{postedAt}}</time></p>
+      <h1>{{postH1}}</h1>
+      <p class="pl">{{lead}}</p>
+    </header>
+
+    {{#secs}}
+    <section class="pb">
+      <h2>{{h}}</h2>
+      {{#p}}<p>{{t}}</p>{{/p}}
+    </section>
+    {{/secs}}
+
+    {{#costPart}}
+    <section class="pb pc">
+      <h2>{{sigunguLabel}} 비용 기준</h2>
+      <p>{{intro}}</p>
+      <table class="pt"><tbody>
+        {{#price}}<tr><th>{{item}}</th><td>{{basis}}</td></tr>{{/price}}
+      </tbody></table>
+      <p>{{after}}</p>
+    </section>
+    {{/costPart}}
+
+    <section class="pb">
+      <h2>{{dongHeading}}</h2>
+      <p class="pd">{{#dongs}}{{name}} {{/dongs}}</p>
+    </section>
+
+    <p class="pe">{{closing}}</p>
+
+    <section class="pb">
+      <h2>{{sameAreaHeading}}</h2>
+      <ul class="blinks">{{#sameArea}}<li><a href="{{href}}">{{label}}</a></li>{{/sameArea}}</ul>
+    </section>
+
+    <section class="pb">
+      <h2>{{sameKwHeading}}</h2>
+      <ul class="blinks">{{#sameKw}}<li><a href="{{href}}">{{label}}</a></li>{{/sameKw}}</ul>
+      <p class="pd"><a href="{{kwHubHref}}">{{kwLabel2}} 글 전체 보기</a> · <a href="{{blogHref}}">다른 증상 글 보기</a></p>
+    </section>
+
+    <p class="pg">{{#tags}}<span>{{t}}</span>{{/tags}}</p>
+  </article>
+</div>
+
+{{{estimateForm}}}

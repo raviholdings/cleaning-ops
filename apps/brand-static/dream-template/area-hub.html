@@ -1,0 +1,18 @@
+<div class="wrap">
+  <div class="phead">
+    <p class="kicker rise" style="animation-delay:.05s">서비스 지역</p>
+    <h1 class="rise" style="animation-delay:.12s">{{{hubHeading}}}</h1>
+    <p class="s rise" style="animation-delay:.28s">{{hubLede}}</p>
+  </div>
+</div>
+
+<section class="hub"><div class="wrap">
+  {{#sido}}
+  <div class="hubgroup">
+    <p class="tag">{{label}} <u>{{count}}</u></p>
+    <div class="area">
+      {{#items}}<a href="{{href}}">{{label}}</a>{{/items}}
+    </div>
+  </div>
+  {{/sido}}
+</div></section>

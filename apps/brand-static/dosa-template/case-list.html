@@ -1,0 +1,11 @@
+<div class="wrap">
+  <div class="sign dbl">
+    <span class="seal">記</span>
+    <h1>겪은 일들</h1>
+    <p class="say">어떤 형편으로 부르셨고 무엇이 까닭이었는지 적어 두었습니다. 모두 {{caseCount}}건입니다.</p>
+  </div>
+  <div class="ledger">
+    {{#cases}}<div><b><a href="{{href}}">{{title}}</a></b><i></i><span>{{#area}}{{area}} · {{/area}}{{summary}}</span></div>{{/cases}}
+  </div>
+  <div style="height:44px"></div>
+</div>

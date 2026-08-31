@@ -18,7 +18,9 @@
     "crawl:resume": "powershell -File ./scripts/run-windows-naver-crawl-resume.ps1",
     "render:one": "node scripts/render-static-site.mjs",
     "render:vars": "node scripts/render-static-site.mjs --inspect",
-    "render:compare": "node scripts/compare-static-render.mjs"
+    "render:compare": "node scripts/compare-static-render.mjs",
+    "brands:build": "node scripts/build-all-brands.mjs",
+    "brands:check": "node scripts/build-all-brands.mjs --check"
   },
   "dependencies": {
     "pg": "^8.11.3",

@@ -1,0 +1,394 @@
+/* 비버배관 — 브리프 3: "동네 생활 서비스 + 믿을 수 있는 숙련 기술자"
+   기준 문서: C:/Users/LD/Desktop/ravi/template.md
+
+   브리프가 정한 것
+     색   크림 화이트 · 웜 브라운 · 브릭 오렌지 · 세이지 그린 / 글자는 다크 브라운
+     결   따뜻하고 친근하되 저가 전단지처럼 보이면 안 된다
+          둥근 모서리와 부드러운 배경색
+          손그림 느낌 아이콘은 제한적으로
+          과도한 캐릭터·만화풍·이모지 남발 금지
+   글꼴은 다섯 사이트 공통(Noto Sans KR). 결은 색·여백·모서리로 낸다. */
+
+:root{
+  --cream:#FBF6EE;         /* 바탕 */
+  --cream-2:#F4EBDD;       /* 한 단계 진한 면 */
+  --card:#FFFFFF;
+  --brown:#6B4A32;         /* 웜 브라운 */
+  --brick:#C0562B;         /* 브릭 오렌지 — 행동 */
+  --sage:#7C9473;          /* 세이지 그린 — 확인·완료 */
+  --ink:#2E2118;           /* 다크 브라운 */
+  --ink-2:#6A5949;
+  --line:rgba(46,33,24,.14);
+  --soft:0 1px 2px rgba(46,33,24,.05), 0 10px 26px rgba(46,33,24,.07);
+  --soft-sm:0 1px 2px rgba(46,33,24,.05), 0 5px 14px rgba(46,33,24,.06);
+  --r:20px;                /* 둥근 모서리 */
+  --r-sm:12px;
+  --sans:"Noto Sans KR",system-ui,sans-serif;
+  --disp:var(--sans);
+  --mono:var(--sans);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--ink);
+  font-family:var(--sans);font-weight:400;font-size:18px;line-height:1.85;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;padding-bottom:0}
+.wrap{max-width:1060px;margin:0 auto;padding:0 clamp(18px,4vw,38px)}
+a{color:inherit}
+
+/* ── 1. 지역 상담 안내 바 ── */
+.soil{background:var(--brown);color:#F6EDE2;font-size:15px}
+.soil .wrap{display:flex;flex-wrap:wrap;gap:6px 24px;justify-content:center;
+  padding-top:9px;padding-bottom:9px;text-align:center}
+
+/* ── 2. 헤더 ── */
+header{background:var(--cream);position:sticky;top:0;z-index:20;
+  border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+.brand{font-size:clamp(24px,3.4vw,31px);font-weight:700;letter-spacing:-.02em;
+  text-decoration:none;line-height:1}
+.brand em{font-style:normal;color:var(--brick)}
+nav{display:flex;gap:clamp(6px,1.2vw,14px);flex-wrap:wrap;align-items:center}
+nav>a{font-size:16px;font-weight:500;text-decoration:none;color:var(--ink-2);
+  padding:7px 13px;border-radius:999px}
+nav>a:hover{background:var(--cream-2);color:var(--ink)}
+.call{background:var(--brick);color:#fff;text-decoration:none;font-weight:700;
+  font-size:18px;padding:11px 22px;border-radius:999px;white-space:nowrap;
+  box-shadow:var(--soft-sm);transition:background .15s,transform .15s}
+.call:hover{background:#A9481F;transform:translateY(-1px)}
+@media(max-width:900px){header .wrap{justify-content:center}
+  nav{order:3;width:100%;justify-content:center}}
+
+/* ── 3. 히어로 ── */
+.hero{padding:clamp(34px,5vw,66px) 0 clamp(24px,3.5vw,42px)}
+.herobox{background:var(--card);border-radius:var(--r);box-shadow:var(--soft);
+  padding:clamp(26px,4.5vw,54px);display:grid;
+  grid-template-columns:1.15fr .85fr;gap:clamp(22px,3.5vw,44px);align-items:center}
+.hero .hi{display:inline-block;background:var(--cream-2);color:var(--brown);
+  font-size:14.5px;font-weight:500;padding:6px 15px;border-radius:999px;margin-bottom:16px}
+.hero h1{font-size:clamp(29px,4.6vw,50px);font-weight:700;line-height:1.28;letter-spacing:-.025em}
+.hero h1 .c{color:var(--brick)}
+.hero .say{margin-top:16px;max-width:44ch;font-size:17.5px;color:var(--ink-2)}
+.hero .acts{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap}
+.btn{text-decoration:none;font-weight:700;font-size:17.5px;padding:14px 26px;
+  border-radius:999px;display:inline-block;transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-1px)}
+.b1{background:var(--brick);color:#fff;box-shadow:var(--soft-sm)}
+.b1:hover{background:#A9481F}
+.b2{background:var(--cream-2);color:var(--ink)}
+.b2:hover{background:#E9DDCB}
+/* 작업자 사진 자리 — 사진이 없으면 약속 카드가 대신 선다 */
+.herofig{border-radius:var(--r-sm);overflow:hidden;background:var(--cream-2)}
+.herofig img{display:block;width:100%;height:100%;object-fit:cover;aspect-ratio:4/5}
+@media(max-width:880px){.herobox{grid-template-columns:1fr}}
+
+/* 핵심 약속 3개 */
+.vows{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.vows div{background:var(--cream);border-radius:var(--r-sm);padding:15px 16px}
+.vows b{display:block;font-size:16px;font-weight:700;color:var(--brown)}
+.vows span{display:block;margin-top:3px;font-size:14.5px;color:var(--ink-2);line-height:1.6}
+@media(max-width:700px){.vows{grid-template-columns:1fr}}
+
+section{padding:clamp(38px,5vw,72px) 0}
+.tag{display:inline-block;background:var(--cream-2);border-radius:999px;
+  padding:6px 16px;font-size:14.5px;font-weight:500;color:var(--brown)}
+h2{font-size:clamp(25px,3.8vw,40px);font-weight:700;line-height:1.32;
+  letter-spacing:-.025em;margin-top:14px}
+h2 .c{color:var(--brick)}
+h2 .g{color:var(--sage)}
+.say2{margin-top:14px;font-size:17px;color:var(--ink-2);max-width:56ch}
+
+/* ── 4. 증상별 서비스 안내 ── */
+.symptoms{margin-top:26px;display:grid;gap:12px;
+  grid-template-columns:repeat(auto-fit,minmax(266px,1fr))}
+.sym{display:flex;align-items:center;gap:14px;background:var(--card);
+  border-radius:var(--r-sm);padding:18px 20px;text-decoration:none;
+  box-shadow:var(--soft-sm);transition:transform .15s,box-shadow .15s}
+.sym:hover{transform:translateY(-2px);box-shadow:var(--soft)}
+.sym .q{flex:1;font-size:17.5px;font-weight:500;line-height:1.45}
+.sym .go{flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+  background:var(--cream-2);color:var(--brown);
+  display:flex;align-items:center;justify-content:center;font-size:15px}
+.sym:hover .go{background:var(--brick);color:#fff}
+
+/* ── 5. 상담 원칙 ── */
+.vowlist{margin-top:26px;display:grid;gap:14px;
+  grid-template-columns:repeat(auto-fit,minmax(272px,1fr))}
+.vow{background:var(--card);border-radius:var(--r);padding:24px;box-shadow:var(--soft-sm)}
+.vow .mk{width:34px;height:34px;border-radius:50%;background:var(--sage);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;
+  margin-bottom:13px}
+.vow h3{font-size:19px;font-weight:700;line-height:1.4}
+.vow p{margin-top:7px;font-size:16.5px;color:var(--ink-2)}
+
+/* ── 7. 방문 작업 과정 ── */
+.steps{margin-top:28px;display:grid;gap:0}
+.step{display:grid;grid-template-columns:56px 1fr;gap:18px;
+  padding:20px 0;border-bottom:1px solid var(--line);align-items:start}
+.step:last-child{border-bottom:0}
+.step .n{width:42px;height:42px;border-radius:50%;background:var(--cream-2);
+  color:var(--brown);display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:15px}
+.step h3{font-size:18.5px;font-weight:700}
+.step p{margin-top:5px;font-size:16.5px;color:var(--ink-2)}
+
+/* 카드 목록 (서비스·원인 등) */
+.cards{margin-top:26px;display:grid;gap:14px;
+  grid-template-columns:repeat(auto-fit,minmax(258px,1fr))}
+.card{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--soft-sm)}
+.card .ic{display:inline-block;background:var(--cream-2);border-radius:999px;
+  padding:5px 13px;font-size:14px;font-weight:500;color:var(--brown);margin-bottom:12px}
+.card h3{font-size:19px;font-weight:700;line-height:1.4}
+.card p{margin-top:7px;font-size:16.5px;color:var(--ink-2)}
+
+/* 요금 */
+.fees{margin-top:24px;display:grid;gap:9px}
+.fee{background:var(--card);border-radius:var(--r-sm);padding:15px 20px;
+  box-shadow:var(--soft-sm);display:flex;justify-content:space-between;
+  align-items:baseline;gap:14px;flex-wrap:wrap}
+.fee b{font-size:17.5px;font-weight:700}
+.fee span{font-size:16px;color:var(--ink-2)}
+.note{margin-top:18px;font-size:16.5px;color:var(--ink-2);max-width:58ch}
+.note a{color:var(--brick);font-weight:500}
+
+/* ── 9. 고객 이야기 (준비 중) ── */
+.pending{margin-top:22px;background:var(--cream-2);border-radius:var(--r);
+  padding:26px 24px;text-align:center}
+.pending b{display:block;font-size:17px;font-weight:700;color:var(--brown)}
+.pending span{display:block;margin-top:7px;font-size:16px;color:var(--ink-2);
+  max-width:48ch;margin-left:auto;margin-right:auto;line-height:1.7}
+
+/* FAQ */
+.qas{margin-top:24px;display:grid;gap:11px}
+.qa{background:var(--card);border-radius:var(--r-sm);padding:20px 22px;box-shadow:var(--soft-sm)}
+.qa .q{font-size:18px;font-weight:700}
+.qa .a{margin-top:7px;font-size:16.5px;color:var(--ink-2)}
+
+/* 지역 */
+.pills{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px}
+.pills a{background:var(--card);color:var(--ink);border-radius:999px;padding:9px 17px;
+  font-size:16px;text-decoration:none;box-shadow:var(--soft-sm);transition:background .15s}
+.pills a:hover{background:var(--brick);color:#fff}
+
+/* 동네 */
+.hoods{margin-top:24px;display:grid;gap:10px;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.hoodz{background:var(--card);border-radius:var(--r-sm);padding:13px 17px;box-shadow:var(--soft-sm)}
+.hoodz b{font-size:17px;font-weight:700}
+.hoodz span{display:block;font-size:13.5px;color:var(--ink-2)}
+
+/* 사진 */
+.shots{margin-top:24px;display:grid;gap:13px;
+  grid-template-columns:repeat(auto-fit,minmax(226px,1fr))}
+.shots figure{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--soft-sm)}
+.shots img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+.shots figcaption{padding:11px 15px;font-size:14.5px;color:var(--ink-2)}
+
+/* /area/ 허브 */
+.grp{margin-top:20px;background:var(--card);border-radius:var(--r);padding:22px 24px;
+  box-shadow:var(--soft-sm)}
+.grp h3{font-size:19px;font-weight:700}
+.grp h3 em{font-style:normal;font-size:14.5px;color:var(--ink-2);margin-left:8px;font-weight:400}
+.grp .pills{margin-top:14px}
+.grp .pills a{background:var(--cream-2);box-shadow:none}
+
+/* 지역 페이지 머리 */
+.rtop{padding:clamp(26px,4vw,52px) 0 clamp(18px,2.5vw,30px)}
+.rtopbox{background:var(--card);border-radius:var(--r);box-shadow:var(--soft);
+  padding:clamp(24px,4vw,46px)}
+.rtop .where{display:inline-block;background:var(--sage);color:#fff;font-size:14.5px;
+  padding:5px 15px;border-radius:999px;margin-bottom:14px}
+.rtop h1{font-size:clamp(27px,4.4vw,46px);font-weight:700;line-height:1.28;letter-spacing:-.025em}
+.rtop h1 .c{color:var(--brick)}
+.rtop .say{margin-top:14px;max-width:46ch;font-size:17px;color:var(--ink-2)}
+
+/* 알림 칸 */
+.notes{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:16px}
+.notes div{background:var(--cream-2);border-radius:var(--r-sm);padding:16px 12px;text-align:center}
+.notes b{display:block;font-size:clamp(17px,2.2vw,21px);font-weight:700;color:var(--brown)}
+.notes span{display:block;margin-top:3px;font-size:14px;color:var(--ink-2)}
+@media(max-width:720px){.notes{grid-template-columns:repeat(2,1fr)}}
+
+/* ── 12. 최종 CTA ── */
+.end{background:var(--brown);color:#F6EDE2;border-radius:var(--r);
+  margin:0 auto clamp(30px,4vw,54px);max-width:1060px;
+  padding:clamp(32px,4.5vw,58px) clamp(22px,4vw,48px);text-align:center}
+.end h2{color:#fff;margin-top:0}
+.end h2 .c{color:#F0B49A}
+.end .say2{margin-left:auto;margin-right:auto;color:#DCCDBB;text-align:center}
+.end .big{display:inline-block;margin-top:22px;background:var(--brick);color:#fff;
+  font-size:clamp(24px,3.6vw,38px);font-weight:700;letter-spacing:-.02em;
+  padding:14px 34px;border-radius:999px;text-decoration:none;transition:transform .15s}
+.end .big:hover{transform:translateY(-2px)}
+.end .tags{margin-top:20px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.end .tags b{background:rgba(255,255,255,.12);border-radius:999px;padding:7px 16px;
+  font-size:14.5px;font-weight:500;color:#EADFD1}
+
+/* ── 13. 업체 정보 푸터 ── */
+footer{padding:26px 0 34px;font-size:15px;color:var(--ink-2);border-top:1px solid var(--line)}
+footer .wrap{display:flex;gap:10px 20px;flex-wrap:wrap;justify-content:space-between;
+  align-items:baseline}
+
+/* ── 14. 모바일 하단 전화 버튼 ── */
+.dock{display:none}
+@media(max-width:760px){
+  body{padding-bottom:70px}
+  .dock{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:fixed;
+    left:10px;right:10px;bottom:10px;z-index:40}
+  .dock a{display:flex;align-items:center;justify-content:center;min-height:52px;
+    border-radius:999px;text-decoration:none;font-weight:700;font-size:17px;
+    box-shadow:0 6px 18px rgba(46,33,24,.22)}
+  .dock .d1{background:var(--brick);color:#fff}
+  .dock .d2{background:var(--card);color:var(--ink)}
+}
+
+/* ── 계층 메뉴 ── */
+.navgrp{position:relative}
+.navgrp>summary{list-style:none;cursor:pointer;font-size:16px;font-weight:500;
+  color:var(--ink-2);padding:7px 13px;border-radius:999px;white-space:nowrap}
+.navgrp>summary::-webkit-details-marker{display:none}
+.navgrp>summary::after{content:" ▾";color:var(--brick)}
+.navgrp[open]>summary{background:var(--cream-2);color:var(--ink)}
+.navmenu{display:grid;gap:2px}
+@media(min-width:901px){
+  .navmenu{position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:212px;
+    max-height:70vh;overflow:auto;background:var(--card);border-radius:var(--r-sm);
+    box-shadow:var(--soft);padding:9px}
+}
+.navmenu a{display:block;padding:9px 14px;font-size:15.5px;text-decoration:none;
+  border-radius:999px}
+.navmenu a:hover{background:var(--cream-2)}
+@media(max-width:900px){
+  .navgrp{width:100%;text-align:center}
+  .navmenu{margin:7px 0 10px;grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+}
+
+/* ── 6. 온라인 상담 신청 ── */
+.lead-form{margin-top:26px;background:var(--card);border-radius:var(--r);
+  padding:clamp(20px,3vw,34px);box-shadow:var(--soft)}
+.lf-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px clamp(14px,2.4vw,24px)}
+.lf{display:flex;flex-direction:column;gap:6px}
+.lf-wide{grid-column:1/-1}
+.lf>span{font-size:15.5px;font-weight:500;color:var(--brown)}
+.lead-form input,.lead-form select,.lead-form textarea{
+  font-family:var(--sans);font-size:17px;color:var(--ink);background:var(--cream);
+  border:2px solid transparent;border-radius:var(--r-sm);padding:13px 15px;width:100%;
+  appearance:none;-webkit-appearance:none;transition:border-color .15s,background .15s}
+.lead-form textarea{line-height:1.7;resize:vertical}
+.lead-form input::placeholder,.lead-form textarea::placeholder{color:#A79683}
+.lead-form input:focus,.lead-form select:focus,.lead-form textarea:focus{
+  outline:0;border-color:var(--brick);background:#fff}
+.lead-form select{background-image:linear-gradient(45deg,transparent 50%,#2E2118 50%),
+  linear-gradient(135deg,#2E2118 50%,transparent 50%);
+  background-position:calc(100% - 17px) 53%,calc(100% - 11px) 53%;
+  background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:36px}
+.lf-split{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.lf-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.lf-hint{margin-top:6px;font-size:14.5px;color:var(--sage);font-weight:500}
+.lf-foot{margin-top:22px;display:flex;flex-wrap:wrap;gap:14px;
+  align-items:center;justify-content:space-between}
+.lf-agree{display:flex;align-items:center;gap:9px;font-size:16px;color:var(--ink-2)}
+.lf-agree input{width:21px;height:21px;flex:0 0 auto;accent-color:var(--brick);
+  border:0;padding:0;background:none;border-radius:0}
+.lf-terms{font:inherit;font-size:15px;background:none;border:0;padding:0;cursor:pointer;
+  color:var(--brick);text-decoration:underline;text-underline-offset:3px}
+.lf-send{font-size:19px;font-weight:700;color:#fff;background:var(--brick);
+  border:0;border-radius:999px;padding:15px 40px;cursor:pointer;min-height:52px;
+  box-shadow:var(--soft-sm);transition:background .15s,transform .15s}
+.lf-send:hover{background:#A9481F;transform:translateY(-1px)}
+.lf-send:disabled{opacity:.55;cursor:default;transform:none}
+.lf-status{margin-top:13px;font-size:16px;font-weight:500}
+.lf-status[data-kind="error"]{color:#B3402A}
+.lf-status[data-kind="success"]{color:var(--sage)}
+.lf-status[data-kind="loading"]{color:var(--ink-2)}
+.lf-or{margin-top:13px;font-size:16px;color:var(--ink-2)}
+.lf-or a{color:var(--brick);font-weight:700}
+
+.terms{border:0;border-radius:var(--r);background:var(--card);color:var(--ink);
+  max-width:560px;width:calc(100% - 32px);padding:0;box-shadow:var(--soft)}
+.terms::backdrop{background:rgba(46,33,24,.5)}
+.terms-body{padding:clamp(22px,4vw,32px)}
+.terms-body h3{font-size:22px;font-weight:700;margin-bottom:14px}
+.terms-body dt{font-size:15px;font-weight:700;color:var(--brown);margin-top:14px}
+.terms-body dd{font-size:16.5px;line-height:1.7;margin-top:3px;color:var(--ink-2)}
+.terms-close{margin-top:22px;font-size:17px;font-weight:700;color:#fff;
+  background:var(--ink);border:0;border-radius:999px;padding:12px 30px;cursor:pointer;
+  min-height:48px}
+
+@media(max-width:640px){
+  body{font-size:17.5px}
+  .herobox{padding:22px 18px;border-radius:16px}
+  .lf-grid{grid-template-columns:1fr;gap:15px}
+  .lf-split{grid-template-columns:1fr;gap:10px}
+  .lf-foot{flex-direction:column;align-items:stretch}
+  .lf-send{width:100%}
+  .lead-form input,.lead-form select,.lead-form textarea{font-size:16.5px}
+  .hoods{grid-template-columns:1fr}
+  .btn{width:100%;text-align:center;min-height:52px;
+    display:flex;align-items:center;justify-content:center}
+  .end{border-radius:16px;margin-left:14px;margin-right:14px}
+  .step{grid-template-columns:44px 1fr;gap:14px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}
+  .sym,.btn,.call,.end .big,.lf-send{transition:none}}
+
+/* ── 공통 인터랙션 (apex 와 같은 방식) ──
+   .js 는 스크립트가 돌았다는 표시다. 자바스크립트가 없으면 아무것도 숨기지 않는다. */
+.js [data-reveal]{opacity:0;transform:translateY(18px)}
+.js [data-reveal].in{opacity:1;transform:none;
+  transition:opacity .6s cubic-bezier(.2,.7,.3,1) var(--d,0s),
+             transform .6s cubic-bezier(.2,.7,.3,1) var(--d,0s)}
+
+/* 떠 있는 전화 버튼 — 데스크톱 전용. 모바일은 하단 고정 바가 대신한다. */
+.fab{position:fixed;right:clamp(16px,2.4vw,30px);bottom:clamp(16px,2.4vw,30px);z-index:60;
+  display:inline-flex;align-items:center;gap:9px;
+  background:var(--brick);color:#fff;text-decoration:none;
+  font-weight:700;font-size:16px;padding:14px 20px;
+  box-shadow:0 12px 30px rgba(0,0,0,.22);
+  animation:fab-in .5s .7s cubic-bezier(.2,1.3,.4,1) both;
+  transition:transform .15s,box-shadow .15s}
+.fab:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(0,0,0,.28)}
+.fab:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.fab svg{width:20px;height:20px;flex:none}
+@keyframes fab-in{from{opacity:0;transform:translateY(20px) scale(.92)}to{opacity:1}}
+@media(max-width:760px){.fab{display:none}}
+
+/* 스크롤하면 헤더가 얇아진다 */
+header{transition:padding .18s ease, box-shadow .18s ease}
+header.shrunk .wrap{padding-top:9px;padding-bottom:9px}
+header.shrunk{box-shadow:0 6px 20px rgba(0,0,0,.10)}
+
+@media (prefers-reduced-motion:reduce){
+  .js [data-reveal]{opacity:1;transform:none}
+  .fab{animation:none;transition:none}
+  header,header.shrunk{transition:none}
+}
+
+/* H1 에서 내려온 브랜드 문구 */
+.rsub{margin-top:12px;font-size:16px;color:var(--ink-2)}
+.rsub .c{color:var(--brick);font-weight:700}
+
+/* ── 히어로 배경 사진 ── 따뜻한 주방 컷. 크림색으로 덮어 글자를 살린다 */
+.hero{position:relative;isolation:isolate}
+.herobg{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:var(--r)}
+.herobg img{width:100%;height:100%;object-fit:cover;object-position:75% 50%}
+.herobg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg, var(--cream) 0%, rgba(251,246,238,.94) 42%,
+    rgba(251,246,238,.60) 100%)}
+@media(max-width:880px){
+  .herobg::after{background:linear-gradient(180deg, rgba(251,246,238,.95) 0%,
+    rgba(251,246,238,.88) 60%, rgba(251,246,238,.70) 100%)}
+}
+
+/* 저작권 — apex 와 같은 자리(맨 아래 한 줄). 사업자 정보는 적지 않는다. */
+footer .copy{width:100%;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:#8A7A69}
+
+/* ── 로고 ──
+   원본에 이름 글자가 같이 들어 있어서, 마스코트만 잘라낸 마크를 쓰고
+   이름은 지금까지처럼 글자로 둔다. 통째로 넣으면 이름이 두 번 나오고,
+   줄여 넣으면 그 글자가 안 읽힌다.
+   가로세로가 사이트마다 조금씩 달라 height 로 맞추고 width 는 auto 로 둔다. */
+.brand{display:inline-flex;align-items:center;gap:10px}
+.brand .mark{height:42px;width:auto;flex:none;display:block}
+@media(max-width:640px){.brand .mark{height:33px}}

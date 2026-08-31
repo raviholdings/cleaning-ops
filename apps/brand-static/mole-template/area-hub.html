@@ -1,0 +1,18 @@
+<div class="wrap">
+  <div class="hero">
+    <div class="herobox" style="grid-template-columns:1fr">
+      <div>
+      <span class="hi">어디까지 가나</span>
+      <h1>{{{hubHeading}}}</h1>
+      <p class="say">{{hubLede}}</p>
+      </div>
+    </div>
+  </div>
+  {{#sido}}
+  <div class="grp">
+    <h3>{{label}}<em>{{count}}곳</em></h3>
+    <div class="pills">{{#items}}<a href="{{href}}">{{label}}</a>{{/items}}</div>
+  </div>
+  {{/sido}}
+  <div style="height:40px"></div>
+</div>

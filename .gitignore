@@ -54,3 +54,14 @@ data/dev_tasks.json
 # R2 에 올려 assets.<루트> 로 서빙한다. 커밋하면 저장소만 무거워진다.
 /apps/cleaning-ravi/public/cleaning/
 .claude/settings.local.json
+
+# 브랜드 사이트 5개(드림컴뚜러·썬더배관·비버배관·싹쓰리배관·하수구도사) 사진.
+# 청소 이미지와 같은 방침이다 — 로컬 전용이고 배포는 git 을 거치지 않는다.
+#   output/                       원본 자산 71M (현장·작업사례·개별사용·히어로·로고)
+#   apps/brand-static/*/assets/img/  굽기용 사본 68M
+#   assets/branding/              로고·파비콘 원본 11M
+# 사진이 없으면 빌더가 "이미지가 없습니다" 로 멈춘다. 다른 기계에서 구우려면
+# 위 세 폴더를 그대로 복사해 와야 한다 (docs/BRAND-SITES-PHOTOS.md 참고).
+/output/
+/apps/brand-static/*/assets/img/
+/assets/branding/

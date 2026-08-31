@@ -1,0 +1,14 @@
+<div class="wrap">
+  <div class="rsign dbl">
+    <span class="place">하는 일</span>
+    <h1>{{{kwListHeading}}}</h1>
+    <p class="say">{{kwListLede}}</p>
+  </div>
+  {{#groups}}
+  <div class="grp">
+    <h3>{{what}}</h3>
+    <div class="names">{{#items}}<a href="{{href}}">{{label}}</a>{{/items}}</div>
+  </div>
+  {{/groups}}
+  <div style="height:44px"></div>
+</div>

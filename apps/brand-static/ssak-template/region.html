@@ -1,0 +1,125 @@
+<div class="wrap">
+  <div class="rflyer">
+    <span class="where">{{sidoLabel}} 출동</span>
+    <h1>{{{regionH1}}}</h1>
+    <p class="rsub">{{sigunguLabel}} <span class="r">{{regionTagline}}</span></p>
+    <p class="say">{{regionLede}}</p>
+    <div class="acts" style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-r" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  <div class="boxes">
+    <div><b>{{dongCount}}곳</b><span>{{sigunguLabel}} 동 단위</span></div>
+    {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+  </div>
+</div>
+
+<section id="keyword"><div class="wrap">
+  <div class="head">{{{keywordHeading}}}</div>
+  <p class="sub">{{keywordLede}}</p>
+  <div class="grid">
+    {{#keywordBlurbs}}<div class="box"><span class="no">{{kw}}</span><h3>{{h}}</h3><p>{{body}}</p></div>{{/keywordBlurbs}}
+  </div>
+</div></section>
+
+<section id="dong"><div class="wrap">
+  <div class="head">{{{dongHeading}}}</div>
+  <p class="sub">{{dongLede}}</p>
+  <div class="hoods">
+    {{#dongs}}<div class="hoodz"><b>{{name}}</b><span>{{kw}}</span></div>{{/dongs}}
+  </div>
+</div></section>
+
+<section id="price"><div class="wrap">
+  <div class="head">{{{priceHeading}}}</div>
+  <div class="tab">{{#price}}<div><b>{{item}}</b><span>{{basis}}</span></div>{{/price}}</div>
+  <p class="memo">{{priceNote}}</p>
+</div></section>
+
+<section id="service"><div class="wrap">
+  <div class="head">{{{serviceHeading}}}</div>
+  <p class="sub">{{serviceLede}}</p>
+  <div class="grid">
+    {{#jobs}}<div class="box"><span class="no">{{no}}</span><h3>{{title}}</h3><p>{{body}}</p></div>{{/jobs}}
+  </div>
+  <div class="tags">{{#serviceLinks}}<a href="{{href}}">{{label}}</a>{{/serviceLinks}}</div>
+</div></section>
+
+{{{estimateForm}}}
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <div class="head">{{{photoHeading}}}</div>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="cause"><div class="wrap">
+  <div class="head">{{{causeHeading}}}</div>
+  <p class="sub">{{causeLede}}</p>
+  <div class="grid">
+    {{#causes}}<div class="box"><span class="no">{{sym}}</span><h3>{{title}}</h3><p>{{body}}</p></div>{{/causes}}
+  </div>
+</div></section>
+
+<section id="method"><div class="wrap">
+  <div class="head">{{{methodHeading}}}</div>
+  <p class="sub">{{methodLede}}</p>
+  <div class="grid">
+    {{#method}}<div class="box"><span class="no">{{t}}</span><p>{{b}}</p></div>{{/method}}
+  </div>
+</div></section>
+
+<section id="prevent"><div class="wrap">
+  <div class="head">{{{preventHeading}}}</div>
+  <p class="sub">{{preventLede}}</p>
+  <div class="grid">
+    {{#prevent}}<div class="box"><span class="no">{{t}}</span><p>{{b}}</p></div>{{/prevent}}
+  </div>
+</div></section>
+
+<section id="building"><div class="wrap">
+  <div class="head">{{{buildingHeading}}}</div>
+  <p class="sub">{{buildingLede}}</p>
+  <div class="grid">
+    {{#building}}<div class="box"><span class="no">{{t}}</span><p>{{b}}</p></div>{{/building}}
+  </div>
+</div></section>
+
+<section id="season"><div class="wrap">
+  <div class="head">{{{seasonHeading}}}</div>
+  <div class="tab">
+    {{#season}}<div><b>{{t}}</b><span>{{b}}</span></div>{{/season}}
+  </div>
+</div></section>
+
+<section id="case"><div class="wrap">
+  <div class="head">{{{caseHeading}}}</div>
+  <div class="grid">
+    {{#cases}}<div class="box"><span class="no">{{id}}</span><h3>{{title}}</h3><p>{{body}}</p></div>{{/cases}}
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <div class="head">{{{faqHeading}}}</div>
+  <div class="qs">
+    {{#faq}}<div><p class="q">{{q}}</p><p class="a">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+<section id="before"><div class="wrap">
+  <div class="head">{{{beforeHeading}}}</div>
+  <p class="sub">{{beforeLede}}</p>
+  <div class="hoods">
+    {{#before}}<div class="hoodz"><b>{{text}}</b></div>{{/before}}
+  </div>
+</div></section>
+
+<section id="near"><div class="wrap">
+  <div class="head">{{{nearHeading}}}</div>
+  <div class="tags">{{#near}}<a href="{{href}}">{{label}}</a>{{/near}}</div>
+  <p class="memo"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

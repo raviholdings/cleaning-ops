@@ -1,0 +1,72 @@
+<div class="wrap">
+  <div class="hero">
+    {{#heroBg}}<div class="herobg"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" fetchpriority="high" decoding="async"></div>{{/heroBg}}
+    
+    <div>
+      <p class="kicker rise" style="animation-delay:.05s">{{kicker}}</p>
+      <h1>
+        <span class="rise" style="animation-delay:.12s">{{h1a}}</span> <span class="mk rise" style="animation-delay:.2s">{{h1b}}</span>
+        <span class="s rise" style="animation-delay:.36s">{{h1sub}}</span>
+      </h1>
+    </div>
+    <div class="board rise" style="animation-delay:.48s">
+      <h2>{{boardTitle}}</h2>
+      <div class="row"><b>현재 시각</b><span id="clock">--:--:--</span></div>
+      {{#board}}<div class="row"><b>{{k}}</b><span>{{v}}</span></div>{{/board}}
+    </div>
+  </div>
+</div>
+
+<section id="cause"><div class="wrap">
+  <p class="tag">02 — 원인</p>
+  <h3>{{{causeHeading}}}</h3>
+  <p class="lede">{{causeLede}}</p>
+  <div class="causes">
+    {{#causes}}<div class="cause">
+      <p class="sym">{{sym}}</p>
+      <h4>{{title}}</h4>
+      <p>{{body}}</p>
+    </div>{{/causes}}
+  </div>
+</div></section>
+
+<section id="service"><div class="wrap">
+  <p class="tag">01 — 서비스</p>
+  <h3>{{{serviceHeading}}}</h3>
+  <p class="lede">{{serviceLede}}</p>
+  <div class="jobs">
+    {{#jobs}}<div class="job"><div class="no">{{no}}</div><div><h4>{{title}}</h4><p>{{body}}</p></div></div>{{/jobs}}
+  </div>
+  <p class="note">작업별 자세히 —
+    {{#serviceLinks}}<a class="more" href="{{href}}">{{label}}</a> {{/serviceLinks}}
+  </p>
+</div></section>
+
+<section id="shot"><div class="wrap">
+  <p class="tag">현장</p>
+  <h3>실제로 다녀온<br>현장입니다</h3>
+  <div class="shots">
+    {{#homeShots}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/homeShots}}
+  </div>
+</div></section>
+
+<section id="price"><div class="wrap">
+  <p class="tag">03 — 요금</p>
+  <h3>{{{priceHeading}}}</h3>
+  <div class="price">
+    {{#price}}<div class="r"><i>{{item}}</i><u></u><s>{{basis}}</s></div>{{/price}}
+  </div>
+  <p class="note">{{priceNote}}</p>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="faq"><div class="wrap">
+  <p class="tag">06 — 자주 묻는 질문</p>
+  <h3>{{{faqHeading}}}</h3>
+  <div class="qa">
+    {{#faq}}<div class="q"><div class="m">Q</div><p class="qq">{{q}}</p></div>
+    <div class="q"><div class="a">A</div><p>{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+

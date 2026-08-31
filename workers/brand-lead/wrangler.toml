@@ -1,0 +1,23 @@
+name = "brand-lead"
+main = "src/worker.js"
+compatibility_date = "2026-08-01"
+
+# 브랜드 사이트 5개. 배관 대량배포(piping-lead)와 다른 Worker 다 —
+# 도메인도 group_key 도 다르고, 그쪽은 이미 돌고 있어서 건드릴 이유가 없다.
+#
+# ⚠ 다섯 도메인이 아직 등록 전이다(2026-08-31 확인, 전부 NXDOMAIN).
+#   도메인을 사고 Cloudflare 존에 붙인 뒤에야 이 라우트를 배포할 수 있다.
+routes = [
+  { pattern = "*dreamcome.kr/api/lead",    zone_name = "dreamcome.kr" },
+  { pattern = "*thunderdrain.kr/api/lead", zone_name = "thunderdrain.kr" },
+  { pattern = "*beaverpipe.kr/api/lead",   zone_name = "beaverpipe.kr" },
+  { pattern = "*ssac3.kr/api/lead",        zone_name = "ssac3.kr" },
+  { pattern = "*dosadosa.kr/api/lead",     zone_name = "dosadosa.kr" },
+]
+
+# 비밀값은 여기 두지 않는다. 배포 전에 아래를 한 번씩 실행한다.
+# TELEGRAM_* 은 배관 Worker 와 **같은 값**을 넣는다 — 알림을 한 방으로 받기 위해서다.
+#   npx wrangler secret put SUPABASE_URL
+#   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#   npx wrangler secret put TELEGRAM_BOT_TOKEN
+#   npx wrangler secret put TELEGRAM_CHAT_ID

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="{{canonical}}">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta property="og:type" content="{{ogType}}">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="{{siteName}}">
+{{#hasPublished}}<meta property="article:published_time" content="{{t}}">{{/hasPublished}}
+<meta property="article:modified_time" content="{{modifiedTime}}">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{canonical}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{fontHref}}" rel="stylesheet">
+<link rel="icon" href="/assets/{{assetVersion}}/img/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/assets/{{assetVersion}}/img/favicon.png">
+<link rel="apple-touch-icon" href="/assets/{{assetVersion}}/img/favicon.png">
+<meta property="og:image" content="{{siteUrl}}/assets/{{assetVersion}}/img/logo.png">
+<link rel="stylesheet" href="/assets/{{assetVersion}}/style.css">
+<script type="application/ld+json">{{{jsonLd}}}</script>
+</head>
+<body>
+
+<div class="soil"><div class="wrap">
+  {{#strip}}<span>{{text}}</span>{{/strip}}
+</div></div>
+
+<header><div class="wrap">
+  <a class="brand" href="/"><img class="mark" src="/assets/{{assetVersion}}/img/logo-mark.png" alt="" width="{{markW}}" height="{{markH}}" decoding="async"><span>{{brandHead}}<em>{{brandTail}}</em></span></a>
+  <nav>
+    {{#nav}}{{#isGroup}}<details class="navgrp"><summary>{{label}}</summary>
+      <div class="navmenu">{{#children}}<a href="{{href}}">{{label}}</a>{{/children}}</div>
+    </details>{{/isGroup}}{{^isGroup}}<a href="{{href}}">{{label}}</a>{{/isGroup}}{{/nav}}
+  </nav>
+  <a class="call" href="tel:{{phoneRaw}}">{{phone}}</a>
+</div></header>
+
+{{{main}}}
+
+<div class="wrap"><div class="end">
+  <h2>{{{endHeading}}}</h2>
+  <p class="say2">{{endLede}}</p>
+  <a class="big" href="tel:{{phoneRaw}}">{{phone}}</a>
+  <div class="tags">{{#badges}}<b>{{.}}</b>{{/badges}}</div>
+</div></div>
+
+<footer><div class="wrap">
+  <span>{{brand}}</span><span>{{footerNote}}</span>
+  <span class="copy">&copy; {{year}} {{brand}}. All rights reserved.</span>
+</div></footer>
+
+<div class="dock">
+  <a class="d1" href="tel:{{phoneRaw}}">전화하기</a>
+  <a class="d2" href="/#estimate">상담 남기기</a>
+</div>
+
+<script src="/assets/{{assetVersion}}/app.js" defer></script>
+</body>
+</html>

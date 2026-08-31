@@ -1,0 +1,57 @@
+<div class="wrap">
+  <div class="rflyer">
+    <span class="where">{{svcName}}</span>
+    <h1>{{{svcTitle}}}</h1>
+    <p class="say">{{svcLede}}</p>
+    <div class="acts" style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-r" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  <div class="boxes">
+    <div><b>{{svcName}}</b><span>작업</span></div>
+    {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+  </div>
+</div>
+
+<section id="when"><div class="wrap">
+  <div class="head">이럴 때 <span class="r">부르십시오</span></div>
+  <div class="hoods">
+    {{#when}}<div class="hoodz"><b>{{text}}</b></div>{{/when}}
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="head">작업 <span class="r">순서</span></div>
+  <div class="grid">
+    {{#steps}}<div class="box"><span class="no">{{no}}</span><h3>{{t}}</h3><p>{{b}}</p></div>{{/steps}}
+  </div>
+  <p class="memo">{{svcNote}}</p>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="avoid"><div class="wrap">
+  <div class="head">이건 <span class="r">하지 마십시오</span></div>
+  <div class="grid">
+    {{#avoid}}<div class="box"><p>{{text}}</p></div>{{/avoid}}
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <div class="head">{{svcName}} <span class="r">문답</span></div>
+  <div class="qs">
+    {{#faq}}<div><p class="q">{{q}}</p><p class="a">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+<section id="others"><div class="wrap">
+  <div class="head">다른 <span class="r">작업</span></div>
+  <div class="tags">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+</div></section>
+
+<section id="spots"><div class="wrap">
+  <div class="head">출장 <span class="r">지역</span></div>
+  <div class="tags">{{#spots}}<a href="{{href}}">{{label}}</a>{{/spots}}</div>
+  <p class="memo"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

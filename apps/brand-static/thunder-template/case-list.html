@@ -1,0 +1,14 @@
+<div class="wrap">
+  <div class="hero">
+    <span class="eyebrow">작업 사례</span>
+    <h1>실제로 <span class="b">있었던 일</span></h1>
+    <p class="sub">어떤 증상으로 접수됐고 실제 원인이 무엇이었는지 정리했습니다. 총 {{caseCount}}건입니다.</p>
+  </div>
+</div>
+<section class="alt"><div class="wrap">
+  <div class="rows">
+    {{#cases}}<div class="row"><div class="n word">→</div><div>
+      <h3><a href="{{href}}">{{title}}</a></h3>
+      <p>{{#area}}{{area}} · {{/area}}{{summary}}</p></div></div>{{/cases}}
+  </div>
+</div></section>

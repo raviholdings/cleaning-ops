@@ -1,0 +1,57 @@
+<section id="estimate"><div class="wrap">
+  <p class="mark">접 수</p>
+  <h2>{{{estimateHeading}}}</h2>
+  <p class="lede">{{estimateLede}}</p>
+
+  <form class="lead-form" method="post" action="#estimate"
+        data-lead-form data-lead-api="{{leadApi}}" data-project="{{leadProject}}"
+        data-area="{{leadArea}}">
+    <div class="lf-grid">
+      <label class="lf"><span>이름</span>
+        <input name="name" autocomplete="name" placeholder="이름을 입력해 주세요"></label>
+      <label class="lf"><span>연락처</span>
+        <input name="phone" inputmode="tel" autocomplete="tel" placeholder="숫자만 입력해 주세요 (- 없이)"></label>
+      <div class="lf lf-wide"><span>주소</span>
+        <div class="lf-split">
+          <select name="sido" data-region-sido data-selected-sido="{{selectedSido}}" aria-label="시/도"></select>
+          <select name="sigungu" data-region-sigungu data-selected-sigungu="{{selectedSigungu}}"
+                  data-region-placeholder="시/군/구 선택" aria-label="시/군/구"></select>
+        </div>
+        <input name="address" placeholder="동·건물·호수">
+      </div>
+      <label class="lf lf-wide"><span>문의내용</span>
+        <textarea name="message" rows="4"
+          placeholder="어디가 어떻게 막혔는지 적어주세요"></textarea></label>
+    </div>
+    <input class="lf-hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="lf-foot">
+      <label class="lf-agree">
+        <input type="checkbox" name="consent" value="true" checked>
+        개인정보 수집·이용에 동의합니다
+        <button type="button" class="lf-terms" data-terms-open>전문</button>
+      </label>
+      <button class="lf-send" type="submit" data-lead-submit>접수하기</button>
+    </div>
+    <p class="lf-status" data-lead-status aria-live="polite"></p>
+    <p class="lf-or">서두르시면 <a href="tel:{{phoneRaw}}">{{phone}}</a> 로 연락 주십시오.</p>
+  </form>
+</div></section>
+
+<dialog class="terms" data-terms-modal aria-label="개인정보 수집 및 이용 동의">
+  <div class="terms-body">
+        <h3>개인정보 수집 및 이용 동의</h3>
+    <dl>
+      <dt>개인정보 수집항목</dt>
+      <dd>이름, 연락처, IP 등을 포함한 고객이 입력한 정보</dd>
+      <dt>개인정보 수집·이용목적</dt>
+      <dd>전화, SMS를 통한 상품안내 및 상담</dd>
+      <dt>개인정보 보유·이용기간</dt>
+      <dd>수집일로부터 1년 (고객 동의 철회 시 지체 없이 파기)</dd>
+      <dt>개인정보의 취급 위탁</dt>
+      <dd>당사는 서비스 이행 및 향상을 위해 개인정보 취급업무를 전문업체에 위탁 운영하고 있습니다.
+        또한 개인정보를 안전하게 처리하기 위하여 필요한 사항 등을 명확히 규정하고 있으며,
+        당해 계약 내용을 서면 또는 전자적으로 보관하고 있습니다.</dd>
+    </dl>
+    <button type="button" class="terms-close" data-terms-close>닫기</button>
+  </div>
+</dialog>

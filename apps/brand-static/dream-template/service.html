@@ -1,0 +1,68 @@
+<div class="wrap">
+  <div class="phead">
+    <div>
+      <p class="kicker rise" style="animation-delay:.05s">서비스 · {{svcName}}</p>
+      <h1 class="rise" style="animation-delay:.12s">{{{svcTitle}}}</h1>
+      <p class="s rise" style="animation-delay:.3s">{{svcLede}}</p>
+    </div>
+    <div class="board rise" style="animation-delay:.42s">
+      <h2>접수 현황</h2>
+      <div class="row"><b>현재 시각</b><span id="clock">--:--:--</span></div>
+      <div class="row"><b>작업</b><span>{{svcName}}</span></div>
+      {{#board}}<div class="row"><b>{{k}}</b><span>{{v}}</span></div>{{/board}}
+    </div>
+  </div>
+</div>
+
+<section id="when"><div class="wrap">
+  <p class="tag">01 — 이럴 때 부르세요</p>
+  <h3>{{svcName}}<br>이런 증상입니다</h3>
+  <div class="dongs">
+    {{#when}}<div class="dong"><b>·</b><span>{{text}}</span></div>{{/when}}
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <p class="tag">02 — 작업 순서</p>
+  <h3>이 순서로<br>진행합니다</h3>
+  <div class="jobs">
+    {{#steps}}<div class="job"><div class="no">{{no}}</div><div><h4>{{t}}</h4><p>{{b}}</p></div></div>{{/steps}}
+  </div>
+  <p class="note">{{svcNote}}</p>
+</div></section>
+
+<section id="avoid"><div class="wrap">
+  <p class="tag">03 — 하지 마세요</p>
+  <h3>이건 오히려<br>일을 키웁니다</h3>
+  <div class="causes">
+    {{#avoid}}<div class="cause"><p class="self">{{text}}</p></div>{{/avoid}}
+  </div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="faq"><div class="wrap">
+  <p class="tag">06 — {{svcName}} 자주 묻는 질문</p>
+  <h3>이건 먼저<br>말씀드립니다</h3>
+  <div class="qa">
+    {{#faq}}<div class="q"><div class="m">Q</div><p class="qq">{{q}}</p></div>
+    <div class="q"><div class="a">A</div><p>{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+<section id="others"><div class="wrap">
+  <p class="tag">07 — 다른 작업</p>
+  <h3>이런 것도 합니다</h3>
+  <div class="area">
+    {{#others}}<a href="{{href}}">{{label}}</a>{{/others}}
+  </div>
+</div></section>
+
+<section id="spots"><div class="wrap">
+  <p class="tag">08 — 출동 지역</p>
+  <h3>전국 어디든</h3>
+  <div class="area">
+    {{#spots}}<a href="{{href}}">{{label}}</a>{{/spots}}
+  </div>
+  <p class="note"><a class="more" href="/area/">서비스 지역 전체 보기 ({{regionCount}}곳)</a></p>
+</div></section>
