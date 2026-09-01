@@ -207,9 +207,15 @@ function dbApiPlugin() {
           }
           const clause = where.length ? `where ${where.join(' and ')}` : '';
           /*
-           * "전체 N개 중 조사 완료 M개" 의 N 도 고른 업종을 따라야 한다.
-           * 전에는 항상 전체 도메인(2만)을 셌다 — 브랜드 5개를 조사해도
-           * "5 / 20005" 로 보여 진도율이 0% 처럼 보였다.
+           * "전체 N개 중 조사 완료 M개" 의 N 은 **색인조사 대상**이다.
+           *
+           * 전에는 등록된 전체 도메인(20,005)을 셌다. 그건 "우리가 추적하는 수" 가
+           * 아니라 그냥 DB 에 있는 수라, 브랜드 다섯만 보는 지금은 다 조사해도
+           * "5 / 20005 = 0%" 로 보였다.
+           *
+           * 대상은 naver_index_check_target_domains 뷰가 정한다 — 그룹의
+           * index_check_enabled 가 true 고, is_visible · deployment_status=active 이며
+           * 계정이 blocked 가 아닌 도메인. 러너가 실제로 도는 범위와 같다.
            */
           const summaryParams = [...params, groupKey && groupKey !== 'all' ? groupKey : null];
           const gk = `$${summaryParams.length}`;
@@ -217,9 +223,8 @@ function dbApiPlugin() {
           const [summaryRes, bucketRes, rootRes, rowsRes, countRes] = await Promise.all([
             pool.query(`
               with l as (${LATEST_INDEX})
-              select (select count(*)::int from public.naver_project_domains dd
-                              where dd.is_visible = true
-                                and (${gk}::text is null or dd.group_key = ${gk}::text)) as total_domains,
+              select (select count(*)::int from public.naver_index_check_target_domains td
+                              where (${gk}::text is null or td.group_key = ${gk}::text)) as total_domains,
                      count(*)::int                                    as checked,
                      count(*) filter (where l.indexed)::int           as indexed,
                      coalesce(sum(l.indexed_post_count), 0)::int      as indexed_posts,
