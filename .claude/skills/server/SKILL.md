@@ -8,6 +8,9 @@ description: EC2 오리진 서버(SSM·SSH·nginx) 운영 절차. nginx 설정 �
 - 인스턴스: `i-039361b55ae33808b` (ap-northeast-2), `AWS_PROFILE=cleaning-ops`
 - **사양: t3.small — 메모리 2GB, 스왑 없음.** 여유가 항상 좁다
 - 웹루트: `/srv/group-page-origin/sites/<host>/`
+- **설정 전문은 `docs/ORIGIN-NGINX-MAP.md` 에 정리돼 있다.** 다시 읽지 말고 그걸 볼 것.
+  요점: `server_name _` + `root .../sites/$host` 라 **새 도메인은 폴더만 만들면 뜬다**.
+  `gzip_static always` 라 `.html.gz` 로 올린다. `sites/` 아래 폴더가 2만 개라 `du` 를 걸면 안 끝난다
 - nginx: `/etc/nginx/conf.d/cleaning-sites.conf` — server 블록 2개(80/443), 항상 둘 다 고칠 것
 
 ## ⛔ 로그·대용량 처리는 메모리를 먼저 생각한다

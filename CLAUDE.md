@@ -17,6 +17,8 @@
 INDEX-CHECK-HANDOVER, LEAD-BEACON, HAIIP-VM-SCALEOUT-PROMPT 등).
 **배관 신규 프로젝트는 docs/PIPING-PROJECT-HANDOVER.md 부터 읽을 것** —
 인프라 전체 플로우·확정 요구사항·실행 단계·함정 총정리 (2026-08-24).
+**오리진 nginx 는 docs/ORIGIN-NGINX-MAP.md 를 먼저 볼 것** — 설정 144줄을 읽어
+정리해 뒀다. 새 도메인은 nginx 를 안 고쳐도 되고(와일드카드), 파일은 .html.gz 로 올린다.
 **apex(루트 도메인) 홈페이지는 docs/APEX-HANDOVER.md 부터 읽을 것** —
 파일 지도·수정 위치·함정 10가지·미완료 목록 (2026-08-26).
 
