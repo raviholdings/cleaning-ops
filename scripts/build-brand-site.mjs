@@ -604,6 +604,12 @@ const markSize = (() => {
 
 const base = {
   siteUrl,
+  /*
+   * 네이버 서치어드바이저 소유확인. 도메인마다 다른 값이라 사이트 파일에 적는다.
+   * 값이 없으면 태그를 아예 안 내보낸다 — content 가 빈 채로 나가면 소유확인이 실패한다.
+   * 도메인 등록 → 서치어드바이저에 사이트 추가 → 받은 값을 naverVerification 에 넣는다.
+   */
+  naverVerification: site.naverVerification ? [{ t: site.naverVerification }] : [],
   // og:site_name. 레퍼런스는 여기에 키워드와 전화번호를 통째로 넣는다.
   // 다섯이 다 그러면 또 한 회사로 보이므로 두 곳만 그렇게 쓴다.
   siteName: site.siteName || site.brand,
