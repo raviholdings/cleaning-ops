@@ -1149,7 +1149,8 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     vars,
     sitePools: {
       원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
-      유형: pools.keywordBlurbs.map((x) => `${x.h}. ${x.body}`),
+      // keywordBlurbs 는 {kw, body} 다. body 가 이미 "{구}에서 …" 로 시작하므로 그대로 쓴다.
+      유형: pools.keywordBlurbs.map((x) => x.body),
       작업: pools.jobs.map((x) => `${x.title}. ${x.body}`),
       건물: pools.building.map((x) => `${x.t}. ${x.b}`),
       예방: pools.prevent.map((x) => `${x.t}. ${x.b}`),

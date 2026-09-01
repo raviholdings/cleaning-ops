@@ -264,6 +264,19 @@ export function composeArticle(o) {
     const key = name.slice(5);
     const arr = sitePools[key];
     if (!arr || !arr.length) throw new Error(`사이트 문단 묶음 "${key}" 가 비었습니다.`);
+    /*
+     * 빌더가 카드({t,b} · {title,body} · {kw,body})를 문단으로 이어 붙이는데,
+     * 필드 이름을 하나 잘못 적으면 "undefined. 의성군 세면대막힘은…" 이 256장에
+     * 그대로 박혀 나갔다 (2026-09-01). 조용히 통과시키지 않는다.
+     */
+    arr.forEach((text, i) => {
+      if (typeof text !== 'string' || !text.trim()) {
+        throw new Error(`사이트 문단 "${key}#${i}" 가 글이 아닙니다: ${JSON.stringify(text)}`);
+      }
+      if (text.includes('undefined') || text.includes('[object Object]')) {
+        throw new Error(`사이트 문단 "${key}#${i}" 에 빈 값이 섞였습니다 — 필드 이름을 확인하세요:\n  ${text.slice(0, 90)}`);
+      }
+    });
     return arr.map((text, i) => ({ name: `${key}#${i}`, text }));
   };
 
