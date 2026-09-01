@@ -770,6 +770,17 @@ function longArticle({
  */
 const BUILT_AT = new Date().toISOString();
 
+/*
+ * lastmod 를 W3C Datetime(+09:00)으로 적는다.
+ *
+ * 날짜만(2026-09-01) 써도 규약 위반은 아니지만, 네이버 웹마스터도구 문서의 예제가
+ * `2019-08-26T11:16:53+09:00` 꼴이라 그대로 맞춘다. 받는 쪽 기준에 맞추는 편이 낫다.
+ */
+function kstStamp(iso) {
+  const t = new Date(iso).getTime() + 9 * 3600 * 1000;    // UTC -> KST
+  return `${new Date(t).toISOString().slice(0, 19)}+09:00`;
+}
+
 function buildGraph({ canonical, title, description, jsonLd, crumbs, published, modified }) {
   const graph = [{
     '@type': 'WebPage',
@@ -880,7 +891,7 @@ function page({
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'index.html'), html);
   // 사이트맵에 lastmod 를 넣으려면 날짜가 필요하다. 글이면 게시일, 아니면 굽는 시각.
-  return { loc: canonical, kind, lastmod: (published || modified || BUILT_AT).slice(0, 10) };
+  return { loc: canonical, kind, lastmod: kstStamp(published || modified || BUILT_AT) };
 }
 
 /*
@@ -2083,13 +2094,31 @@ for (const u of urls) {
   byGroup.get(g).push(u);
 }
 
+/*
+ * changefreq · priority 는 선택 항목이지만 네이버 문서 예제에 들어 있어 같이 적는다.
+ * 값은 이 사이트의 실제 성격대로다 — 본문은 한 번 굽고 잘 안 고치니 monthly,
+ * 목록은 글이 늘면 바뀌니 weekly. priority 는 사이트 안에서의 상대 중요도라
+ * 홈 1.0, 본문 0.8, 목록·안내 0.5 로 둔다.
+ */
+const SITEMAP_HINT = {
+  home: { freq: 'weekly', pri: '1.0' },
+  page: { freq: 'weekly', pri: '0.5' },
+  region: { freq: 'monthly', pri: '0.8' },
+  detail: { freq: 'monthly', pri: '0.8' },
+  post: { freq: 'monthly', pri: '0.8' },
+  service: { freq: 'monthly', pri: '0.6' },
+};
+const hintOf = (g) => SITEMAP_HINT[g] || { freq: 'monthly', pri: '0.5' };
+
 const children = [];
 for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1].length)) {
+  const { freq, pri } = hintOf(g);
   for (let i = 0; i < list.length; i += SITEMAP_CHUNK) {
     const part = list.slice(i, i + SITEMAP_CHUNK);
     const file = `${g}-sitemap${Math.floor(i / SITEMAP_CHUNK) + 1}.xml`;
     const body = part
-      .map((u) => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`)
+      .map((u) => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n`
+        + `    <changefreq>${freq}</changefreq>\n    <priority>${pri}</priority>\n  </url>`)
       .join('\n');
     writeFileSync(join(outRoot, siteKey, file),
       '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -2106,9 +2135,35 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
 const indexXml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
   + children
-    .map((c) => `<sitemap><loc>${siteUrl}/${c.file}</loc><lastmod>${c.lastmod}</lastmod></sitemap>`)
+    .map((c) => `  <sitemap>\n    <loc>${siteUrl}/${c.file}</loc>\n`
+      + `    <lastmod>${c.lastmod}</lastmod>\n  </sitemap>`)
     .join('\n')
   + '\n</sitemapindex>\n';
+/*
+ * 네이버 웹마스터도구가 제출 때 검사하는 세 가지를 굽는 자리에서 미리 막는다.
+ * 제출해 보고 거절당한 뒤에 알면 그때는 이미 3,000장을 다시 구워야 한다.
+ *
+ *   - 사이트맵 하나가 10MB 를 넘으면 제출 불가
+ *   - 사이트맵 하나에 URL 50,000개 초과 불가
+ *   - 모든 URL 의 도메인이 소유확인된 사이트와 같아야 한다
+ */
+const NAVER_MAX_BYTES = 10 * 1024 * 1024;
+const NAVER_MAX_URLS = 50000;
+for (const c of children) {
+  const bytes = statSync(join(outRoot, siteKey, c.file)).size;
+  if (bytes > NAVER_MAX_BYTES) {
+    throw new Error(`${c.file} 이 ${(bytes / 1048576).toFixed(1)}MB 입니다 — 네이버 제출 한도 10MB 초과. SITEMAP_CHUNK 를 줄이세요.`);
+  }
+  if (c.count > NAVER_MAX_URLS) {
+    throw new Error(`${c.file} 에 URL 이 ${c.count}개입니다 — 네이버 제출 한도 50,000개 초과.`);
+  }
+}
+const offSite = urls.filter((u) => !u.loc.startsWith(`${siteUrl}/`) && u.loc !== siteUrl);
+if (offSite.length) {
+  throw new Error(`사이트맵에 다른 도메인 주소가 ${offSite.length}건 있습니다 (예: ${offSite[0].loc}). `
+    + '네이버는 소유확인된 도메인과 다른 URL 이 섞이면 제출을 거절합니다.');
+}
+
 writeFileSync(join(outRoot, siteKey, 'sitemap_index.xml'), indexXml);
 /*
  * /sitemap.xml 에도 같은 색인을 둔다. 이 주소를 이미 가리키고 있는 곳이 있고

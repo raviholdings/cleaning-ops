@@ -34,6 +34,11 @@ loadEnv(resolve(projectRoot, '.env'));
 const options = parseOptions(process.argv.slice(2));
 const dryRun = Boolean(options.dryRun);
 const groupKey = options.groupKey || 'cleaning-ravi';
+/*
+ * 제출할 사이트맵 경로. 기본값은 지금까지와 같다 — 청소·배관 1만은 바뀌지 않는다.
+ * 브랜드는 /sitemap_index.xml 이 색인이다 (/sitemap.xml 도 같은 내용을 준다).
+ */
+const sitemapPath = options.sitemapPath || '/sitemap.xml';
 const limit = options.limit ? Number(options.limit) : null;
 const perSiteDelayMs = Number(options.delayMs || 250);
 const skipHaiIp = Boolean(options.noHaiip);
@@ -121,7 +126,7 @@ async function submitForAccount(account) {
   }
 
   if (dryRun) {
-    console.log(`  [dry-run] 예시: ${domains[0].site_url.replace(/\/+$/, '')}/sitemap.xml`);
+    console.log(`  [dry-run] 예시: ${domains[0].site_url.replace(/\/+$/, '')}${sitemapPath}`);
     return { accountId: account.account_id, accountOrder: account.account_order, ok: true, dryRun: true, submitted: 0, already: 0, failed: 0, unknown: 0, total: domains.length };
   }
 
@@ -217,7 +222,7 @@ async function submitOne(session, origin) {
     } catch (error) {
       return { status: 0, body: String(error && error.message) };
     }
-  }, [session.encId, session.csrf, `${origin}/sitemap.xml`]);
+  }, [session.encId, session.csrf, `${origin}${sitemapPath}`]);
 
   return classify(result.status, result.body);
 }
