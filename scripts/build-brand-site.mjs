@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
 import { assignSlugs } from './lib/region-slug.mjs';
 import { romanize, romanizeUnique } from './lib/romanize.mjs';
+import { SITEMAP_XSL } from './lib/sitemap-xsl.mjs';
 import {
   makeVars, composeArticle, renderArticleHtml, faqEntities, charCount,
 } from './lib/blog-compose.mjs';
@@ -878,7 +879,7 @@ function page({
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'index.html'), html);
   // 사이트맵에 lastmod 를 넣으려면 날짜가 필요하다. 글이면 게시일, 아니면 굽는 시각.
-  return { loc: canonical, lastmod: (published || modified || BUILT_AT).slice(0, 10) };
+  return { loc: canonical, kind, lastmod: (published || modified || BUILT_AT).slice(0, 10) };
 }
 
 /*
@@ -924,7 +925,9 @@ const orgLd = {
 const siteOut = join(outRoot, siteKey);
 if (existsSync(siteOut)) {
   const entries = readdirSync(siteOut);
-  const ours = entries.every((e) => ['index.html', 'sitemap.xml', 'robots.txt', 'assets'].includes(e)
+  // sitemap_index.xml · <종류>-sitemap<N>.xml · main-sitemap.xsl 도 우리가 쓰는 것이다
+  const OURS = /^(index\.html|robots\.txt|sitemap\.xml|sitemap_index\.xml|main-sitemap\.xsl|[a-zA-Z]+-sitemap\d+\.xml)$/;
+  const ours = entries.every((e) => e === 'assets' || OURS.test(e)
     || statSync(join(siteOut, e)).isDirectory());
   if (!ours) {
     throw new Error(`${siteOut} 에 우리 산출물이 아닌 파일이 있습니다. 확인 후 직접 지우세요.`);
@@ -2050,18 +2053,64 @@ if (BLOG) {
 
 /* ── 사이트맵 · robots · 자산 ── */
 /*
- * lastmod 를 넣는다. 크롤러가 "언제 바뀌었나" 를 보고 다시 올지 정한다.
- * 없으면 매번 전부 새로 훑거나, 반대로 오래 안 온다.
+ * Yoast 꼴 사이트맵 색인 (운영자 지시 2026-09-01).
+ * 색인 한 장이 자식 사이트맵을 가리키고, 자식마다 주소 1,000개씩 담는다.
+ *
+ * 한 장에 3,600개를 몰아넣으면 어느 묶음이 언제 바뀌었는지 따로 말할 수가 없고,
+ * 받는 쪽도 매번 전부를 다시 읽는다. 종류별로 나누면 글만 늘어났을 때
+ * 그 조각만 새 lastmod 를 달고 나머지는 그대로 둔다.
  */
-const sitemapBody = urls
-  .map((u) => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`)
-  .join('\n');
-writeFileSync(join(outRoot, siteKey, 'sitemap.xml'),
-  `<?xml version="1.0" encoding="UTF-8"?>\n`
-  + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapBody}\n</urlset>\n`);
+const SITEMAP_CHUNK = 1000;
+/* 작은 것들은 page 하나로 묶는다. 두 줄짜리 사이트맵을 여러 개 만들 이유가 없다. */
+const SITEMAP_GROUP = {
+  home: 'page', area: 'page', form: 'page', privacy: 'page', sido: 'page', sigungu: 'page',
+};
+const byGroup = new Map();
+for (const u of urls) {
+  const g = SITEMAP_GROUP[u.kind] || u.kind;
+  if (!byGroup.has(g)) byGroup.set(g, []);
+  byGroup.get(g).push(u);
+}
+
+const XSL_HREF = '/main-sitemap.xsl';
+const children = [];
+for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1].length)) {
+  for (let i = 0; i < list.length; i += SITEMAP_CHUNK) {
+    const part = list.slice(i, i + SITEMAP_CHUNK);
+    const file = `${g}-sitemap${Math.floor(i / SITEMAP_CHUNK) + 1}.xml`;
+    const body = part
+      .map((u) => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`)
+      .join('\n');
+    writeFileSync(join(outRoot, siteKey, file),
+      '<?xml version="1.0" encoding="UTF-8"?>\n'
+      + `<?xml-stylesheet type="text/xsl" href="${XSL_HREF}"?>\n`
+      + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
+    // 그 묶음에서 가장 늦은 날짜가 그 사이트맵의 lastmod 다
+    children.push({
+      file,
+      count: part.length,
+      lastmod: part.reduce((a, u) => (u.lastmod > a ? u.lastmod : a), part[0].lastmod),
+    });
+  }
+}
+
+const indexXml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+  + `<?xml-stylesheet type="text/xsl" href="${XSL_HREF}"?>\n`
+  + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+  + children
+    .map((c) => `<sitemap><loc>${siteUrl}/${c.file}</loc><lastmod>${c.lastmod}</lastmod></sitemap>`)
+    .join('\n')
+  + '\n</sitemapindex>\n';
+writeFileSync(join(outRoot, siteKey, 'sitemap_index.xml'), indexXml);
+/*
+ * /sitemap.xml 에도 같은 색인을 둔다. 이 주소를 이미 가리키고 있는 곳이 있고
+ * (네이버 콘솔에 넣은 것 포함), 색인으로 바뀌었다고 404 를 내면 그쪽이 통째로 끊긴다.
+ */
+writeFileSync(join(outRoot, siteKey, 'sitemap.xml'), indexXml);
+writeFileSync(join(outRoot, siteKey, 'main-sitemap.xsl'), SITEMAP_XSL);
 
 writeFileSync(join(outRoot, siteKey, 'robots.txt'),
-  `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`);
+  `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap_index.xml\n`);
 
 const assetOut = join(outRoot, siteKey, 'assets', site.assetVersion);
 mkdirSync(assetOut, { recursive: true });

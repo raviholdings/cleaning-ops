@@ -1356,8 +1356,8 @@ async function fetchSitemapUrls(sitemapUrl, siteUrl, { hasFallback = false } = {
 
   const origin = new URL(siteUrl).origin;
   const text = await response.text();
-  const urls = [...text.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)]
-    .map((match) => decodeXmlEntities(match[1].trim()))
+  const sameOrigin = (list) => list
+    .map((raw) => decodeXmlEntities(String(raw).trim()))
     .filter(Boolean)
     .filter((url) => {
       try {
@@ -1367,8 +1367,42 @@ async function fetchSitemapUrls(sitemapUrl, siteUrl, { hasFallback = false } = {
       }
     });
 
-  if (urls.length === 0) throw new Error(`sitemap has no same-origin loc entries: ${sitemapUrl}`);
-  return [...new Set(urls)];
+  const locs = sameOrigin([...text.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((m) => m[1]));
+
+  /*
+   * 사이트맵 색인(<sitemapindex>)이면 <loc> 이 페이지가 아니라 자식 사이트맵이다.
+   * 그대로 쓰면 .xml 주소를 수집요청으로 올린다 — 할당량만 태우고 색인은 안 된다.
+   * 브랜드 사이트가 Yoast 꼴 색인으로 바뀌어서(2026-09-01) 한 단계 따라 내려간다.
+   * 색인 안의 색인(두 단계)은 안 만들므로 재귀는 하지 않는다.
+   */
+  if (/<sitemapindex[\s>]/i.test(text)) {
+    const kids = locs.filter((u) => /\.xml(\?|$)/i.test(u));
+    if (kids.length === 0) throw new Error(`sitemap index has no child sitemaps: ${sitemapUrl}`);
+    const out = [];
+    for (const kid of kids) {
+      let kidRes;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+          kidRes = await fetch(kid, {
+            headers: { accept: 'application/xml,text/xml,*/*;q=0.8' },
+            signal: AbortSignal.timeout(attemptTimeoutMs),
+          });
+          break;
+        } catch {
+          if (attempt < maxAttempts) await new Promise((r) => setTimeout(r, attempt * 3000));
+        }
+      }
+      if (!kidRes || !kidRes.ok) throw new Error(`child sitemap fetch failed ${kidRes ? kidRes.status : 'ERR'} ${kid}`);
+      const kidText = await kidRes.text();
+      out.push(...sameOrigin([...kidText.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((m) => m[1])));
+    }
+    const pages = out.filter((u) => !/\.xml(\?|$)/i.test(u));
+    if (pages.length === 0) throw new Error(`sitemap index yielded no page urls: ${sitemapUrl}`);
+    return [...new Set(pages)];
+  }
+
+  if (locs.length === 0) throw new Error(`sitemap has no same-origin loc entries: ${sitemapUrl}`);
+  return [...new Set(locs)];
 }
 
 function normalizedUrlPath(url) {
