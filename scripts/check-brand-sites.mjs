@@ -162,7 +162,7 @@ for (const key of keys) {
   }
 
   sites.push({
-    key, meta, pages, slugs, freq, links, broken, orphans,
+    key, root, meta, pages, slugs, freq, links, broken, orphans,
   });
   console.log(`${key.padEnd(9)} ${String(pages.length).padStart(4)}장  링크 ${links}  `
   + `고립 ${orphans.length}  `
@@ -204,6 +204,35 @@ for (const s of sites) {
   console.log(`  ${s.key}: 전 페이지 공통 문장 ${everywhere.length}개 (한도 ${ALL_PAGE_LIMIT})`);
   if (everywhere.length > ALL_PAGE_LIMIT) {
     problems.push(`[${s.key}] 전 페이지에 같은 문장이 ${everywhere.length}개 — 본문 변형이 안 걸렸습니다`);
+  }
+}
+
+/*
+ * ── 3.5 제목 안의 <br> ──
+ *
+ * 운영자가 h1·h2·h3 에서 줄바꿈 태그를 빼라고 했다. 눈에는 안 보이는 문제라
+ * 사람이 훑어서는 못 잡는다 — 실제로 h1·h2 만 고치고 h3 다섯 곳을 놓쳤고,
+ * 그것도 홈·서비스 페이지라 지역 페이지만 보던 눈에 안 걸렸다 (2026-09-01).
+ *
+ * 검색엔진이 제목을 읽을 때 "실제로 다녀온<br>현장입니다" 는 붙어서 한 낱말이
+ * 되거나 어색하게 끊긴다. 줄바꿈은 CSS 로 한다.
+ */
+console.log('\n── 제목 안 <br> ──');
+for (const s of sites) {
+  const bad = [];
+  for (const f of s.pages) {
+    const html = readFileSync(f, 'utf8');
+    if (!/<br/i.test(html)) continue;          // 대부분은 여기서 끝난다
+    for (const m of html.matchAll(/<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/g)) {
+      if (/<br\s*\/?>/i.test(m[2])) {
+        bad.push(`${relative(s.root, f)} — ${m[0].replace(/\s+/g, ' ').slice(0, 70)}`);
+      }
+    }
+  }
+  console.log(`  ${s.key}: ${bad.length}건`);
+  if (bad.length) {
+    problems.push(`[${s.key}] 제목 안에 <br> 가 ${bad.length}건 있습니다`);
+    bad.slice(0, 5).forEach((x) => problems.push(`    ${x}`));
   }
 }
 

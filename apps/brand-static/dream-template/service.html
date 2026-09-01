@@ -16,7 +16,7 @@
 
 <section id="when"><div class="wrap">
   <p class="tag">01 — 이럴 때 부르세요</p>
-  <h3>{{svcName}}<br>이런 증상입니다</h3>
+  <h3>{{svcName}} 이런 증상입니다</h3>
   <div class="dongs">
     {{#when}}<div class="dong"><b>·</b><span>{{text}}</span></div>{{/when}}
   </div>
@@ -24,7 +24,7 @@
 
 <section id="how"><div class="wrap">
   <p class="tag">02 — 작업 순서</p>
-  <h3>이 순서로<br>진행합니다</h3>
+  <h3>이 순서로 진행합니다</h3>
   <div class="jobs">
     {{#steps}}<div class="job"><div class="no">{{no}}</div><div><h4>{{t}}</h4><p>{{b}}</p></div></div>{{/steps}}
   </div>
@@ -33,7 +33,7 @@
 
 <section id="avoid"><div class="wrap">
   <p class="tag">03 — 하지 마세요</p>
-  <h3>이건 오히려<br>일을 키웁니다</h3>
+  <h3>이건 오히려 일을 키웁니다</h3>
   <div class="causes">
     {{#avoid}}<div class="cause"><p class="self">{{text}}</p></div>{{/avoid}}
   </div>
@@ -50,7 +50,7 @@
 
 <section id="faq"><div class="wrap">
   <p class="tag">06 — {{svcName}} 자주 묻는 질문</p>
-  <h3>이건 먼저<br>말씀드립니다</h3>
+  <h3>이건 먼저 말씀드립니다</h3>
   <div class="qa">
     {{#faq}}<div class="q"><div class="m">Q</div><p class="qq">{{q}}</p></div>
     <div class="q"><div class="a">A</div><p>{{a}}</p></div>{{/faq}}
