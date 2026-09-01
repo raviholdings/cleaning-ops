@@ -251,7 +251,6 @@ node scripts/check-naver-indexed-posts.mjs --group cleaning-ravi
 | `scripts/run-naver-index-checks.sh` | 16KB | 그룹 단위 러너 (락, 재시도, 타임아웃) |
 | `scripts/naver-index-check-alert.mjs` | 6KB | 실패 알림 |
 | `scripts/list-naver-index-check-runners.mjs` | 2KB | 러너 목록 |
-| `scripts/update-naver-index-google-sheet.mjs` | 28KB | 구글 시트 반영 |
 | `scripts/lib/naver-index-target-query.mjs` | — | 대상 조회 |
 | `scripts/lib/naver-index-url-classifier.mjs` | — | URL 분류 (포스트/정적) |
 | `scripts/naver-site-check-proxy.mjs` | — | 프록시 풀 관리 |

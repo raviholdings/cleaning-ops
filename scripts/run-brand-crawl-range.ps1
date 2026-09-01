@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   브랜드 사이트(다섯 개) 수집요청을 계정 순번 범위로 돌린다.
@@ -70,8 +70,6 @@ $env:NAVER_WINDOWS_CRAWL_RUNNER_PC = 'siwol-win'
 $env:NAVER_CRAWL_RUNNER_PC = 'siwol-win'
 $env:NAVER_CRAWL_INCLUDE_ACCOUNTS = $ids
 $env:NAVER_CRAWL_EXCLUDE_ACCOUNTS = ''
-# 구글시트 갱신 끔 — 시트가 실제로 만들어진 적이 없다. 현황은 관리자 페이지가 담당한다.
-$env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS = '0'
 
 # 브랜드 전용 — 그룹 고정 + 사이트맵 모드
 $env:NAVER_CRAWL_INCLUDE_GROUPS = 'brand-ravi'

@@ -38,5 +38,6 @@ description: 네이버 색인 확인 배치 실행 절차 — 페이스, 차단 
 ## 참고
 
 - docs/INDEX-CHECK-HANDOVER.md — 상세 핸드오버 (소유확인·토큰 회수 함정 포함)
-- 결과는 관리자 페이지 색인 탭에 표시 (scripts/update-naver-index-google-sheet.mjs,
-  scripts/naver-index-check-alert.mjs)
+- 결과는 관리자 페이지 색인 탭에 표시 (scripts/naver-index-check-alert.mjs)
+- 구글시트 연동은 걷어냈다 (2026-09-01). 시트가 만들어진 적이 없고 러너마다
+  꺼 두고 있었다. 현황은 관리자 페이지가 담당한다.

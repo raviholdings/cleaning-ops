@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   이사(moving-ravi) 수집요청을 계정 순번 범위로 돌린다.
@@ -57,9 +57,6 @@ $env:NAVER_WINDOWS_CRAWL_RUNNER_PC = 'siwol-win'
 $env:NAVER_CRAWL_RUNNER_PC = 'siwol-win'
 $env:NAVER_CRAWL_INCLUDE_ACCOUNTS = $ids
 $env:NAVER_CRAWL_EXCLUDE_ACCOUNTS = ''
-# 구글시트 갱신 끔 — 시트가 실제로 만들어진 적이 없는데 계정마다 무거운 DB 조회만
-# 돌리고 타임아웃으로 죽었다 (2026-08-21). 현황은 관리자 페이지가 담당한다.
-$env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS = '0'
 
 # 이사 전용 — 그룹 고정 + 사이트맵 모드 + 이사 사이트맵 경로
 $env:NAVER_CRAWL_INCLUDE_GROUPS = 'moving-ravi'

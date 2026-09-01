@@ -1,4 +1,4 @@
-param(
+﻿param(
 	[switch]$DryRun,
 	[switch]$NoHaiIp
 )
@@ -25,7 +25,6 @@ $RuntimeDir = Join-Path $RootDir 'tmp\naver-crawl-runtime'
 $RunScratchDir = Join-Path $RuntimeDir $RunStartedAt
 $LockPath = Join-Path $RootDir '.windows-naver-crawl.lock'
 $MainLog = Join-Path $LogDir 'windows-naver-crawl-requests.log'
-$DefaultGoogleSheetsServiceAccountFile = Join-Path $RootDir 'config\google-sheets-service-account-watermelon-index.json'
 $CommandLogLock = [object]::new()
 $LocalLogEnabled = ($env:NAVER_WINDOWS_CRAWL_LOCAL_LOG -ne '0' -and $env:NAVER_CRAWL_LOCAL_LOG -ne '0')
 $LocalReportEnabled = ($env:NAVER_CRAWL_LOCAL_REPORT -eq '1')
@@ -923,72 +922,6 @@ function Restore-EnvValue {
 	Set-Item -Path "Env:$Name" -Value $Value
 }
 
-function Invoke-CrawlGoogleSheetUpdate {
-	param(
-		[string]$GroupKey,
-		[string]$Project,
-		[string]$AccountLog
-	)
-
-	if ($DryRun) {
-		Write-Log "Skipping Google Sheet update for $GroupKey/$Project because this is a dry run."
-		return
-	}
-	if ($env:NAVER_WINDOWS_CRAWL_UPDATE_SHEETS -eq '0') {
-		Write-Log "Skipping Google Sheet update for $GroupKey/$Project because NAVER_WINDOWS_CRAWL_UPDATE_SHEETS=0."
-		return
-	}
-
-	$script = Join-Path $RootDir 'scripts\update-naver-index-google-sheet.mjs'
-	if (-not (Test-Path $script)) {
-		Write-Log "Skipping Google Sheet update for $GroupKey/$Project because script was not found: $script"
-		return
-	}
-
-	$envNames = @(
-		'NAVER_INDEX_GROUP_KEY',
-		'NAVER_INDEX_TARGET_PROJECT',
-		'NAVER_INDEX_ALLOW_BOOTSTRAP_ON_MISSING_RUN',
-		'NAVER_INDEX_GOOGLE_SHEET_SKIP_IF_UNCONFIGURED',
-		'NAVER_INDEX_GOOGLE_SHEET_UPDATE_CRAWL',
-		'NAVER_INDEX_IGNORE_GROUP_HOST_SUFFIX',
-		'NAVER_INDEX_CHECK_RUN_ID',
-		'NAVER_INDEX_FORCE_BOOTSTRAP',
-		'GOOGLE_APPLICATION_CREDENTIALS',
-		'GOOGLE_SHEETS_SERVICE_ACCOUNT_FILE'
-	)
-	$previous = @{}
-	foreach ($name in $envNames) {
-		$previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-	}
-
-	try {
-		$env:NAVER_INDEX_GROUP_KEY = $GroupKey
-		$env:NAVER_INDEX_TARGET_PROJECT = $Project
-		$env:NAVER_INDEX_ALLOW_BOOTSTRAP_ON_MISSING_RUN = '1'
-		$env:NAVER_INDEX_GOOGLE_SHEET_SKIP_IF_UNCONFIGURED = '1'
-		$env:NAVER_INDEX_GOOGLE_SHEET_UPDATE_CRAWL = '1'
-		$env:NAVER_INDEX_IGNORE_GROUP_HOST_SUFFIX = '1'
-		Remove-Item -Path 'Env:NAVER_INDEX_CHECK_RUN_ID' -ErrorAction SilentlyContinue
-		Remove-Item -Path 'Env:NAVER_INDEX_FORCE_BOOTSTRAP' -ErrorAction SilentlyContinue
-
-		if (Test-Path $DefaultGoogleSheetsServiceAccountFile) {
-			$env:GOOGLE_APPLICATION_CREDENTIALS = $DefaultGoogleSheetsServiceAccountFile
-			$env:GOOGLE_SHEETS_SERVICE_ACCOUNT_FILE = $DefaultGoogleSheetsServiceAccountFile
-		}
-
-		Write-Log "Starting Google Sheet crawl-count update for $GroupKey/$Project."
-		Invoke-LoggedCommand -FilePath $Node -Arguments @('scripts/update-naver-index-google-sheet.mjs') -AccountLog $AccountLog -MaxStdoutLines 80
-		Write-Log "Finished Google Sheet crawl-count update for $GroupKey/$Project."
-	} catch {
-		Write-Log "Google Sheet crawl-count update failed for ${GroupKey}/${Project}: $($_.Exception.Message)"
-	} finally {
-		foreach ($name in $envNames) {
-			Restore-EnvValue -Name $name -Value $previous[$name]
-		}
-	}
-}
-
 function Invoke-CrawlStaleRunRepair {
 	param(
 		[string]$Account,
@@ -1249,12 +1182,6 @@ try {
 			Remove-PathQuiet $storageState
 		}
 
-		$nextRun = if ($runIndex -lt $totalRuns) { $Runs[$runIndex] } else { $null }
-		$nextGroupKey = if ($nextRun -and $nextRun.GroupKey) { [string]$nextRun.GroupKey } elseif ($nextRun) { [string]$nextRun.Project } else { '' }
-		$nextProject = if ($nextRun) { [string]$nextRun.Project } else { '' }
-		if (-not $nextRun -or $nextGroupKey -ne $groupKey -or $nextProject -ne $project) {
-			Invoke-CrawlGoogleSheetUpdate -GroupKey $groupKey -Project $project -AccountLog $accountLog
-		}
 	}
 
 	Remove-PathQuiet $RunScratchDir
