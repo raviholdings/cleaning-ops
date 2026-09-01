@@ -26,6 +26,9 @@ import { fileURLToPath } from 'node:url';
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
 import { assignSlugs } from './lib/region-slug.mjs';
 import { romanize, romanizeUnique } from './lib/romanize.mjs';
+import {
+  makeVars, composeArticle, renderArticleHtml, faqEntities, charCount,
+} from './lib/blog-compose.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -699,6 +702,60 @@ function renumberSections(html) {
 }
 
 /*
+ * ── 블로그형 긴 본문 ──
+ *
+ * 레퍼런스(뚜러썬설비 공주 신관동 · 하수구박사 rainpipe)처럼 질문형 소제목과
+ * 목차를 갖춘 4,000자대 글을 만든다. 사이트 json 의 articlePlan 이 있는 곳만.
+ *
+ * 문안은 다섯 사이트가 한 라이브러리를 나눠 쓰되 libraryShare 로 겹치지 않게
+ * 잘라 간다. 같은 문장이 두 브랜드에 실리면 한 운영자가 만든 티가 난다.
+ */
+const articlePlan = site.articlePlan || null;
+const blogLib = articlePlan
+  ? JSON.parse(readFileSync(resolve(projectRoot, 'data/brands/_blog-library.json'), 'utf8')).groups
+  : null;
+const blogDict = articlePlan
+  ? JSON.parse(readFileSync(resolve(projectRoot, 'data/brands/_blog-vars.json'), 'utf8'))
+  : null;
+
+/** 이 페이지의 값 표. 조립기가 '비용' 구역에 표로 꽂는다. */
+function priceRows(vars) {
+  const rows = fillDeep(pools.price, vars);
+  return {
+    head: [{ t: '작업' }, { t: '기준' }],
+    rows: rows.map((x) => ({ cells: [{ t: x.item }, { t: x.basis }] })),
+  };
+}
+
+/**
+ * 한 편을 조립해 HTML 과 부산물(FAQ 구조화 데이터, 해시태그, 글자수)을 준다.
+ * seed 는 페이지마다 하나뿐이라 다시 구워도 같은 글이 나온다.
+ */
+function longArticle({
+  kwLabel, sido, sigungu, dongs, neighbors = [], seed, shortLabel, vars, sitePools,
+}) {
+  const v = makeVars({
+    dict: blogDict, site, kwLabel, sido, sigungu, dongs, neighbors, seed, shortLabel,
+  });
+  const art = composeArticle({
+    lib: blogLib,
+    plan: articlePlan,
+    vars: v,
+    seed,
+    share: site.libraryShare,
+    sitePools,
+    extras: { price: priceRows(vars) },
+  });
+  return {
+    html: renderArticleHtml(art),
+    faq: faqEntities(art),
+    hashtags: art.hashtags,
+    chars: charCount(art),
+    toc: art.toc,
+  };
+}
+
+/*
  * 구조화 데이터. 레퍼런스(하수구박사)를 그대로 따라간다 —
  * WebPage · BreadcrumbList · WebSite 를 @graph 하나에 묶고, 거기에 그 페이지의
  * 본체(LocalBusiness / Service / BlogPosting)를 더한다.
@@ -746,7 +803,8 @@ function buildGraph({ canonical, title, description, jsonLd, crumbs, published, 
     description: site.siteDescription || site.h1sub || site.brand,
     inLanguage: 'ko-KR',
   });
-  if (jsonLd) graph.push(jsonLd);
+  // 배열이면 펼친다 — 글 하나가 BlogPosting 과 FAQPage 를 함께 낼 때가 있다.
+  if (jsonLd) graph.push(...(Array.isArray(jsonLd) ? jsonLd : [jsonLd]));
   return { '@context': 'https://schema.org', '@graph': graph };
 }
 
@@ -1567,6 +1625,29 @@ if (TIERED) {
       const siblings = keywords.filter((x) => x.slug !== k.slug)
         .map((x) => ({ href: detailHref(r, x), label: `${r.sigunguLabel} ${x.label}` }));
 
+      const neighbors = others.map((x) => x.sigunguLabel);
+      /*
+       * 이 사이트의 문단은 카드({t,d})로 저장돼 있다. 제목과 설명을 한 문장으로
+       * 이어 붙여 문단으로 쓴다 — 새로 쓰지 않고 있는 것을 그대로 살린다.
+       */
+      const asPara = (arr) => arr.map((x) => `${x.t}. ${x.d}`);
+      const detailArticle = longArticle({
+        kwLabel: k.label,
+        sido: r.sidoLabel,
+        sigungu: r.sigunguLabel,
+        shortLabel: r.sigunguLabel,
+        dongs: dongPick,
+        neighbors,
+        seed,
+        vars,
+        sitePools: {
+          원인: asPara(g.causes),
+          증상: asPara(g.symptoms),
+          작업: asPara(g.method),
+          주의: asPara(g.dont),
+        },
+      });
+
       urls.push(page({
         path: detailHref(r, k),
         kind: 'detail',
@@ -1574,7 +1655,7 @@ if (TIERED) {
         title: `${r.sigunguLabel}${k.label} ${r.sigunguLabel} ${k.label} 출동 — ${site.brand}`,
         description: `${full} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
           + `연락 주십시오. ${dongPick.join(' · ')} 등 ${r.dongCount}개 동네 출동.`,
-        jsonLd: {
+        jsonLd: [{
           ...orgLd,
           '@type': 'Service',
           serviceType: k.label,
@@ -1582,8 +1663,18 @@ if (TIERED) {
           areaServed: { '@type': 'AdministrativeArea', name: full },
           url: `${siteUrl}${detailHref(r, k)}`,
         },
+        // 화면에 실제로 실린 문답만 FAQPage 로 낸다
+        ...(detailArticle.faq.length ? [{
+          '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: detailArticle.faq,
+        }] : [])],
         main: renderTemplate(templates.detail, {
           ...base,
+          /*
+           * 본문. 레퍼런스(뚜러썬설비 공주 신관동 글)처럼 질문형 소제목 · 목차 ·
+           * 값 표 · 체크리스트 · 강조상자 · 문답을 갖춘 4,000자대 글이다.
+           * 싹쓰리와 문안이 겹치지 않게 라이브러리를 반씩 나눠 쓴다 (libraryShare).
+           */
+          article: detailArticle.html,
           sidoLabel: r.sidoLabel,
           sidoHref: `/${r.sidoSlug}/`,
           sigunguLabel: r.sigunguLabel,
@@ -1780,32 +1871,35 @@ if (BLOG) {
         const at = postedAt(seed);
 
         /*
-         * 소제목 5개가 그대로 다 나가면 3,072장이 같은 뼈대가 된다.
-         * 시드로 순서를 돌리고 문단도 골라 뽑는다 — 재빌드해도 같은 글이 나온다.
+         * 본문. 레퍼런스(하수구박사 rainpipe)처럼 질문형 소제목 · 목차 · 표 ·
+         * 번호목록 · 체크리스트 · 강조상자 · FAQ 를 갖춘 4,000자대 글이다.
+         * 조립은 lib/blog-compose.mjs 가 하고 여기서는 값만 넘긴다.
          */
-        const tail = g.sections.map((_, i) => i).slice(1);
-        const shuffled = pickCombination(tail, tail.length, seed)
-          .map((_, n) => tail[(seed + n * 7) % tail.length]);
-        const useIdx = [0, ...[...new Set(shuffled)], ...tail].slice(0, g.sections.length);
-        const secs = useIdx.map((i, n) => {
-          const s2 = g.sections[i];
-          return {
-            // 목차에서 눌러 갈 자리. 한글 제목을 그대로 id 로 쓰면 주소가 지저분해진다.
-            id: `s${n + 1}`,
-            h: fillPlaceholders(s2.h, vars),
-            // 문단 5개 중 4개를 뽑아 순서까지 시드로 돌린다
-            /*
-             * 구역 첫머리에 지역을 짚는 한 줄. 설명문단 29개 중 3개에만 지역명이
-             * 있어서 "횡성군 변기막힘" 으로 들어온 사람이 본문에서 자기 동네를 못 봤다.
-             * 문단 210개를 다 고치는 대신 구역마다 한 줄씩 넣는다.
-             */
-            p: [
-              { t: fillPlaceholders(
-                blogData.regionLines[(seed + n * 13) % blogData.regionLines.length], vars,
-              ) },
-              ...pickCombination(s2.p, 5, seed + n * 31).map((t) => ({ t: fillPlaceholders(t, vars) })),
-            ],
-          };
+        // 상담 안내의 "주요 지역: … 및 {인접지역}" 에 들어갈 같은 시도의 이웃들
+        const neighbors = allRegions
+          .filter((x) => x.sidoLabel === r.sidoLabel && x.code !== r.code)
+          .map((x) => x.sigunguLabel);
+        const article = longArticle({
+          kwLabel: kw.label,
+          sido: r.sidoLabel,
+          sigungu: r.sigunguLabel,
+          shortLabel: blogLabel(r),
+          dongs: dongPick,
+          neighbors,
+          seed,
+          vars,
+          /*
+           * 설명 문단은 이 사이트가 키워드마다 따로 써 둔 것을 쓴다 (묶음당 7개).
+           * 공용 라이브러리는 뼈대·표·목록·문답만 댄다 — 그래야 3,072편이
+           * 서로 다르고, 다른 브랜드와 같은 문장이 안 실린다.
+           */
+          sitePools: {
+            원인: g.sections[0].p,
+            신호: g.sections[1].p,
+            작업: g.sections[2].p,
+            예방: g.sections[3].p,
+            문답: g.sections[4].p,
+          },
         });
 
         const costPart = kind.focus === 'cost' ? [{
@@ -1830,13 +1924,11 @@ if (BLOG) {
           sameKw.push({ href: `/${t.slug}/`, label: t.title });
         }
 
-        // 하단 해시태그. 레퍼런스가 #지역키워드 두세 개를 붙인다.
-        const tags = [
-          `#${blogSlugLabel(r)}${kw.label}`,
-          `#${blogSlugLabel(r)}${work}`,
-          `#${r.sidoLabel}${kw.label}`,
-          `#${kw.label}${kind.label}`,
-        ];
+        /*
+         * 하단 해시태그. 조립기가 지역·증상·장비 조합으로 뽑아 준다.
+         * 첫 자리는 늘 "#{지역}{키워드}" 라 검색어와 그대로 맞물린다.
+         */
+        const tags = article.hashtags.map((x) => x.t);
 
         /*
          * 글 맨 위 한 장. 레퍼런스(하수구박사)도 글머리에 썸네일 한 장을 둔다.
@@ -1864,7 +1956,7 @@ if (BLOG) {
           title: `${blogLabel(r)}${kw.label} ${work} ${kind.label} - ${site.brand}`,
           description: `${full} ${kw.label} ${kind.label}. `
             + `${dongPick.join(' · ')} 등 ${r.dongCount}개 동네. 원인부터 해결까지 정리했어요.`,
-          jsonLd: {
+          jsonLd: [{
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
             headline: `${blogLabel(r)}${kw.label} ${work} ${kind.label}`,
@@ -1876,17 +1968,19 @@ if (BLOG) {
             areaServed: { '@type': 'AdministrativeArea', name: full },
             mainEntityOfPage: `${siteUrl}/${slug}/`,
           },
+          /*
+           * 본문 안의 문답을 그대로 FAQPage 로 낸다. 화면에 없는 질문을 스키마에만
+           * 적으면 구조화 데이터 위반이라, 조립기가 실제로 넣은 것만 가져온다.
+           */
+          ...(article.faq.length ? [{
+            '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: article.faq,
+          }] : [])],
           main: renderTemplate(templates.post, {
             ...base,
             postH1: `${blogLabel(r)}${kw.label} ${work} ${kind.label}`,
             postedAt: ymd(at),
             postedAtISO: at.toISOString(),
             leadImage,
-            /*
-             * 목차. 레퍼런스(누수도사)가 제목 바로 아래에 둔다.
-             * 글이 2,700자쯤 되고 소제목이 다섯이라, 없으면 뭘 다루는지 한눈에 안 들어온다.
-             */
-            toc: secs.map((x) => ({ id: x.id, h: x.h })),
             sidoLabel: r.sidoLabel,
             sigunguLabel: r.sigunguLabel,
             kwLabel: kw.label,
@@ -1894,7 +1988,7 @@ if (BLOG) {
             lead: `${full}에서 ${kw.label}으로 검색해 들어오셨다면 잘 오셨어요. `
               + `${dongPick.join(' · ')} 어디든 가고요, 이 글에 원인부터 해결까지 정리해 뒀으니 `
               + `읽어 보시고 애매하면 전화 주세요.`,
-            secs,
+            article: article.html,
             costPart,
             closing: fillPlaceholders(blogData.closing[seed % blogData.closing.length], vars),
             tags: tags.map((t) => ({ t })),

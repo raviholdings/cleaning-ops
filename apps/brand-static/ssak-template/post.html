@@ -8,17 +8,7 @@
 
     {{#leadImage}}<figure class="plead"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" fetchpriority="high" decoding="async"></figure>{{/leadImage}}
 
-    <nav class="ptoc" aria-label="목차">
-      <p class="ptoct">목차</p>
-      <ol>{{#toc}}<li><a href="#{{id}}">{{h}}</a></li>{{/toc}}</ol>
-    </nav>
-
-    {{#secs}}
-    <section class="pb" id="{{id}}">
-      <h2>{{h}}</h2>
-      {{#p}}<p>{{t}}</p>{{/p}}
-    </section>
-    {{/secs}}
+    {{{article}}}
 
     {{#costPart}}
     <section class="pb pc">

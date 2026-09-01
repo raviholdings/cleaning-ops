@@ -11,41 +11,9 @@
   </div>
 </div>
 
-<section id="local"><div class="wrap">
-  <p class="mark">01 — 이 지역</p>
-  <h2>{{localHeading}}</h2>
-  <p class="lede">{{localBody}}</p>
-</div></section>
-
-<section id="symptom"><div class="wrap">
-  <p class="mark">02 — 증상</p>
-  <h2>{{symptomHeading}}</h2>
-  <div class="panes">{{#symptoms}}<div class="pane"><h3>{{t}}</h3><p>{{d}}</p></div>{{/symptoms}}</div>
-</div></section>
-
-<section id="cause"><div class="wrap">
-  <p class="mark">03 — 원인</p>
-  <h2>{{causeHeading}}</h2>
-  <div class="panes">{{#causes}}<div class="pane"><h3>{{t}}</h3><p>{{d}}</p></div>{{/causes}}</div>
-</div></section>
-
-<section id="method"><div class="wrap">
-  <p class="mark">04 — 하는 방법</p>
-  <h2>{{methodHeading}}</h2>
-  <div class="panes">{{#method}}<div class="pane"><p class="num">{{no}}</p><h3>{{t}}</h3><p>{{d}}</p></div>{{/method}}</div>
-</div></section>
-
-<section id="dont"><div class="wrap">
-  <p class="mark">05 — 주의</p>
-  <h2>{{dontHeading}}</h2>
-  <div class="dialog">{{#dont}}<div class="dlg"><p class="ask">{{t}}</p><p class="ans">{{d}}</p></div>{{/dont}}</div>
-</div></section>
-
-<section id="price"><div class="wrap">
-  <p class="mark">06 — 값</p>
-  <h2>{{{priceHeading}}}</h2>
-  <div class="ledger">{{#price}}<div><b>{{item}}</b><i></i><span>{{basis}}</span></div>{{/price}}</div>
-  <p class="aside">{{priceNote}}</p>
+<section id="read"><div class="wrap">
+  <p class="mark">01 — 읽을거리</p>
+  {{{article}}}
 </div></section>
 
 {{#hasPhotos}}
@@ -55,12 +23,6 @@
   <div class="shots">{{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}</div>
 </div></section>
 {{/hasPhotos}}
-
-<section id="faq"><div class="wrap">
-  <p class="mark">08 — 문답</p>
-  <h2>{{faqHeading}}</h2>
-  <div class="dialog">{{#faq}}<div class="dlg"><p class="ask">{{q}}</p><p class="ans">{{a}}</p></div>{{/faq}}</div>
-</div></section>
 
 <section id="near"><div class="wrap">
   <p class="mark">09 — 인근</p>

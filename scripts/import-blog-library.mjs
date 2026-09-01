@@ -23,6 +23,7 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRCS = [
   'blog-section-reference-library.md',
   'blog-section-reference-library-2.md',
+  'blog-section-reference-library-3.md',
 ].map((f) => join(projectRoot, f)).filter((f) => existsSync(f));
 const OUT = join(projectRoot, 'data/brands/_blog-library.json');
 

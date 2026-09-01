@@ -1,712 +1,811 @@
 {
-  "_note": "하수구도사 — 5개 브랜드 중 5번(마지막). 앞의 넷과 한 문장도 겹치면 안 된다(scripts/check-brand-sites.mjs). 목소리는 노련한 노포 — 하십시오체를 쓰고, 겪어본 사람의 말투로 쓴다.",
-  "key": "dosa",
-  "template": "dosa",
-  "brand": "하수구도사",
-  "brandHead": "하수구",
-  "brandTail": "도사",
-  "host": "dosadosa.kr",
-  "siteUrl": "https://TBD.co.kr",
-  "phone": "070-7106-5229",
-  "phoneRaw": "07071065229",
-  "assetVersion": "dosa-v18",
-  "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
-  "slugWords": [
-    "well",
-    "spring",
-    "craft",
-    "hand",
-    "stone"
-  ],
-  "_imagesNote": "사진은 apps/brand-static/dosa-template/assets/img/ 에 dosa-01.webp ~ dosa-10.webp 로 넣고 `node scripts/register-brand-images.mjs dosa` 를 돌린다. pool 은 그 스크립트가 채우므로 손으로 고치지 않는다. 주제표는 그 스크립트의 SUBJECTS.",
-  "images": {
-    "pool": [
-      {
-        "file": "dosa-01.webp",
-        "label": "변기 뚫는 중",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-02.webp",
-        "label": "꺼낸 이물질",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-03.webp",
-        "label": "열어 둔 배수 트랩",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-04.webp",
-        "label": "걷어낸 침전물",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-05.webp",
-        "label": "주방 싱크대 배수",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-06.webp",
-        "label": "굳어 붙은 기름",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-07.webp",
-        "label": "세면대 배관",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-08.webp",
-        "label": "관 속을 보는 내시경",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-09.webp",
-        "label": "챙겨 간 장비",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-10.webp",
-        "label": "정리하고 나온 자리",
-        "width": 1200,
-        "height": 900
-      },
-      {
-        "file": "dosa-i01.webp",
-        "label": "변기막힘",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i02.webp",
-        "label": "하수구막힘",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i03.webp",
-        "label": "싱크대막힘",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i04.webp",
-        "label": "누수탐지",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i05.webp",
-        "label": "수전교체",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i06.webp",
-        "label": "상가주방",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i07.webp",
-        "label": "샤워기수전",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i08.webp",
-        "label": "고압세척",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i09.webp",
-        "label": "아파트화장실냄새",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i10.webp",
-        "label": "아파트누수",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i11.webp",
-        "label": "보일러누수",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "dosa-i12.webp",
-        "label": "베란다천장누수",
-        "width": 1448,
-        "height": 1086
-      }
-    ],
-    "captions": {
-      "10": "마치고 나서",
-      "01": "변기 안을 먼저 살핍니다",
-      "02": "걸려 있던 것",
-      "03": "배수구 아래를 풀어 놓은 자리",
-      "04": "걷어낸 것들",
-      "05": "주방 아래에서",
-      "06": "관에 앉은 기름 켜를 벗김",
-      "07": "세면대 아래를 풀어",
-      "08": "관 속을 들여다봄",
-      "09": "지니고 다니는 연장"
-    },
-    "cases": [
-      {
-        "file": "case-01-01.webp",
-        "label": "물이 차오르고 휴지가 남아 있는 막힘 상태",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-02-01.webp",
-        "label": "바닥 하수구 주변에 물이 고인 상태",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-03-01.webp",
-        "label": "싱크대에 탁한 물이 빠지지 않는 상태",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-04-01.webp",
-        "label": "벽 하단 습기와 누수 흔적 발견",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-05-01.webp",
-        "label": "노후 수전의 부식과 물방울 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-06-01.webp",
-        "label": "상가 주방 바닥 배수 불량 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-07-01.webp",
-        "label": "샤워 수전의 물때와 누수 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-08-01.webp",
-        "label": "배관 접근구 앞 고압세척 장비 준비",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-09-01.webp",
-        "label": "가스 측정기로 바닥 배수구 점검",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-10-01.webp",
-        "label": "아랫집 천장의 누수 얼룩 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-11-01.webp",
-        "label": "보일러 하부 배관 연결부 물방울 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-12-01.webp",
-        "label": "비 온 뒤 베란다 천장 습기와 도장 들뜸 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-01-02.webp",
-        "label": "내시경과 스프링 장비로 막힘 위치 진단",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-01-03.webp",
-        "label": "변기를 분리해 물티슈 이물질 제거",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-01-04.webp",
-        "label": "변기 재설치 후 배수 시험",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-01-05.webp",
-        "label": "정상 수위와 깨끗한 현장 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-02-02.webp",
-        "label": "배수구를 열고 내시경으로 내부 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-02-03.webp",
-        "label": "회전 스프링 장비로 이물질 제거",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-02-04.webp",
-        "label": "물을 흘려 원활한 배수 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-02-05.webp",
-        "label": "배수구 덮개 복구와 현장 정리",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-03-02.webp",
-        "label": "하부 트랩을 분해해 막힘 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-03-03.webp",
-        "label": "전동 스프링으로 벽체 배관 청소",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-03-04.webp",
-        "label": "수전 물을 흘려 빠른 배수 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-04-02.webp",
-        "label": "열화상 장비로 습기 범위 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-04-03.webp",
-        "label": "청음 장비와 수분계로 누수 지점 특정",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-04-04.webp",
-        "label": "최소 범위 개방 후 배관 연결부 수리",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-05-02.webp",
-        "label": "전용 공구로 노후 수전 철거",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-05-03.webp",
-        "label": "새 수전과 급수 호스 연결",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-05-04.webp",
-        "label": "통수 시험과 연결부 누수 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-06-02.webp",
-        "label": "내시경으로 유지방 축적 상태 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-06-03.webp",
-        "label": "회전 장비와 습식 흡입기로 배관 청소",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-06-04.webp",
-        "label": "바닥 배수 시험 후 영업 준비 완료",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-07-02.webp",
-        "label": "급수 차단 후 기존 샤워 수전 철거",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-07-03.webp",
-        "label": "새 샤워 수전을 수평으로 설치",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-07-04.webp",
-        "label": "출수와 연결부 누수 최종 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-08-02.webp",
-        "label": "배관에 고압 세척 호스 투입",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-08-03.webp",
-        "label": "오염수를 회수하며 배관 내부 세척",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-08-04.webp",
-        "label": "강한 배수 흐름 확인 후 장비 정리",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-09-02.webp",
-        "label": "건조되거나 밀폐 불량인 트랩 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-09-03.webp",
-        "label": "냄새 차단 트랩 설치와 틈새 밀봉",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-09-04.webp",
-        "label": "덮개 복구 후 공기 상태 재확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-10-02.webp",
-        "label": "열화상과 수분계로 누수 경로 추적",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-10-03.webp",
-        "label": "윗집 욕실 배관 연결부 수리",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-10-04.webp",
-        "label": "아랫집 천장 건조와 마감 후 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-11-02.webp",
-        "label": "압력 시험으로 부식된 연결부 특정",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-11-03.webp",
-        "label": "보일러 하부 배관 부속 교체",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-11-04.webp",
-        "label": "압력 안정과 연결부 건조 상태 확인",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-12-02.webp",
-        "label": "수분계와 열화상으로 유입 경로 추적",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-12-03.webp",
-        "label": "외부 접합부와 균열 방수 보수",
-        "width": 1448,
-        "height": 1086
-      },
-      {
-        "file": "case-12-04.webp",
-        "label": "천장 건조와 도장 복구 후 확인",
-        "width": 1448,
-        "height": 1086
-      }
-    ]
-  },
-  "leadApi": "/api/lead",
-  "leadProject": "brand-dosa",
-  "estimateHeading": "말씀을 <span class=\"d\">남겨 두십시오</span>",
-  "estimateLede": "읽는 대로 연락드립니다. 물이 넘치는 중이라면 전화가 낫습니다.",
-  "strip": [
-    {
-      "text": "밤낮 없이 받습니다"
-    },
-    {
-      "text": "전국 출행"
-    },
-    {
-      "text": "보고 나서 값을 말씀드립니다"
-    }
-  ],
-  "nav": [
-    {
-      "anchor": "service",
-      "label": "시술"
-    },
-    {
-      "anchor": "dong",
-      "label": "동네",
-      "regionOnly": true
-    },
-    {
-      "anchor": "cause",
-      "label": "진단"
-    },
-    {
-      "anchor": "price",
-      "label": "비용"
-    },
-    {
-      "anchor": "estimate",
-      "label": "접수"
-    },
-    {
-      "anchor": "case",
-      "label": "기록",
-      "homeOnly": true
-    },
-    {
-      "anchor": "faq",
-      "label": "문답",
-      "homeOnly": true
-    },
-    {
-      "href": "/area/",
-      "label": "출행"
-    }
-  ],
-  "kicker": "하수구 · 변기 막힘",
-  "h1a": "삼십 년을 보면",
-  "h1b": "소리만 들어도 압니다",
-  "h1sub": "같은 막힘이라도 이물이 걸린 것과 관이 좁아진 것은 손대는 자리가 다릅니다. 그 자리를 짚는 데에 오래 걸렸습니다.",
-  "board": [
-    {
-      "k": "받는 때",
-      "v": "밤낮 없이"
-    },
-    {
-      "k": "나가는 곳",
-      "v": "전국"
-    },
-    {
-      "k": "값",
-      "v": "보고 나서"
-    },
-    {
-      "k": "다시 막히면",
-      "v": "다시 갑니다"
-    }
-  ],
-  "serviceHeading": "손대기 전에 <span class=\"d\">자리를 짚습니다</span>",
-  "serviceLede": "짚지 않고 넣으면 이물이 더 깊이 들어갑니다. 그때부터는 일이 다릅니다.",
-  "jobs": [
-    {
-      "no": "一",
-      "title": "변기",
-      "body": "이물이 걸렸는지 관이 좁아졌는지를 먼저 가릅니다. 이 둘은 손대는 방향이 반대입니다."
-    },
-    {
-      "no": "二",
-      "title": "욕실 · 베란다",
-      "body": "배수구 아래를 풀어 쌓인 것을 걷어내고 다시 맞춥니다. 대개 여기서 끝납니다."
-    },
-    {
-      "no": "三",
-      "title": "주방",
-      "body": "기름은 식으면서 관 안쪽에 붙습니다. 더운물로는 밀릴 뿐이고 긁어내야 합니다."
-    },
-    {
-      "no": "四",
-      "title": "관 살피기",
-      "body": "안을 들여다보고 시작합니다. 짐작으로 넣으면 성한 관도 상합니다."
-    }
-  ],
-  "causeHeading": "증상을 들으면 <span class=\"c\">대개 갈립니다</span>",
-  "causeLede": "증후를 들으면 까닭이 대개 갈립니다. 그래야 연장을 맞게 지니고 갑니다.",
-  "causes": [
-    {
-      "sym": "더딤",
-      "title": "천천히 빠집니다",
-      "body": "막힌 것이 아니라 길이 좁아진 것입니다. 자리는 대개 배수구에서 멀지 않습니다."
-    },
-    {
-      "sym": "역류",
-      "title": "아랫집도 넘칩니다",
-      "body": "그러면 세대의 일이 아니라 건물의 일입니다. 우리 집만 손대서는 잡히지 않습니다."
-    },
-    {
-      "sym": "냄새",
-      "title": "막힌 데 없이 냄새만 납니다",
-      "body": "오래 쓰지 않은 배수구는 물막이가 말라 아래 냄새가 그대로 올라옵니다."
-    },
-    {
-      "sym": "소리",
-      "title": "물 내릴 때 소리가 납니다",
-      "body": "공기가 거꾸로 통하며 나는 소리입니다. 관이 좁아지고 있다는 조짐입니다."
-    }
-  ],
-  "priceHeading": "보고 나서 <span class=\"d\">값을 말씀드립니다</span>",
-  "price": [
-    {
-      "item": "변기 단순",
-      "basis": "5만원"
-    },
-    {
-      "item": "변기 석션",
-      "basis": "10만원"
-    },
-    {
-      "item": "싱크대 단순",
-      "basis": "7만원"
-    },
-    {
-      "item": "싱크대 샤프트",
-      "basis": "15만원"
-    },
-    {
-      "item": "하수구 단순",
-      "basis": "7만원"
-    },
-    {
-      "item": "하수구 샤프트",
-      "basis": "15만원"
-    }
-  ],
-  "priceNote": "위 값은 단순한 경우입니다. 형편에 따라 달라지면 손대기 전에 여쭙고, 허락하신 뒤에 시작합니다.",
-  "caseHeading": "겪은 일들",
-  "cases": [
-    {
-      "id": "一",
-      "title": "약을 붓고 부르신 댁",
-      "body": "관이 이미 삭아 있었습니다. 약은 걸린 이물이 아니라 관을 먼저 상하게 합니다. 손볼 자리가 크게 늘었습니다."
-    },
-    {
-      "id": "二",
-      "title": "해마다 같은 철에 막히던 가게",
-      "body": "기름이 쌓이는 속도가 일정했습니다. 긁어낸 뒤 다음 철을 미리 일러드려, 이제는 막히기 전에 부르십니다."
-    },
-    {
-      "id": "三",
-      "title": "새 집인데 자꾸 막히던 댁",
-      "body": "관의 기울기가 거의 없었습니다. 뚫어도 그 자리에 다시 쌓입니다. 지은 쪽의 일이라 말씀드렸습니다."
-    }
-  ],
-  "faqHeading": "먼저 <span class=\"c\">여쭙는 것들</span>",
-  "faq": [
-    {
-      "q": "약을 부어도 되겠습니까?",
-      "a": "권하지 않습니다. 이물에는 듣지 않고 오래된 관은 약에 먼저 상합니다."
-    },
-    {
-      "q": "오늘 오실 수 있습니까?",
-      "a": "연락 주시면 그 고장에 나갈 사람이 있는지 곧바로 확인해 드립니다. 어려우면 어렵다고 말씀드립니다."
-    },
-    {
-      "q": "변기를 들어내야 합니까?",
-      "a": "웬만하면 들어내지 않습니다. 들어내야 할 형편이면 까닭을 보여드리고 여쭙습니다."
-    },
-    {
-      "q": "또 막히면 어찌합니까?",
-      "a": "같은 까닭이면 다시 나갑니다. 다른 까닭이면 처음부터 다시 봐야 합니다."
-    }
-  ],
-  "areaHeading": "전국 출행",
-  "areaLede": "고장을 누르시면 그곳 안내로 넘어갑니다.",
-  "hubHeading": "어디든 <span class=\"d\">나갑니다</span>",
-  "hubLede": "시·군·구를 누르시면 그 안에서 자주 나가는 동네가 적혀 있습니다.",
-  "endHeading": "넘치는 중이면 <span class=\"d\">먼저 연락 주십시오</span>",
-  "endLede": "물은 기다려 주지 않습니다. 사정만 이르시면 나갈 수 있는지 곧 알려 드립니다.",
-  "badges": [
-    "밤낮 없이",
-    "보고 나서 값",
-    "같은 까닭이면 다시"
-  ],
-  "footerNote": "연중무휴 · 밤낮 없이 받습니다",
-  "regionKeywords": [
-    "하수구막힘",
-    "싱크대막힘",
-    "변기막힘",
-    "욕조막힘",
-    "배관내시경",
-    "관로탐지",
-    "오수받이막힘",
-    "집수정청소",
-    "맨홀청소",
-    "수도배관막힘",
-    "세면대뚫기",
-    "배수로막힘",
-    "상수관세척"
-  ],
-  "_navModelNote": "메뉴가 시술 종류다. 드림과 같은 모델이지만 라벨과 순서가 다르다.",
-  "navModel": "services",
-  "navAreaLabel": "지역",
-  "heroImage": {
-    "file": "dosa-hero.webp",
-    "label": "배관과 압력계",
-    "width": 1600,
+ "_note": "하수구도사 — 5개 브랜드 중 5번(마지막). 앞의 넷과 한 문장도 겹치면 안 된다(scripts/check-brand-sites.mjs). 목소리는 노련한 노포 — 하십시오체를 쓰고, 겪어본 사람의 말투로 쓴다.",
+ "key": "dosa",
+ "template": "dosa",
+ "brand": "하수구도사",
+ "brandHead": "하수구",
+ "brandTail": "도사",
+ "host": "dosadosa.kr",
+ "siteUrl": "https://TBD.co.kr",
+ "phone": "070-7106-5229",
+ "phoneRaw": "07071065229",
+ "assetVersion": "dosa-v18",
+ "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
+ "slugWords": [
+  "well",
+  "spring",
+  "craft",
+  "hand",
+  "stone"
+ ],
+ "_imagesNote": "사진은 apps/brand-static/dosa-template/assets/img/ 에 dosa-01.webp ~ dosa-10.webp 로 넣고 `node scripts/register-brand-images.mjs dosa` 를 돌린다. pool 은 그 스크립트가 채우므로 손으로 고치지 않는다. 주제표는 그 스크립트의 SUBJECTS.",
+ "images": {
+  "pool": [
+   {
+    "file": "dosa-01.webp",
+    "label": "변기 뚫는 중",
+    "width": 1200,
     "height": 900
+   },
+   {
+    "file": "dosa-02.webp",
+    "label": "꺼낸 이물질",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-03.webp",
+    "label": "열어 둔 배수 트랩",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-04.webp",
+    "label": "걷어낸 침전물",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-05.webp",
+    "label": "주방 싱크대 배수",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-06.webp",
+    "label": "굳어 붙은 기름",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-07.webp",
+    "label": "세면대 배관",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-08.webp",
+    "label": "관 속을 보는 내시경",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-09.webp",
+    "label": "챙겨 간 장비",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-10.webp",
+    "label": "정리하고 나온 자리",
+    "width": 1200,
+    "height": 900
+   },
+   {
+    "file": "dosa-i01.webp",
+    "label": "변기막힘",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i02.webp",
+    "label": "하수구막힘",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i03.webp",
+    "label": "싱크대막힘",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i04.webp",
+    "label": "누수탐지",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i05.webp",
+    "label": "수전교체",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i06.webp",
+    "label": "상가주방",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i07.webp",
+    "label": "샤워기수전",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i08.webp",
+    "label": "고압세척",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i09.webp",
+    "label": "아파트화장실냄새",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i10.webp",
+    "label": "아파트누수",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i11.webp",
+    "label": "보일러누수",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "dosa-i12.webp",
+    "label": "베란다천장누수",
+    "width": 1448,
+    "height": 1086
+   }
+  ],
+  "captions": {
+   "10": "마치고 나서",
+   "01": "변기 안을 먼저 살핍니다",
+   "02": "걸려 있던 것",
+   "03": "배수구 아래를 풀어 놓은 자리",
+   "04": "걷어낸 것들",
+   "05": "주방 아래에서",
+   "06": "관에 앉은 기름 켜를 벗김",
+   "07": "세면대 아래를 풀어",
+   "08": "관 속을 들여다봄",
+   "09": "지니고 다니는 연장"
   },
-  "_heroNote": "히어로 배경. output/hero-concepts 에서 골라 넣었다. 글자가 얹히므로 왼쪽이 비어 있는 컷을 썼다.",
-  "structure": "tiered",
-  "kwListHeading": "하수구도사가 하는 일",
-  "kwListLede": "변기·주방·욕실 배수와 하수구, 그리고 관 속을 보는 일까지 합니다. 정화조는 하지 않습니다 — 허가가 있어야 하는 일이라 저희 일이 아닙니다.",
-  "naverVerification": "",
-  "shotsPerPage": 6,
-  "facts": {
-    "equipment": [
-      "석션기",
-      "전동 스프링",
-      "플렉스 샤프트",
-      "배관 내시경",
-      "고압세척기"
-    ],
-    "hours": "24시간 연중무휴",
-    "_confirmed": "운영자 확인 2026-09-01"
+  "cases": [
+   {
+    "file": "case-01-01.webp",
+    "label": "물이 차오르고 휴지가 남아 있는 막힘 상태",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-02-01.webp",
+    "label": "바닥 하수구 주변에 물이 고인 상태",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-03-01.webp",
+    "label": "싱크대에 탁한 물이 빠지지 않는 상태",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-04-01.webp",
+    "label": "벽 하단 습기와 누수 흔적 발견",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-05-01.webp",
+    "label": "노후 수전의 부식과 물방울 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-06-01.webp",
+    "label": "상가 주방 바닥 배수 불량 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-07-01.webp",
+    "label": "샤워 수전의 물때와 누수 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-08-01.webp",
+    "label": "배관 접근구 앞 고압세척 장비 준비",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-09-01.webp",
+    "label": "가스 측정기로 바닥 배수구 점검",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-10-01.webp",
+    "label": "아랫집 천장의 누수 얼룩 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-11-01.webp",
+    "label": "보일러 하부 배관 연결부 물방울 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-12-01.webp",
+    "label": "비 온 뒤 베란다 천장 습기와 도장 들뜸 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-01-02.webp",
+    "label": "내시경과 스프링 장비로 막힘 위치 진단",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-01-03.webp",
+    "label": "변기를 분리해 물티슈 이물질 제거",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-01-04.webp",
+    "label": "변기 재설치 후 배수 시험",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-01-05.webp",
+    "label": "정상 수위와 깨끗한 현장 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-02-02.webp",
+    "label": "배수구를 열고 내시경으로 내부 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-02-03.webp",
+    "label": "회전 스프링 장비로 이물질 제거",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-02-04.webp",
+    "label": "물을 흘려 원활한 배수 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-02-05.webp",
+    "label": "배수구 덮개 복구와 현장 정리",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-03-02.webp",
+    "label": "하부 트랩을 분해해 막힘 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-03-03.webp",
+    "label": "전동 스프링으로 벽체 배관 청소",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-03-04.webp",
+    "label": "수전 물을 흘려 빠른 배수 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-04-02.webp",
+    "label": "열화상 장비로 습기 범위 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-04-03.webp",
+    "label": "청음 장비와 수분계로 누수 지점 특정",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-04-04.webp",
+    "label": "최소 범위 개방 후 배관 연결부 수리",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-05-02.webp",
+    "label": "전용 공구로 노후 수전 철거",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-05-03.webp",
+    "label": "새 수전과 급수 호스 연결",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-05-04.webp",
+    "label": "통수 시험과 연결부 누수 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-06-02.webp",
+    "label": "내시경으로 유지방 축적 상태 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-06-03.webp",
+    "label": "회전 장비와 습식 흡입기로 배관 청소",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-06-04.webp",
+    "label": "바닥 배수 시험 후 영업 준비 완료",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-07-02.webp",
+    "label": "급수 차단 후 기존 샤워 수전 철거",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-07-03.webp",
+    "label": "새 샤워 수전을 수평으로 설치",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-07-04.webp",
+    "label": "출수와 연결부 누수 최종 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-08-02.webp",
+    "label": "배관에 고압 세척 호스 투입",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-08-03.webp",
+    "label": "오염수를 회수하며 배관 내부 세척",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-08-04.webp",
+    "label": "강한 배수 흐름 확인 후 장비 정리",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-09-02.webp",
+    "label": "건조되거나 밀폐 불량인 트랩 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-09-03.webp",
+    "label": "냄새 차단 트랩 설치와 틈새 밀봉",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-09-04.webp",
+    "label": "덮개 복구 후 공기 상태 재확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-10-02.webp",
+    "label": "열화상과 수분계로 누수 경로 추적",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-10-03.webp",
+    "label": "윗집 욕실 배관 연결부 수리",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-10-04.webp",
+    "label": "아랫집 천장 건조와 마감 후 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-11-02.webp",
+    "label": "압력 시험으로 부식된 연결부 특정",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-11-03.webp",
+    "label": "보일러 하부 배관 부속 교체",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-11-04.webp",
+    "label": "압력 안정과 연결부 건조 상태 확인",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-12-02.webp",
+    "label": "수분계와 열화상으로 유입 경로 추적",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-12-03.webp",
+    "label": "외부 접합부와 균열 방수 보수",
+    "width": 1448,
+    "height": 1086
+   },
+   {
+    "file": "case-12-04.webp",
+    "label": "천장 건조와 도장 복구 후 확인",
+    "width": 1448,
+    "height": 1086
+   }
+  ]
+ },
+ "leadApi": "/api/lead",
+ "leadProject": "brand-dosa",
+ "estimateHeading": "말씀을 <span class=\"d\">남겨 두십시오</span>",
+ "estimateLede": "읽는 대로 연락드립니다. 물이 넘치는 중이라면 전화가 낫습니다.",
+ "strip": [
+  {
+   "text": "밤낮 없이 받습니다"
+  },
+  {
+   "text": "전국 출행"
+  },
+  {
+   "text": "보고 나서 값을 말씀드립니다"
   }
+ ],
+ "nav": [
+  {
+   "anchor": "service",
+   "label": "시술"
+  },
+  {
+   "anchor": "dong",
+   "label": "동네",
+   "regionOnly": true
+  },
+  {
+   "anchor": "cause",
+   "label": "진단"
+  },
+  {
+   "anchor": "price",
+   "label": "비용"
+  },
+  {
+   "anchor": "estimate",
+   "label": "접수"
+  },
+  {
+   "anchor": "case",
+   "label": "기록",
+   "homeOnly": true
+  },
+  {
+   "anchor": "faq",
+   "label": "문답",
+   "homeOnly": true
+  },
+  {
+   "href": "/area/",
+   "label": "출행"
+  }
+ ],
+ "kicker": "하수구 · 변기 막힘",
+ "h1a": "삼십 년을 보면",
+ "h1b": "소리만 들어도 압니다",
+ "h1sub": "같은 막힘이라도 이물이 걸린 것과 관이 좁아진 것은 손대는 자리가 다릅니다. 그 자리를 짚는 데에 오래 걸렸습니다.",
+ "board": [
+  {
+   "k": "받는 때",
+   "v": "밤낮 없이"
+  },
+  {
+   "k": "나가는 곳",
+   "v": "전국"
+  },
+  {
+   "k": "값",
+   "v": "보고 나서"
+  },
+  {
+   "k": "다시 막히면",
+   "v": "다시 갑니다"
+  }
+ ],
+ "serviceHeading": "손대기 전에 <span class=\"d\">자리를 짚습니다</span>",
+ "serviceLede": "짚지 않고 넣으면 이물이 더 깊이 들어갑니다. 그때부터는 일이 다릅니다.",
+ "jobs": [
+  {
+   "no": "一",
+   "title": "변기",
+   "body": "이물이 걸렸는지 관이 좁아졌는지를 먼저 가릅니다. 이 둘은 손대는 방향이 반대입니다."
+  },
+  {
+   "no": "二",
+   "title": "욕실 · 베란다",
+   "body": "배수구 아래를 풀어 쌓인 것을 걷어내고 다시 맞춥니다. 대개 여기서 끝납니다."
+  },
+  {
+   "no": "三",
+   "title": "주방",
+   "body": "기름은 식으면서 관 안쪽에 붙습니다. 더운물로는 밀릴 뿐이고 긁어내야 합니다."
+  },
+  {
+   "no": "四",
+   "title": "관 살피기",
+   "body": "안을 들여다보고 시작합니다. 짐작으로 넣으면 성한 관도 상합니다."
+  }
+ ],
+ "causeHeading": "증상을 들으면 <span class=\"c\">대개 갈립니다</span>",
+ "causeLede": "증후를 들으면 까닭이 대개 갈립니다. 그래야 연장을 맞게 지니고 갑니다.",
+ "causes": [
+  {
+   "sym": "더딤",
+   "title": "천천히 빠집니다",
+   "body": "막힌 것이 아니라 길이 좁아진 것입니다. 자리는 대개 배수구에서 멀지 않습니다."
+  },
+  {
+   "sym": "역류",
+   "title": "아랫집도 넘칩니다",
+   "body": "그러면 세대의 일이 아니라 건물의 일입니다. 우리 집만 손대서는 잡히지 않습니다."
+  },
+  {
+   "sym": "냄새",
+   "title": "막힌 데 없이 냄새만 납니다",
+   "body": "오래 쓰지 않은 배수구는 물막이가 말라 아래 냄새가 그대로 올라옵니다."
+  },
+  {
+   "sym": "소리",
+   "title": "물 내릴 때 소리가 납니다",
+   "body": "공기가 거꾸로 통하며 나는 소리입니다. 관이 좁아지고 있다는 조짐입니다."
+  }
+ ],
+ "priceHeading": "보고 나서 <span class=\"d\">값을 말씀드립니다</span>",
+ "price": [
+  {
+   "item": "변기 단순",
+   "basis": "5만원"
+  },
+  {
+   "item": "변기 석션",
+   "basis": "10만원"
+  },
+  {
+   "item": "싱크대 단순",
+   "basis": "7만원"
+  },
+  {
+   "item": "싱크대 샤프트",
+   "basis": "15만원"
+  },
+  {
+   "item": "하수구 단순",
+   "basis": "7만원"
+  },
+  {
+   "item": "하수구 샤프트",
+   "basis": "15만원"
+  }
+ ],
+ "priceNote": "위 값은 단순한 경우입니다. 형편에 따라 달라지면 손대기 전에 여쭙고, 허락하신 뒤에 시작합니다.",
+ "caseHeading": "겪은 일들",
+ "cases": [
+  {
+   "id": "一",
+   "title": "약을 붓고 부르신 댁",
+   "body": "관이 이미 삭아 있었습니다. 약은 걸린 이물이 아니라 관을 먼저 상하게 합니다. 손볼 자리가 크게 늘었습니다."
+  },
+  {
+   "id": "二",
+   "title": "해마다 같은 철에 막히던 가게",
+   "body": "기름이 쌓이는 속도가 일정했습니다. 긁어낸 뒤 다음 철을 미리 일러드려, 이제는 막히기 전에 부르십니다."
+  },
+  {
+   "id": "三",
+   "title": "새 집인데 자꾸 막히던 댁",
+   "body": "관의 기울기가 거의 없었습니다. 뚫어도 그 자리에 다시 쌓입니다. 지은 쪽의 일이라 말씀드렸습니다."
+  }
+ ],
+ "faqHeading": "먼저 <span class=\"c\">여쭙는 것들</span>",
+ "faq": [
+  {
+   "q": "약을 부어도 되겠습니까?",
+   "a": "권하지 않습니다. 이물에는 듣지 않고 오래된 관은 약에 먼저 상합니다."
+  },
+  {
+   "q": "오늘 오실 수 있습니까?",
+   "a": "연락 주시면 그 고장에 나갈 사람이 있는지 곧바로 확인해 드립니다. 어려우면 어렵다고 말씀드립니다."
+  },
+  {
+   "q": "변기를 들어내야 합니까?",
+   "a": "웬만하면 들어내지 않습니다. 들어내야 할 형편이면 까닭을 보여드리고 여쭙습니다."
+  },
+  {
+   "q": "또 막히면 어찌합니까?",
+   "a": "같은 까닭이면 다시 나갑니다. 다른 까닭이면 처음부터 다시 봐야 합니다."
+  }
+ ],
+ "areaHeading": "전국 출행",
+ "areaLede": "고장을 누르시면 그곳 안내로 넘어갑니다.",
+ "hubHeading": "어디든 <span class=\"d\">나갑니다</span>",
+ "hubLede": "시·군·구를 누르시면 그 안에서 자주 나가는 동네가 적혀 있습니다.",
+ "endHeading": "넘치는 중이면 <span class=\"d\">먼저 연락 주십시오</span>",
+ "endLede": "물은 기다려 주지 않습니다. 사정만 이르시면 나갈 수 있는지 곧 알려 드립니다.",
+ "badges": [
+  "밤낮 없이",
+  "보고 나서 값",
+  "같은 까닭이면 다시"
+ ],
+ "footerNote": "연중무휴 · 밤낮 없이 받습니다",
+ "regionKeywords": [
+  "하수구막힘",
+  "싱크대막힘",
+  "변기막힘",
+  "욕조막힘",
+  "배관내시경",
+  "관로탐지",
+  "오수받이막힘",
+  "집수정청소",
+  "맨홀청소",
+  "수도배관막힘",
+  "세면대뚫기",
+  "배수로막힘",
+  "상수관세척"
+ ],
+ "_navModelNote": "메뉴가 시술 종류다. 드림과 같은 모델이지만 라벨과 순서가 다르다.",
+ "navModel": "services",
+ "navAreaLabel": "지역",
+ "heroImage": {
+  "file": "dosa-hero.webp",
+  "label": "배관과 압력계",
+  "width": 1600,
+  "height": 900
+ },
+ "_heroNote": "히어로 배경. output/hero-concepts 에서 골라 넣었다. 글자가 얹히므로 왼쪽이 비어 있는 컷을 썼다.",
+ "structure": "tiered",
+ "kwListHeading": "하수구도사가 하는 일",
+ "kwListLede": "변기·주방·욕실 배수와 하수구, 그리고 관 속을 보는 일까지 합니다. 정화조는 하지 않습니다 — 허가가 있어야 하는 일이라 저희 일이 아닙니다.",
+ "naverVerification": "",
+ "shotsPerPage": 6,
+ "facts": {
+  "equipment": [
+   "석션기",
+   "전동 스프링",
+   "플렉스 샤프트",
+   "배관 내시경",
+   "고압세척기"
+  ],
+  "hours": "24시간 연중무휴",
+  "_confirmed": "운영자 확인 2026-09-01"
+ },
+ "articlePlan": [
+  {
+   "h": "원인",
+   "from": [
+    "site:원인",
+    "막힘 원인 설명"
+   ],
+   "n": [
+    3,
+    1
+   ],
+   "add": "ol:원인"
+  },
+  {
+   "h": "증상",
+   "from": [
+    "site:증상",
+    "증상 및 자가 점검"
+   ],
+   "n": [
+    3,
+    1
+   ],
+   "add": "box:알아두세요"
+  },
+  {
+   "h": "진단",
+   "from": "진단 과정",
+   "n": 3,
+   "add": "ol:부르기"
+  },
+  {
+   "h": "장비",
+   "from": [
+    "site:작업",
+    "장비 및 작업 방법"
+   ],
+   "n": [
+    3,
+    1
+   ]
+  },
+  {
+   "h": "비용",
+   "n": 0,
+   "add": [
+    "cost",
+    "price"
+   ]
+  },
+  {
+   "h": "검수",
+   "from": "작업 후 검수 및 마무리",
+   "n": 2
+  },
+  {
+   "h": "주의",
+   "from": [
+    "site:주의",
+    "자가 조치 및 주의사항"
+   ],
+   "n": [
+    3,
+    1
+   ],
+   "add": [
+    "box:주의하세요",
+    "check:부르기"
+   ]
+  },
+  {
+   "h": "예방",
+   "from": "예방 관리",
+   "n": 2,
+   "add": "table:시기별"
+  },
+  {
+   "h": "FAQ",
+   "n": 0,
+   "add": "faq",
+   "faqCount": 5
+  },
+  {
+   "h": "상담",
+   "from": "업체 및 상담 안내",
+   "n": 1
+  }
+ ],
+ "libraryShare": {
+  "i": 1,
+  "n": 2
+ },
+ "serviceList": [
+  "하수구막힘",
+  "싱크대막힘",
+  "변기막힘",
+  "배관 고압세척",
+  "배관 내시경"
+ ]
 }

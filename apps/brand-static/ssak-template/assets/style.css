@@ -540,3 +540,74 @@ footer .fpv a{text-decoration:underline;text-underline-offset:3px}
    레퍼런스(하수구박사)도 글머리에 썸네일 한 장만 둔다. */
 .plead{margin:0 0 clamp(24px,3.5vw,34px)}
 .plead img{display:block;width:100%;height:auto;border:1px solid var(--line)}
+
+/* ── 긴 본문 (blog-compose) ───────────────────────────────────────────
+   한방하수도 결 그대로 — 적색 경보 바, 테두리 대신 굵은 왼쪽 선.
+   구조는 다섯 사이트가 같고 생김새만 다르다. */
+
+.alead{font-size:17.5px;line-height:1.95;color:var(--ink);margin-bottom:26px}
+.abridge{font-size:17px;line-height:1.95;color:var(--ink);
+  border-left:4px solid var(--accent);padding-left:16px;margin:0 0 40px}
+
+.atoc{background:var(--paper);border-left:6px solid var(--accent);
+  padding:22px 24px 20px;margin:0 0 40px}
+.atoct{font-size:13px;font-weight:900;letter-spacing:.14em;color:var(--accent);
+  margin-bottom:14px}
+.atoc ol{margin:0;padding-left:20px}
+.atoc li{font-size:15.5px;line-height:1.75;margin-bottom:7px}
+.atoc li:last-child{margin-bottom:0}
+.atoc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+.atoc a:hover{border-bottom-color:var(--accent);color:var(--accent)}
+
+.asec{margin-bottom:clamp(38px,4.6vw,58px);scroll-margin-top:78px}
+.asec h2{font-size:clamp(19px,2.5vw,25px);font-weight:900;line-height:1.45;
+  color:var(--ink);margin-bottom:6px;padding-top:16px;border-top:3px solid var(--accent)}
+.alab{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--mute);
+  margin-bottom:18px}
+.asec p{font-size:17px;line-height:1.95;margin-bottom:15px;color:var(--ink)}
+
+.anum{margin:20px 0;padding:0;list-style:none;counter-reset:an}
+.anum li{counter-increment:an;position:relative;padding-left:38px;
+  font-size:16.5px;line-height:1.85;margin-bottom:12px}
+.anum li::before{content:counter(an);position:absolute;left:0;top:2px;
+  width:25px;height:25px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:13px;font-weight:900;display:grid;place-items:center}
+
+.achk{margin:20px 0;padding:0;list-style:none}
+.achk li{position:relative;padding-left:28px;font-size:16.5px;line-height:1.85;
+  margin-bottom:11px}
+.achk li::before{content:"✔";position:absolute;left:0;top:0;color:var(--ok);
+  font-weight:900}
+
+.abox{padding:20px 22px;margin:24px 0;border-left:6px solid var(--accent)}
+.abox-tip{background:var(--paper);border-left-color:var(--haze)}
+.abox-warn{background:#FFF3F4;border-left-color:var(--accent)}
+.aboxt{font-size:14px;font-weight:900;margin-bottom:9px;letter-spacing:.02em}
+.abox-tip .aboxt{color:var(--haze)}
+.abox-warn .aboxt{color:var(--accent-d)}
+.abox p:last-child{margin-bottom:0;font-size:16.5px}
+
+.atw{overflow-x:auto;margin:22px 0;-webkit-overflow-scrolling:touch}
+.atab{width:100%;border-collapse:collapse;min-width:420px}
+.atab th,.atab td{padding:13px 14px;border-bottom:1px solid var(--line);
+  font-size:16px;line-height:1.7;text-align:left;vertical-align:top}
+.atab thead th{background:var(--ink);color:#fff;font-weight:800;font-size:14.5px;
+  letter-spacing:.04em;border-bottom:none}
+.atab tbody th{font-weight:800;white-space:nowrap;width:28%;color:var(--accent-d)}
+
+.afaq{margin-top:8px}
+.afq{border-bottom:1px solid var(--line);padding:20px 0}
+.afq:first-child{border-top:1px solid var(--line)}
+.afqq{font-size:16.5px!important;font-weight:800;margin-bottom:10px!important;
+  padding-left:26px;position:relative}
+.afqq::before{content:"Q";position:absolute;left:0;top:0;color:var(--accent);
+  font-weight:900}
+.afqa{font-size:16.5px!important;color:var(--haze);margin-bottom:0!important;
+  padding-left:26px;position:relative}
+.afqa::before{content:"A";position:absolute;left:0;top:0;color:var(--mute);
+  font-weight:900}
+
+@media(max-width:640px){
+  .asec p,.anum li,.achk li{font-size:16px}
+  .atoc{padding:18px 18px 16px}
+}
