@@ -1481,7 +1481,14 @@ async function loadRegistryDbQueueTargets(client, accountId, project) {
       rssMode: row.rss_mode || '',
       rssPostCount: Number(row.rss_post_count || 0),
       experimentGroup: row.group_key || '',
-      includeRoot: ['bbungbbung-piping', 'woodrel-piping'].includes(project),
+      /*
+       * 루트(/)를 제출 대상에 넣을지.
+       *
+       * 대량배포는 루트가 목록 한 장이라 빼는 게 맞다. 브랜드 다섯은 홈이
+       * 본체이고 제일 중요한 페이지라 넣는다 — 2026-09-01 DryRun 에서 사이트마다
+       * 정확히 한 장씩(=홈) 모자란 것으로 드러났다.
+       */
+      includeRoot: ['bbungbbung-piping', 'woodrel-piping', 'brand-ravi'].includes(project),
       sourceTable: row.source_table || '',
       sourcePk: row.source_pk || '',
     }));
