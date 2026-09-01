@@ -133,6 +133,29 @@ async function registerForAccount(account) {
       ${limit ? 'limit ' + Number(limit) : ''}`,
     [groupKey, account.account_id],
   );
+  /*
+   * site_url 이 host 와 어긋나면 멈춘다.
+   *
+   * 2026-09-01 에 브랜드 5건을 넣으면서 site_url 에 낡은 자리표시자
+   * (https://TBD.co.kr)가 그대로 들어갔고, 이 스크립트가 그 주소로 서치어드바이저에
+   * 등록해 버렸다. 화면에는 아무 이상이 없었다 — 굽기는 host 로 주소를 만들기 때문에
+   * 페이지도 사이트맵도 멀쩡했고 DB 만 틀렸다.
+   *
+   * 잘못 등록하면 계정의 사이트 100개 자리를 하나 먹고, 받은 토큰은 엉뚱한 사이트
+   * 것이라 소유확인에도 못 쓴다. 콘솔에서 사람이 지워야 한다. 그래서 여기서 막는다.
+   */
+  const mismatched = domains.rows.filter((d) => {
+    const want = `https://${d.host}`.replace(/\/+$/, '');
+    return (d.site_url || '').replace(/\/+$/, '') !== want;
+  });
+  if (mismatched.length) {
+    console.error(`  ✗ site_url 이 host 와 다른 행이 ${mismatched.length}건 있습니다 — 등록을 멈춥니다.`);
+    for (const d of mismatched.slice(0, 5)) {
+      console.error(`      ${d.host} → site_url ${d.site_url}`);
+    }
+    throw new Error('site_url 을 https://<host> 로 고친 뒤 다시 돌리세요.');
+  }
+
   // 토큰 유무로 판단하면 안 된다. 네이버는 등록하지 않은 사이트에도 토큰을 내준다.
   // 실제로 목록에 올라갔는지는 등록 상태로만 판단한다.
   const targets = domains.rows.filter((d) => options.force || d.naver_registration_status !== 'registered');
