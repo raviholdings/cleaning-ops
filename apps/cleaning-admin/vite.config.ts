@@ -82,6 +82,7 @@ function dbApiPlugin() {
       server.middlewares.use('/api/stats', gate);
       server.middlewares.use('/api/domains', gate);
       server.middlewares.use('/api/index-status', gate);
+      server.middlewares.use('/api/crawl-brand', gate);
       // 리드는 고객 개인정보(이름·전화·문의내용)라 owner·staff 만. member 는 막는다.
       const leadGate = async (req: any, res: any, next: () => void) => {
         try {
@@ -109,6 +110,65 @@ function dbApiPlugin() {
          where error is null or error = ''
          order by domain, checked_at desc
       `;
+
+      /*
+       * 브랜드 사이트 수집요청 현황 — 도메인 다섯을 따로 본다.
+       *
+       * 업종별 합계로는 브랜드를 볼 수가 없다. 한도가 사이트당 하루 50건이라
+       * 다섯이 각자 천장에 부딪히는데, 합쳐 놓으면 어느 곳이 막혔는지 안 보인다.
+       * host 에 해시 인덱스가 있어 다섯 개 조회는 40ms 대다.
+       */
+      server.middlewares.use('/api/crawl-brand', async (req: any, res: any) => {
+        try {
+          const { rows } = await pool.query(`
+            with d as (
+              select pd.host, pd.page_count, pd.naver_account_id, a.account_order
+                from public.naver_project_domains pd
+                left join public.naver_searchadvisor_accounts a
+                       on a.account_id = pd.naver_account_id
+               where pd.group_key = 'brand-ravi'
+            ),
+            today as (
+              select host,
+                     count(*)::int                                          as processed,
+                     count(*) filter (where status = 'submitted')::int      as submitted,
+                     count(*) filter (where status = 'quota-stop')::int     as quota_stop,
+                     count(*) filter (where status not in
+                       ('submitted','already-present','quota-stop'))::int   as failed
+                from public.naver_searchadvisor_crawl_request_results
+               where host in (select host from d)
+                 and requested_at >= date_trunc('day', now() at time zone 'Asia/Seoul')
+                                     at time zone 'Asia/Seoul'
+               group by 1
+            ),
+            lifetime as (
+              select host,
+                     count(distinct url) filter (where status = 'submitted')::int as done,
+                     max(requested_at)                                            as last_at
+                from public.naver_searchadvisor_crawl_request_results
+               where host in (select host from d)
+               group by 1
+            )
+            select d.host, d.page_count, d.naver_account_id, d.account_order,
+                   coalesce(t.processed, 0)   as processed,
+                   coalesce(t.submitted, 0)   as submitted,
+                   coalesce(t.quota_stop, 0)  as quota_stop,
+                   coalesce(t.failed, 0)      as failed,
+                   coalesce(l.done, 0)        as done,
+                   l.last_at
+              from d
+              left join today t    on t.host = d.host
+              left join lifetime l on l.host = d.host
+             order by d.account_order nulls last, d.host
+          `);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ rows, dailyLimit: 50 }));
+        } catch (error: any) {
+          console.error('[api/crawl-brand]', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: String(error?.message || error) }));
+        }
+      });
 
       server.middlewares.use('/api/index-status', async (req: any, res: any) => {
         try {
