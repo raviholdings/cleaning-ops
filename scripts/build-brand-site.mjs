@@ -27,6 +27,7 @@ import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
 import { assignSlugs } from './lib/region-slug.mjs';
 import { romanize, romanizeUnique } from './lib/romanize.mjs';
 import { SITEMAP_XSL } from './lib/sitemap-xsl.mjs';
+import { robotsTxt } from './lib/robots-txt.mjs';
 import {
   makeVars, composeArticle, renderArticleHtml, faqEntities, charCount,
 } from './lib/blog-compose.mjs';
@@ -2109,8 +2110,12 @@ writeFileSync(join(outRoot, siteKey, 'sitemap_index.xml'), indexXml);
 writeFileSync(join(outRoot, siteKey, 'sitemap.xml'), indexXml);
 writeFileSync(join(outRoot, siteKey, 'main-sitemap.xsl'), SITEMAP_XSL);
 
-writeFileSync(join(outRoot, siteKey, 'robots.txt'),
-  `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap_index.xml\n`);
+writeFileSync(join(outRoot, siteKey, 'robots.txt'), robotsTxt({
+  brand: site.brand,
+  siteUrl,
+  sitemap: `${siteUrl}/sitemap_index.xml`,
+  updated: BUILT_AT.slice(0, 10),
+}));
 
 const assetOut = join(outRoot, siteKey, 'assets', site.assetVersion);
 mkdirSync(assetOut, { recursive: true });
