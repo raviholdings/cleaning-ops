@@ -57,11 +57,27 @@ SSM 출력이 24KB 에서 잘려 세 번 나눠 받았다 — 다음에 또 읽�
     location ~ ^/(favicon\.ico|favicon\.svg|favicon-32\.png|apple-touch-icon\.png)$
                                        -> /srv/group-page-origin/shared/
 
-**주의.** 브랜드 사이트는 파비콘을 `/assets/<버전>/img/favicon.ico` 로 걸어 두었으므로
-이 규칙에 안 걸린다. 다만 브라우저가 관례적으로 요청하는 `/favicon.ico` 는
-shared 것이 나간다 — 다섯 사이트가 같은 파비콘을 물게 된다.
-사이트마다 다르게 하려면 `sites/<host>/favicon.ico` 를 두는 것으로는 안 되고
-(위 location 이 먼저 잡는다) nginx 를 고쳐야 한다.
+### 파비콘은 사이트별로 고쳐 뒀다 (2026-09-01)
+
+원래는 `/favicon.ico` 가 무조건 shared 로 가서 브랜드 사이트 다섯이 대량배포
+2만 개와 같은 아이콘을 물었다. 아래처럼 바꿨다.
+
+    location ~ ^/(favicon\.ico|...)$ {
+      root /srv/group-page-origin/sites/$host;   # 사이트 것을 먼저
+      try_files $uri @shared_icon;               # 없으면 공용으로
+      ...
+    }
+    location @shared_icon {
+      root /srv/group-page-origin/shared;
+      try_files $uri =404;
+      ...
+    }
+
+**기존 2만 개는 그대로다** — 자기 폴더에 파비콘이 없으니 `@shared_icon` 으로 떨어진다.
+`sites/<host>/favicon.ico` 를 놓은 사이트만 자기 것을 쓴다.
+
+백업: `cleaning-sites.conf.bak-favicon-20260901063043`.
+80·443 두 블록 모두 고쳤고 `nginx -t` 통과 후 reload 했다.
 
 ## 그 밖
 

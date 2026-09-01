@@ -5,11 +5,11 @@
   "brand": "비버배관",
   "brandHead": "비버",
   "brandTail": "배관",
-  "host": "TBD.co.kr",
+  "host": "beaverpipe.kr",
   "siteUrl": "https://TBD.co.kr",
   "phone": "070-7106-5227",
   "phoneRaw": "07071065227",
-  "assetVersion": "mole-v16",
+  "assetVersion": "mole-v19",
   "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
   "slugWords": [
     "mole",
