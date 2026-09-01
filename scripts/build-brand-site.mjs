@@ -1132,6 +1132,31 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
   const jobs = many('jobs', 4).map((j, i) => ({ ...j, no: String(i + 1).padStart(2, '0') }));
   const cases = many('cases', 3).map((c, i) => ({ ...c, id: `CASE ${String(i + 1).padStart(3, '0')}` }));
 
+  /*
+   * 지역 페이지 본문. 여기는 키워드 축이 없어서(시군구 한 장) 이 지역이 기댈
+   * 키워드를 시드로 하나 고른다 — 256장이 서로 다른 키워드로 글을 쓴다.
+   * 설명 문단은 이 사이트가 이미 들고 있는 것을 그대로 쓰고, 뼈대와 부속만
+   * 라이브러리에서 가져온다.
+   */
+  const regionArticle = articlePlan ? longArticle({
+    kwLabel: kws[seed % kws.length],
+    sido: r.sidoLabel,
+    sigungu: r.sigunguLabel,
+    shortLabel: r.sigunguLabel,
+    dongs: r.repDong.slice(0, 3),
+    neighbors: others.map((x) => x.sigunguLabel),
+    seed,
+    vars,
+    sitePools: {
+      원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
+      유형: pools.keywordBlurbs.map((x) => `${x.h}. ${x.body}`),
+      작업: pools.jobs.map((x) => `${x.title}. ${x.body}`),
+      건물: pools.building.map((x) => `${x.t}. ${x.b}`),
+      예방: pools.prevent.map((x) => `${x.t}. ${x.b}`),
+      접수전: pools.before.slice(),
+    },
+  }) : null;
+
   urls.push(page({
     path: `/${r.slug}/`,
     kind: 'region',
@@ -1145,6 +1170,8 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
       url: `${siteUrl}/${r.slug}/`,
     },
     main: renderTemplate(templates.region, {
+      // articlePlan 이 있는 사이트만 긴 본문을 낸다 (지금은 드림)
+      article: regionArticle ? regionArticle.html : '',
       ...base,
       sidoLabel: r.sidoLabel,
       sigunguLabel: r.sigunguLabel,

@@ -16,28 +16,6 @@
   </div>
 </div>
 
-<section id="keyword"><div class="wrap">
-  <p class="tag">00 — 유형별</p>
-  <h3>{{{keywordHeading}}}</h3>
-  <p class="lede">{{keywordLede}}</p>
-  <div class="jobs">
-    {{#keywordBlurbs}}<div class="job"><div class="no">·</div><div><h4>{{h}}</h4><p>{{body}}</p></div></div>{{/keywordBlurbs}}
-  </div>
-</div></section>
-
-<section id="cause"><div class="wrap">
-  <p class="tag">03 — 원인</p>
-  <h3>{{{causeHeading}}}</h3>
-  <p class="lede">{{causeLede}}</p>
-  <div class="causes">
-    {{#causes}}<div class="cause">
-      <p class="sym">{{sym}}</p>
-      <h4>{{title}}</h4>
-      <p>{{body}}</p>
-    </div>{{/causes}}
-  </div>
-</div></section>
-
 <section id="dong"><div class="wrap">
   <p class="tag">02 — {{sigunguLabel}} 출동 동네</p>
   <h3>{{{dongHeading}}}</h3>
@@ -68,13 +46,9 @@
 </div></section>
 {{/hasPhotos}}
 
-<section id="prevent"><div class="wrap">
-  <p class="tag">00 — 예방</p>
-  <h3>{{{preventHeading}}}</h3>
-  <p class="lede">{{preventLede}}</p>
-  <div class="jobs">
-    {{#prevent}}<div class="job"><div class="no">·</div><div><h4>{{t}}</h4><p>{{b}}</p></div></div>{{/prevent}}
-  </div>
+<section id="read"><div class="wrap">
+  <p class="tag">05 — 읽을거리</p>
+  {{{article}}}
 </div></section>
 
 <section id="price"><div class="wrap">
@@ -87,51 +61,6 @@
 </div></section>
 
 {{{estimateForm}}}
-
-<section id="method"><div class="wrap">
-  <p class="tag">00 — 작업 방법</p>
-  <h3>{{{methodHeading}}}</h3>
-  <p class="lede">{{methodLede}}</p>
-  <div class="jobs">
-    {{#method}}<div class="job"><div class="no">·</div><div><h4>{{t}}</h4><p>{{b}}</p></div></div>{{/method}}
-  </div>
-</div></section>
-
-<section id="building"><div class="wrap">
-  <p class="tag">00 — 건물 유형</p>
-  <h3>{{{buildingHeading}}}</h3>
-  <p class="lede">{{buildingLede}}</p>
-  <div class="causes">
-    {{#building}}<div class="cause"><p class="sym">{{t}}</p><p>{{b}}</p></div>{{/building}}
-  </div>
-</div></section>
-
-<section id="season"><div class="wrap">
-  <p class="tag">00 — 시기</p>
-  <h3>{{{seasonHeading}}}</h3>
-  <div class="causes">
-    {{#season}}<div class="cause"><p class="sym">{{t}}</p><p>{{b}}</p></div>{{/season}}
-  </div>
-</div></section>
-
-<section id="faq"><div class="wrap">
-  <p class="tag">07 — 자주 묻는 질문</p>
-  <h3>{{{faqHeading}}}</h3>
-  <div class="qa">
-    {{#faq}}<div class="q"><div class="m">Q</div><p class="qq">{{q}}</p></div>
-    <div class="q"><div class="a">A</div><p>{{a}}</p></div>{{/faq}}
-  </div>
-</div></section>
-
-<section id="before"><div class="wrap">
-  <p class="tag">00 — 전화 주실 때</p>
-  <h3>{{{beforeHeading}}}</h3>
-  <p class="lede">{{beforeLede}}</p>
-  <div class="dongs">
-    {{#before}}<div class="dong"><b>·</b><span>{{text}}</span></div>{{/before}}
-  </div>
-</div></section>
-
 
 <section id="near"><div class="wrap">
   <p class="tag">08 — 같은 지역 다른 시군구</p>
