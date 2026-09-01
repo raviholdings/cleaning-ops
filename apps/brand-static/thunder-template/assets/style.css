@@ -1,0 +1,376 @@
+/* 썬더배관 — 긴급 출동 상황판.
+   드림컴뚜러(작업지시서 용지)와 같은 회사로 보이면 안 된다. 그래서 반대로 간다.
+     드림: 크림 용지 · 모눈 · 좌측정렬 · 카드+오프셋 그림자 · 둥근 디스플레이체
+     썬더: 순백 · 밴드 교차 · 중앙정렬 · 구분선 리스트 · 세로 바 액센트
+   공통은 하나뿐이다 — 나이 있는 분들이 보므로 밝고 글씨가 크다. */
+
+:root{
+  --bg:#FFFFFF;
+  --bg-2:#F2F4F8;          /* 밴드 교차용 연회색 */
+  --ink:#0A0C10;
+  --ink-2:#4C555F;
+  --blue:#1B3FE0;          /* 전기 파랑 */
+  --blue-d:#0C24A0;
+  --bolt:#FFD200;          /* 번개 노랑 */
+  --line:#0A0C10;
+  --line-soft:rgba(10,12,16,.14);
+  /* 글꼴은 다섯 사이트가 같다. 구분은 글꼴이 아니라 사이트 구조로 낸다. */
+  --sans:"Noto Sans KR",system-ui,sans-serif;
+  --disp:var(--sans);
+  --mono:var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-weight:400;
+  font-size:18px;line-height:1.8;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(18px,4vw,40px)}
+a{color:inherit}
+
+/* ── 상단: 파란 바 ── */
+.top{background:var(--blue);color:#fff;font-size:15px;font-weight:500}
+.top .wrap{display:flex;gap:22px;flex-wrap:wrap;align-items:center;
+  justify-content:center;padding-top:9px;padding-bottom:9px;text-align:center}
+.top .bolt{color:var(--bolt);font-weight:700}
+
+header{border-bottom:3px solid var(--line);background:var(--bg);
+  position:sticky;top:0;z-index:20}
+header .wrap{display:flex;align-items:center;justify-content:space-between;
+  gap:18px;padding-top:14px;padding-bottom:14px}
+.brand{font-family:var(--disp);font-weight:900;font-size:clamp(24px,3.4vw,32px);
+  letter-spacing:-.01em;text-decoration:none;line-height:1}
+.brand em{font-style:normal;color:var(--blue)}
+nav{display:flex;gap:clamp(10px,1.6vw,22px);flex-wrap:wrap;justify-content:center}
+nav>a{font-size:16px;font-weight:500;text-decoration:none;color:var(--ink-2);
+  padding:4px 0;border-bottom:3px solid transparent}
+nav>a:hover{color:var(--ink);border-bottom-color:var(--bolt)}
+.call{display:inline-flex;align-items:center;min-height:48px;
+  background:var(--blue);color:#fff;text-decoration:none;
+  font-family:var(--disp);font-weight:900;font-size:19px;letter-spacing:.01em;
+  padding:0 20px;white-space:nowrap;transition:background .15s}
+.call:hover{background:var(--blue-d)}
+@media(max-width:900px){
+  header .wrap{flex-wrap:wrap;justify-content:center}
+  nav{order:3;width:100%;border-top:1px solid var(--line-soft);padding-top:10px}
+}
+
+/* ── 히어로: 전폭 중앙 ── */
+.hero{text-align:center;padding:clamp(46px,7vw,96px) 0 clamp(30px,4vw,52px)}
+.hero .eyebrow{display:inline-block;background:var(--bolt);
+  font-weight:700;font-size:15px;letter-spacing:.04em;padding:6px 16px;margin-bottom:22px}
+.hero h1{font-family:var(--disp);font-weight:900;line-height:1.06;letter-spacing:-.02em;
+  font-size:clamp(38px,7.6vw,88px)}
+.hero h1 .b{color:var(--blue)}
+.hero .sub{margin:24px auto 0;max-width:44ch;font-size:19px;line-height:1.75;color:var(--ink-2)}
+.hero .acts{margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;
+  text-decoration:none;font-family:var(--disp);font-weight:900;font-size:21px;
+  padding:0 34px;border:3px solid var(--line);transition:background .15s,border-color .15s}
+.btn-1{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-1:hover{background:var(--blue-d);border-color:var(--blue-d)}
+.btn-2{background:var(--bolt);color:var(--ink)}
+.btn-2:hover{background:#FFE566}
+
+/* 지표 스트립 */
+.stats{border-top:3px solid var(--line);border-bottom:3px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr)}
+.stats div{padding:20px 12px;text-align:center;border-left:1px solid var(--line-soft)}
+.stats div:first-child{border-left:0}
+.stats b{display:block;font-family:var(--disp);font-weight:900;
+  font-size:clamp(22px,3vw,32px);line-height:1.1}
+.stats span{display:block;margin-top:5px;font-size:14.5px;color:var(--ink-2)}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}
+  .stats div:nth-child(3){border-left:0}
+  .stats div:nth-child(n+3){border-top:1px solid var(--line-soft)}}
+
+/* ── 밴드 교차 ── */
+section{padding:clamp(50px,7vw,96px) 0}
+section.alt{background:var(--bg-2)}
+section.ink{background:var(--ink);color:#fff}
+section.ink .lead,section.ink .kicker{color:#B9C0CA}
+.kicker{text-align:center;font-size:15px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--blue)}
+section.ink .kicker{color:var(--bolt)}
+h2{font-family:var(--disp);font-weight:900;text-align:center;line-height:1.12;
+  letter-spacing:-.015em;font-size:clamp(30px,5vw,54px);margin-top:12px}
+.lead{margin:18px auto 0;max-width:52ch;text-align:center;font-size:18px;color:var(--ink-2)}
+
+/* ── 목록: 굵은 구분선 ── */
+.rows{margin-top:clamp(30px,4vw,52px);border-top:3px solid var(--line)}
+section.ink .rows{border-color:#39414D}
+.row{display:grid;grid-template-columns:96px 1fr;gap:clamp(14px,2.5vw,30px);
+  align-items:start;padding:26px 0;border-bottom:1px solid var(--line-soft)}
+section.ink .row{border-color:#39414D}
+.row .n{font-family:var(--disp);font-weight:900;font-size:clamp(36px,5vw,56px);line-height:.9;
+  color:transparent;-webkit-text-stroke:2px var(--blue)}
+section.ink .row .n{-webkit-text-stroke-color:var(--bolt)}
+/*
+ * 아웃라인은 두 자리 숫자에만 쓴다. 한글 단어를 넣으면 칸을 넘치고,
+ * -webkit-text-stroke 를 모르는 브라우저에서는 color:transparent 만 남아
+ * 글자가 통째로 사라진다(흰 바탕에 흰 글자로 보인다).
+ */
+.row .n.word{font-size:15px;line-height:1.5;letter-spacing:.02em;
+  color:var(--blue);-webkit-text-stroke:0;font-weight:700;
+  align-self:start;padding-top:6px;word-break:keep-all}
+section.ink .row .n.word{color:var(--bolt)}
+.row h3{font-size:22px;font-weight:700;line-height:1.35}
+.row p{margin-top:7px;font-size:17px;color:var(--ink-2);max-width:60ch}
+section.ink .row p{color:#B9C0CA}
+.row .tip{margin-top:9px;display:inline-block;border-left:5px solid var(--bolt);
+  padding-left:11px;font-size:16.5px;font-weight:500;color:var(--ink)}
+section.ink .row .tip{color:#fff}
+@media(max-width:640px){
+  .row{grid-template-columns:1fr;gap:8px;padding:22px 0}
+  .row .n{font-size:32px;-webkit-text-stroke-width:1.5px}
+  .row .n.word{font-size:14px;padding-top:0}
+}
+
+/* 요금 */
+.fees{margin-top:34px;border-top:3px solid var(--line)}
+.fee{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  padding:17px 0;border-bottom:1px solid var(--line-soft)}
+.fee b{font-size:18.5px;font-weight:700}
+.fee span{font-size:16.5px;color:var(--ink-2);text-align:right}
+.foot-note{margin-top:20px;text-align:center;font-size:16.5px;color:var(--ink-2)}
+
+/* 접이식 FAQ */
+.faq{margin-top:34px;border-top:3px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line-soft)}
+.faq summary{list-style:none;cursor:pointer;padding:19px 40px 19px 0;position:relative;
+  font-size:18.5px;font-weight:700}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:6px;top:15px;
+  font-family:var(--disp);font-weight:900;font-size:26px;color:var(--blue)}
+.faq details[open] summary::after{content:"−"}
+.faq details[open] summary{color:var(--blue)}
+.faq p{padding:0 0 20px;font-size:17px;color:var(--ink-2);max-width:64ch}
+
+/* 지역 칩 — 글자색을 반드시 같이 준다.
+   배경만 흰색으로 주면 어두운 구역(section.ink) 안에서 color:#fff 를 물려받아
+   흰 바탕에 흰 글자가 된다. */
+.chips{margin-top:30px;display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+.chips a{text-decoration:none;font-size:16px;font-weight:500;color:var(--ink);
+  border:2px solid var(--line);padding:8px 15px;background:var(--bg)}
+.chips a:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+section.alt .chips a{background:var(--bg);color:var(--ink)}
+section.ink .chips a{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+section.ink .chips a:hover{background:var(--bolt);border-color:var(--bolt);color:var(--ink)}
+
+/* 동네 목록 */
+.hoods{margin-top:32px;display:grid;gap:0 clamp(20px,3vw,44px);
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.hood{padding:12px 0;border-bottom:1px solid var(--line-soft)}
+section.ink .hood{border-color:#39414D}
+.hood b{font-size:18px;font-weight:700}
+.hood span{display:block;font-size:14px;color:var(--ink-2)}
+section.ink .hood span{color:#B9C0CA}
+
+/* 사진 */
+.shots{margin-top:32px;display:grid;gap:clamp(12px,2vw,22px);
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.shots figure{border:3px solid var(--line)}
+.shots img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+.shots figcaption{padding:10px 13px;font-size:14px;color:var(--ink-2);
+  border-top:3px solid var(--line)}
+
+/* /area/ 허브 */
+.hubgrp{padding:24px 0;border-bottom:1px solid var(--line-soft)}
+.hubgrp:first-child{border-top:3px solid var(--line)}
+.hubgrp h3{font-family:var(--disp);font-size:24px;font-weight:900;text-align:center}
+.hubgrp h3 em{font-style:normal;color:var(--blue);font-size:18px;margin-left:8px}
+
+/* 지역·서비스 페이지 머리 */
+.rhead{text-align:center;padding:clamp(34px,5vw,68px) 0 clamp(22px,3vw,38px)}
+.rhead .where{display:inline-block;background:var(--blue);color:#fff;
+  font-weight:700;font-size:15px;padding:5px 14px;margin-bottom:18px}
+.rhead h1{font-family:var(--disp);font-weight:900;line-height:1.08;letter-spacing:-.02em;
+  font-size:clamp(34px,6.4vw,72px)}
+.rhead h1 .b{color:var(--blue)}
+.rsub{margin-top:12px;font-size:16.5px;color:var(--ink-2)}
+.rsub .b{color:var(--blue);font-weight:700}
+.rhead .sub{margin:20px auto 0;max-width:46ch;font-size:18px;color:var(--ink-2)}
+
+/* 마무리 CTA */
+.end{background:var(--ink);color:#fff;text-align:center;padding:clamp(38px,5.5vw,74px) 0}
+.end h2{color:#fff}
+.end .lead{color:#B9C0CA}
+.end .big{display:inline-flex;align-items:center;justify-content:center;min-height:60px;
+  margin-top:26px;font-family:var(--disp);font-weight:900;
+  font-size:clamp(30px,5.4vw,56px);color:var(--bolt);text-decoration:none;letter-spacing:.01em}
+.end .big:hover{text-decoration:underline;text-underline-offset:8px}
+.end .tags{margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.end .tags b{border:2px solid #39414D;padding:7px 14px;font-size:15px;
+  font-weight:500;color:#B9C0CA}
+
+footer{border-top:3px solid var(--line);padding:26px 0;font-size:15px;color:var(--ink-2)}
+footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+
+/* ── 모바일 하단 고정 바 ── */
+.dock{display:none}
+@media(max-width:760px){
+  body{padding-bottom:68px}
+  .dock{display:grid;grid-template-columns:1fr 1fr;position:fixed;left:0;right:0;bottom:0;
+    z-index:40;border-top:3px solid var(--line)}
+  .dock a{display:flex;align-items:center;justify-content:center;gap:7px;min-height:56px;
+    text-decoration:none;font-family:var(--disp);font-weight:900;font-size:19px}
+  .dock .d1{background:var(--blue);color:#fff}
+  .dock .d2{background:var(--bolt);color:var(--ink)}
+}
+
+/* ── 계층 메뉴 ── */
+.navgrp{position:relative}
+.navgrp>summary{list-style:none;cursor:pointer;font-size:16px;font-weight:500;color:var(--ink-2);
+  padding:4px 0;border-bottom:3px solid transparent;white-space:nowrap}
+.navgrp>summary::-webkit-details-marker{display:none}
+.navgrp>summary::after{content:" ▾";color:var(--blue)}
+.navgrp[open]>summary{color:var(--ink);border-bottom-color:var(--bolt)}
+.navmenu{display:grid;gap:0}
+@media(min-width:901px){
+  .navmenu{position:absolute;top:calc(100% + 10px);left:0;z-index:30;min-width:200px;
+    max-height:70vh;overflow:auto;background:var(--bg);border:3px solid var(--line);padding:6px}
+}
+.navmenu a{display:block;padding:8px 12px;font-size:15.5px;text-decoration:none;color:var(--ink)}
+.navmenu a:hover{background:var(--blue);color:#fff}
+@media(max-width:900px){
+  .navgrp{width:100%;text-align:center}
+  .navmenu{margin:6px 0 10px;grid-template-columns:repeat(auto-fill,minmax(108px,1fr))}
+  .navmenu a{border:1px solid var(--line-soft)}
+}
+
+/* 어두운 밴드 안의 보조 문구·표 */
+section.ink .foot-note{color:#B9C0CA}
+section.ink .foot-note a{color:var(--bolt)}
+section.ink .fee{border-color:#39414D}
+section.ink .fee span{color:#B9C0CA}
+
+/* ── 접수 폼 ── */
+.lead-form{margin-top:34px;background:var(--bg);border:3px solid var(--line);
+  padding:clamp(20px,3vw,34px)}
+section.alt .lead-form{background:var(--bg)}
+.lf-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px clamp(14px,2.5vw,26px)}
+.lf{display:flex;flex-direction:column;gap:6px}
+.lf-wide{grid-column:1/-1}
+.lf>span{font-size:15px;font-weight:700}
+.lead-form input,.lead-form select,.lead-form textarea{
+  font-family:var(--sans);font-size:17px;color:var(--ink);background:var(--bg-2);
+  border:2px solid transparent;border-radius:0;padding:12px 13px;width:100%;
+  appearance:none;-webkit-appearance:none}
+.lead-form textarea{line-height:1.7;resize:vertical}
+.lead-form input::placeholder,.lead-form textarea::placeholder{color:#8A929C}
+.lead-form input:focus,.lead-form select:focus,.lead-form textarea:focus{
+  outline:0;background:var(--bg);border-color:var(--blue)}
+.lead-form select{background-image:linear-gradient(45deg,transparent 50%,#0A0C10 50%),
+  linear-gradient(135deg,#0A0C10 50%,transparent 50%);
+  background-position:calc(100% - 16px) 52%,calc(100% - 10px) 52%;
+  background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:34px}
+.lf-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.lf-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.lf-foot{margin-top:24px;display:flex;flex-wrap:wrap;gap:15px;
+  align-items:center;justify-content:space-between}
+.lf-agree{display:flex;align-items:center;gap:9px;font-size:16px;color:var(--ink-2)}
+.lf-agree input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--blue);
+  padding:0;border:0;background:none}
+.lf-terms{font:inherit;font-size:15px;background:none;border:0;padding:0;cursor:pointer;
+  color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.lf-send{min-height:52px;font-family:var(--disp);font-size:21px;font-weight:900;color:#fff;
+  background:var(--blue);border:3px solid var(--blue);padding:0 36px;cursor:pointer;
+  transition:background .15s}
+.lf-send:hover{background:var(--blue-d);border-color:var(--blue-d)}
+.lf-send:disabled{opacity:.55;cursor:default}
+.lf-status{margin-top:14px;font-size:16px;font-weight:500}
+.lf-status[data-kind="error"]{color:#C81E1E}
+.lf-status[data-kind="success"]{color:var(--blue)}
+.lf-status[data-kind="loading"]{color:var(--ink-2)}
+.lf-or{margin-top:14px;font-size:16px;color:var(--ink-2)}
+.lf-or a{font-weight:700;color:var(--blue)}
+
+.terms{border:3px solid var(--line);background:var(--bg);color:var(--ink);
+  max-width:560px;width:calc(100% - 32px);padding:0}
+.terms::backdrop{background:rgba(10,12,16,.6)}
+.terms-body{padding:clamp(22px,4vw,32px)}
+.terms-body h3{font-family:var(--disp);font-weight:900;font-size:26px;margin-bottom:16px}
+.terms-body dt{font-size:15px;font-weight:700;color:var(--blue);margin-top:15px}
+.terms-body dd{font-size:16.5px;line-height:1.7;margin-top:3px;color:var(--ink-2)}
+.terms-close{margin-top:24px;min-height:48px;font-family:var(--disp);font-size:18px;
+  font-weight:900;color:#fff;background:var(--blue);border:0;padding:0 28px;cursor:pointer}
+
+@media(max-width:640px){
+  body{font-size:17px}
+  .hero .sub{font-size:17.5px}
+  .lead{font-size:17px}
+  .lf-grid{grid-template-columns:1fr;gap:16px}
+  .lf-split{grid-template-columns:1fr;gap:10px}
+  .lf-foot{flex-direction:column;align-items:stretch}
+  .lf-send{width:100%}
+  .lead-form input,.lead-form select,.lead-form textarea{font-size:16.5px}
+  .hoods{grid-template-columns:1fr}
+  .btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}
+  .btn,.call,.lf-send{transition:none}}
+
+/* ── 공통 인터랙션 (apex 와 같은 방식) ──
+   .js 는 스크립트가 돌았다는 표시다. 자바스크립트가 없으면 아무것도 숨기지 않는다. */
+.js [data-reveal]{opacity:0;transform:translateY(18px)}
+.js [data-reveal].in{opacity:1;transform:none;
+  transition:opacity .6s cubic-bezier(.2,.7,.3,1) var(--d,0s),
+             transform .6s cubic-bezier(.2,.7,.3,1) var(--d,0s)}
+
+/* 떠 있는 전화 버튼 — 데스크톱 전용. 모바일은 하단 고정 바가 대신한다. */
+.fab{position:fixed;right:clamp(16px,2.4vw,30px);bottom:clamp(16px,2.4vw,30px);z-index:60;
+  display:inline-flex;align-items:center;gap:9px;
+  background:var(--blue);color:#fff;text-decoration:none;
+  font-weight:700;font-size:16px;padding:14px 20px;
+  box-shadow:0 12px 30px rgba(0,0,0,.22);
+  animation:fab-in .5s .7s cubic-bezier(.2,1.3,.4,1) both;
+  transition:transform .15s,box-shadow .15s}
+.fab:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(0,0,0,.28)}
+.fab:focus-visible{outline:3px solid var(--line);outline-offset:3px}
+.fab svg{width:20px;height:20px;flex:none}
+@keyframes fab-in{from{opacity:0;transform:translateY(20px) scale(.92)}to{opacity:1}}
+@media(max-width:760px){.fab{display:none}}
+
+/* 스크롤하면 헤더가 얇아진다 */
+header{transition:padding .18s ease, box-shadow .18s ease}
+header.shrunk .wrap{padding-top:9px;padding-bottom:9px}
+header.shrunk{box-shadow:0 6px 20px rgba(0,0,0,.10)}
+
+@media (prefers-reduced-motion:reduce){
+  .js [data-reveal]{opacity:1;transform:none}
+  .fab{animation:none;transition:none}
+  header,header.shrunk{transition:none}
+}
+
+/* ── 히어로 배경 사진 ── 밤 출동 컷이라 어둡게 덮고 글자를 흰색으로 올린다 */
+.hero{position:relative;isolation:isolate;color:#fff;
+  padding-left:clamp(18px,4vw,40px);padding-right:clamp(18px,4vw,40px)}
+.herobg{position:absolute;inset:0;z-index:-1;overflow:hidden}
+.herobg img{width:100%;height:100%;object-fit:cover;object-position:60% 50%}
+.herobg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(10,12,16,.78) 0%, rgba(10,12,16,.62) 55%,
+    rgba(10,12,16,.80) 100%)}
+.hero .sub{color:#D5DBE4}
+.hero .eyebrow{background:var(--bolt);color:var(--ink)}
+
+/* 저작권 — apex 와 같은 자리(맨 아래 한 줄). 사업자 정보는 적지 않는다. */
+footer .copy{width:100%;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-2);opacity:.75}
+
+/* ── 로고 ──
+   원본에 이름 글자가 같이 들어 있어서, 마스코트만 잘라낸 마크를 쓰고
+   이름은 지금까지처럼 글자로 둔다. 통째로 넣으면 이름이 두 번 나오고,
+   줄여 넣으면 그 글자가 안 읽힌다.
+   가로세로가 사이트마다 조금씩 달라 height 로 맞추고 width 는 auto 로 둔다. */
+.brand{display:inline-flex;align-items:center;gap:11px}
+.brand .mark{height:44px;width:auto;flex:none;display:block}
+@media(max-width:640px){.brand .mark{height:34px}}
+
+/* 개인정보 방침 — 푸터 링크와 본문 */
+footer .fpv{width:100%;margin-top:12px}
+footer .fpv a{text-decoration:underline;text-underline-offset:3px}
+.terms-page{max-width:760px;margin:0 auto;padding:8px 0 clamp(30px,5vw,60px)}
+.terms-page dt{font-size:12.5px;letter-spacing:.14em;font-weight:700;margin-top:26px}
+.terms-page dt:first-child{margin-top:0}
+.terms-page dd{margin:8px 0 0;font-size:16.5px;line-height:1.9}

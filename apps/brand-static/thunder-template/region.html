@@ -1,0 +1,124 @@
+<div class="wrap">
+  <div class="rhead">
+    <span class="where">{{sidoLabel}} 출동</span>
+    <h1>{{{regionH1}}}</h1>
+    <p class="rsub">{{sigunguLabel}} <span class="b">{{regionTagline}}</span></p>
+    <p class="sub">{{regionLede}}</p>
+    <div class="acts" style="margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn btn-2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+</div>
+<div class="stats">
+  <div><b>{{dongCount}}곳</b><span>{{sigunguLabel}} 동 단위</span></div>
+  {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+</div>
+
+{{{estimateForm}}}
+
+<section id="keyword" class="alt"><div class="wrap">
+  <p class="kicker">유형별</p>
+  <h2>{{{keywordHeading}}}</h2>
+  <p class="lead">{{keywordLede}}</p>
+  <div class="rows">
+    {{#keywordBlurbs}}<div class="row"><div class="n word">{{kw}}</div><div><h3>{{h}}</h3><p>{{body}}</p></div></div>{{/keywordBlurbs}}
+  </div>
+</div></section>
+
+<section id="dong" class="alt"><div class="wrap">
+  <p class="kicker">{{sigunguLabel}} 출동 동네</p>
+  <h2>{{{dongHeading}}}</h2>
+  <p class="lead">{{dongLede}}</p>
+  <div class="hoods">
+    {{#dongs}}<div class="hood"><b>{{name}}</b><span>{{kw}}</span></div>{{/dongs}}
+  </div>
+</div></section>
+
+<section id="service"><div class="wrap">
+  <p class="kicker">서비스</p>
+  <h2>{{{serviceHeading}}}</h2>
+  <p class="lead">{{serviceLede}}</p>
+  <div class="rows">
+    {{#jobs}}<div class="row"><div class="n">{{no}}</div><div><h3>{{title}}</h3><p>{{body}}</p></div></div>{{/jobs}}
+  </div>
+  <div class="chips">{{#serviceLinks}}<a href="{{href}}">{{label}}</a>{{/serviceLinks}}</div>
+</div></section>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="kicker">현장</p>
+  <h2>{{{photoHeading}}}</h2>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="cause"><div class="wrap">
+  <p class="kicker">원인</p>
+  <h2>{{{causeHeading}}}</h2>
+  <p class="lead">{{causeLede}}</p>
+  <div class="rows">
+    {{#causes}}<div class="row"><div class="n word">{{sym}}</div><div><h3>{{title}}</h3><p>{{body}}</p></div></div>{{/causes}}
+  </div>
+</div></section>
+
+<section id="method"><div class="wrap">
+  <p class="kicker">작업 방법</p>
+  <h2>{{{methodHeading}}}</h2>
+  <p class="lead">{{methodLede}}</p>
+  <div class="rows">
+    {{#method}}<div class="row"><div class="n word">{{t}}</div><div><p>{{b}}</p></div></div>{{/method}}
+  </div>
+</div></section>
+
+<section id="building"><div class="wrap">
+  <p class="kicker">건물 유형</p>
+  <h2>{{{buildingHeading}}}</h2>
+  <p class="lead">{{buildingLede}}</p>
+  <div class="rows">
+    {{#building}}<div class="row"><div class="n word">{{t}}</div><div><p>{{b}}</p></div></div>{{/building}}
+  </div>
+</div></section>
+
+<section id="prevent" class="alt"><div class="wrap">
+  <p class="kicker">예방</p>
+  <h2>{{{preventHeading}}}</h2>
+  <p class="lead">{{preventLede}}</p>
+  <div class="rows">
+    {{#prevent}}<div class="row"><div class="n word">✓</div><div><h3>{{t}}</h3><p>{{b}}</p></div></div>{{/prevent}}
+  </div>
+</div></section>
+
+<section id="season" class="alt"><div class="wrap">
+  <p class="kicker">시기</p>
+  <h2>{{{seasonHeading}}}</h2>
+  <div class="rows">
+    {{#season}}<div class="row"><div class="n word">{{t}}</div><div><p>{{b}}</p></div></div>{{/season}}
+  </div>
+</div></section>
+
+<section id="before" class="ink"><div class="wrap">
+  <p class="kicker">접수하실 때</p>
+  <h2>{{{beforeHeading}}}</h2>
+  <p class="lead">{{beforeLede}}</p>
+  <div class="hoods">
+    {{#before}}<div class="hood"><b>{{text}}</b></div>{{/before}}
+  </div>
+</div></section>
+
+<section id="case"><div class="wrap">
+  <p class="kicker">작업 사례</p>
+  <h2>{{{caseHeading}}}</h2>
+  <div class="rows">
+    {{#cases}}<div class="row"><div class="n word">{{id}}</div><div><h3>{{title}}</h3><p>{{body}}</p></div></div>{{/cases}}
+  </div>
+</div></section>
+
+<section id="near" class="ink"><div class="wrap">
+  <p class="kicker">{{sidoLabel}} 안의 다른 지역</p>
+  <h2>{{{nearHeading}}}</h2>
+  <div class="chips">{{#near}}<a href="{{href}}">{{label}}</a>{{/near}}</div>
+  <p class="foot-note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

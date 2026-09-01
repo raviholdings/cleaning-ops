@@ -1,0 +1,53 @@
+<div class="wrap">
+  <div class="hero">
+    {{#heroBg}}<div class="herobg"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" fetchpriority="high" decoding="async"></div>{{/heroBg}}
+    
+    <span class="eyebrow">{{kicker}}</span>
+    <h1>{{h1a}} <span class="b">{{h1b}}</span></h1>
+    <p class="sub">{{h1sub}}</p>
+    <div class="acts">
+      <a class="btn btn-1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn btn-2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+</div>
+<div class="stats">{{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}</div>
+
+{{{estimateForm}}}
+
+<section id="service"><div class="wrap">
+  <p class="kicker">서비스</p>
+  <h2>{{{serviceHeading}}}</h2>
+  <p class="lead">{{serviceLede}}</p>
+  <div class="rows">
+    {{#jobs}}<div class="row"><div class="n">{{no}}</div><div><h3>{{title}}</h3><p>{{body}}</p></div></div>{{/jobs}}
+  </div>
+  <div class="chips">{{#serviceLinks}}<a href="{{href}}">{{label}}</a>{{/serviceLinks}}</div>
+</div></section>
+
+<section id="cause" class="alt"><div class="wrap">
+  <p class="kicker">원인</p>
+  <h2>{{{causeHeading}}}</h2>
+  <p class="lead">{{causeLede}}</p>
+  <div class="rows">
+    {{#causes}}<div class="row"><div class="n word">{{sym}}</div><div><h3>{{title}}</h3><p>{{body}}</p></div></div>{{/causes}}
+  </div>
+</div></section>
+
+
+
+<section id="shot" class="alt"><div class="wrap">
+  <p class="kicker">현장</p>
+  <h2>실제 출동 현장</h2>
+  <div class="shots">
+    {{#homeShots}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/homeShots}}
+  </div>
+</div></section>
+
+<section id="case"><div class="wrap">
+  <p class="kicker">작업 사례</p>
+  <h2>{{{caseHeading}}}</h2>
+  <div class="rows">
+    {{#cases}}<div class="row"><div class="n word">{{id}}</div><div><h3>{{title}}</h3><p>{{body}}</p></div></div>{{/cases}}
+  </div>
+</div></section>

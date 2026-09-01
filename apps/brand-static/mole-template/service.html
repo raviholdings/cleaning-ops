@@ -1,0 +1,63 @@
+<div class="wrap">
+  <div class="rtop">
+    <span class="where">{{svcName}}</span>
+    <h1>{{{svcTitle}}}</h1>
+    <p class="say">{{svcLede}}</p>
+    <div class="acts" style="margin-top:26px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+      <a class="btn b1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn b2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  <div class="notes">
+    <div><b>{{svcName}}</b><span>이 페이지</span></div>
+    {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+  </div>
+</div>
+
+<section id="when"><div class="wrap">
+  <span class="tag">이럴 때</span>
+  <h2>이런 얘기시면 <span class="c">{{svcName}}</span>입니다</h2>
+  <div class="hoods">
+    {{#when}}<div class="hoodz"><b>{{text}}</b></div>{{/when}}
+  </div>
+</div></section>
+
+<section id="avoid"><div class="wrap">
+  <span class="tag">이건 마세요</span>
+  <h2>하시면 <span class="c">더 커집니다</span></h2>
+  <div class="cards">
+    {{#avoid}}<div class="card"><p>{{text}}</p></div>{{/avoid}}
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <span class="tag">어떻게 하나</span>
+  <h2>이 순서로 <span class="g">합니다</span></h2>
+  <div class="cards">
+    {{#steps}}<div class="card"><div class="ic">{{no}}</div><h3>{{t}}</h3><p>{{b}}</p></div>{{/steps}}
+  </div>
+  <p class="note">{{svcNote}}</p>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <span class="tag">궁금한 것</span>
+  <h2>{{svcName}} <span class="g">많이 물으시는 것</span></h2>
+  <div class="qas">
+    {{#faq}}<div class="qa"><p class="q">{{q}}</p><p class="a">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="others"><div class="wrap">
+  <span class="tag">다른 일</span>
+  <h2>이런 것도 합니다</h2>
+  <div class="pills">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+</div></section>
+
+<section id="spots"><div class="wrap">
+  <span class="tag">어디까지</span>
+  <h2>전국 다 갑니다</h2>
+  <div class="pills">{{#spots}}<a href="{{href}}">{{label}}</a>{{/spots}}</div>
+  <p class="note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

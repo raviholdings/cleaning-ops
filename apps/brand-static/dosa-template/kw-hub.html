@@ -1,0 +1,65 @@
+<div class="wrap">
+  <div class="sign dbl">
+    {{#heroBg}}<div class="herobg"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" decoding="async"></div>{{/heroBg}}
+    <span class="seal">道</span>
+    <h1>{{{kwH1}}}</h1>
+    <p class="say">{{kwLede}}</p>
+    <div class="acts">
+      <a class="btn btn-d" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn" href="#estimate">글로 남기기</a>
+    </div>
+  </div>
+</div>
+
+<section id="symptom"><div class="wrap">
+  <p class="mark">01 — 증상</p>
+  <h2>{{symptomHeading}}</h2>
+  <div class="panes">{{#symptoms}}<div class="pane"><h3>{{t}}</h3><p>{{d}}</p></div>{{/symptoms}}</div>
+</div></section>
+
+<section id="cause"><div class="wrap">
+  <p class="mark">02 — 원인</p>
+  <h2>{{causeHeading}}</h2>
+  <div class="panes">{{#causes}}<div class="pane"><h3>{{t}}</h3><p>{{d}}</p></div>{{/causes}}</div>
+</div></section>
+
+<section id="method"><div class="wrap">
+  <p class="mark">03 — 하는 방법</p>
+  <h2>{{methodHeading}}</h2>
+  <div class="panes">{{#method}}<div class="pane"><p class="num">{{no}}</p><h3>{{t}}</h3><p>{{d}}</p></div>{{/method}}</div>
+</div></section>
+
+<section id="dont"><div class="wrap">
+  <p class="mark">04 — 주의</p>
+  <h2>{{dontHeading}}</h2>
+  <div class="dialog">{{#dont}}<div class="dlg"><p class="ask">{{t}}</p><p class="ans">{{d}}</p></div>{{/dont}}</div>
+</div></section>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="mark">05 — 현장</p>
+  <h2>다녀온 자리</h2>
+  <div class="shots">{{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}</div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="price"><div class="wrap">
+  <p class="mark">06 — 값</p>
+  <h2>{{{priceHeading}}}</h2>
+  <div class="ledger">{{#price}}<div><b>{{item}}</b><i></i><span>{{basis}}</span></div>{{/price}}</div>
+  <p class="aside">{{priceNote}}</p>
+</div></section>
+
+<section id="area"><div class="wrap">
+  <p class="mark">07 — 지역</p>
+  <h2>어디로 가나</h2>
+  <div class="names">{{#sido}}<a href="{{href}}">{{label}} {{count}}곳</a>{{/sido}}</div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <p class="mark">08 — 문답</p>
+  <h2>{{faqHeading}}</h2>
+  <div class="dialog">{{#faq}}<div class="dlg"><p class="ask">{{q}}</p><p class="ans">{{a}}</p></div>{{/faq}}</div>
+</div></section>
+
+{{{estimateForm}}}

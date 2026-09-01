@@ -1,0 +1,24 @@
+<div class="wrap">
+  <article class="post">
+    <header class="ph">
+      <p class="pk">배관 정보 글</p>
+      <h1>막히는 이유와 비용, 지역별로 정리했어요</h1>
+      <p class="pl">증상마다 원인이 다르고, 같은 증상이어도 건물에 따라 손대는 자리가 달라요. 궁금한 증상을 고르시거나, 아래 목록에서 사시는 지역을 눌러 보세요.</p>
+    </header>
+
+    <section class="pb">
+      <h2>무엇이 막혔나요</h2>
+      <div class="blist">
+        {{#groups}}<a class="bcard" href="{{href}}"><b>{{label}}</b><span>{{what}}</span></a>{{/groups}}
+      </div>
+    </section>
+
+    <section class="pb">
+      <h2>최근에 적은 글</h2>
+      <div class="bboard">
+        <div class="brow bhead"><span class="bc-a">지역</span><span class="bc-t">제목</span><span class="bc-k">증상</span><span class="bc-d">게시일</span></div>
+        {{#rows}}<a class="brow" href="{{href}}"><span class="bc-a">{{area}}</span><span class="bc-t">{{title}}</span><span class="bc-k">{{kw}}</span><span class="bc-d">{{at}}</span></a>{{/rows}}
+      </div>
+    </section>
+  </article>
+</div>

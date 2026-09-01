@@ -1,0 +1,25 @@
+<div class="wrap">
+  <div class="rflyer">
+    {{#caseArea}}<span class="where">{{caseArea}}</span>{{/caseArea}}
+    <h1>{{caseTitle}}</h1>
+    <p class="say">{{caseBody}}</p>
+  </div>
+  <div class="boxes">{{#detail}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/detail}}</div>
+</div>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <div class="head">현장 <span class="r">사진</span></div>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+{{{estimateForm}}}
+
+<section id="others"><div class="wrap">
+  <div class="head">다른 <span class="r">사례</span></div>
+  <div class="tags">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+  <p class="memo"><a href="{{casesHref}}">작업 기록 전체 보기</a></p>
+</div></section>

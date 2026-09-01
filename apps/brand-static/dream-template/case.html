@@ -1,0 +1,33 @@
+<div class="wrap">
+  <div class="phead">
+    <div>
+      <p class="kicker rise" style="animation-delay:.05s">작업 사례{{#caseArea}} · {{caseArea}}{{/caseArea}}</p>
+      <h1 class="rise" style="animation-delay:.12s">{{caseTitle}}</h1>
+      <p class="s rise" style="animation-delay:.3s">{{caseBody}}</p>
+    </div>
+    <div class="board rise" style="animation-delay:.42s">
+      <h2>기록</h2>
+      {{#detail}}<div class="row"><b>{{k}}</b><span>{{v}}</span></div>{{/detail}}
+    </div>
+  </div>
+</div>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="tag">사진</p>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+{{{estimateForm}}}
+
+<section id="others"><div class="wrap">
+  <p class="tag">다른 사례</p>
+  <h3>지난 현장에서</h3>
+  <div class="area">
+    {{#others}}<a href="{{href}}">{{label}}</a>{{/others}}
+  </div>
+  <p class="note"><a class="more" href="{{casesHref}}">작업 사례 전체 보기</a></p>
+</div></section>

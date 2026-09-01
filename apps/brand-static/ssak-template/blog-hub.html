@@ -1,0 +1,33 @@
+<div class="wrap">
+  <article class="post">
+    <header class="ph">
+      <p class="pk">{{kwLabel}}{{#zoneLabel}} · {{zoneLabel}}{{/zoneLabel}}</p>
+      <h1>{{kwLabel}} 지역별 정보</h1>
+      <p class="pl">{{kwLede}}</p>
+    </header>
+
+    <section class="pb">
+      <nav class="btabs">
+        {{#tabs}}<a class="btab{{#on}} on{{/on}}" href="{{href}}">{{label}}</a>{{/tabs}}
+      </nav>
+      <div class="bboard">
+        <div class="brow bhead"><span class="bc-a">지역</span><span class="bc-t">제목</span><span class="bc-k">증상</span><span class="bc-d">게시일</span></div>
+        {{#rows}}<a class="brow" href="{{href}}"><span class="bc-a">{{area}}</span><span class="bc-t">{{title}}</span><span class="bc-k">{{kw}}</span><span class="bc-d">{{at}}</span></a>{{/rows}}
+      </div>
+      {{#hasPager}}
+      <nav class="bpager">
+        {{#first}}<a class="bp bp-e" href="{{href}}" aria-label="첫 쪽">«</a>{{/first}}
+        {{#prev}}<a class="bp bp-e" href="{{href}}" rel="prev" aria-label="이전 쪽">‹</a>{{/prev}}
+        {{#nums}}<a class="bp{{#on}} on{{/on}}" href="{{href}}">{{n}}</a>{{/nums}}
+        {{#next}}<a class="bp bp-e" href="{{href}}" rel="next" aria-label="다음 쪽">›</a>{{/next}}
+        {{#last}}<a class="bp bp-e" href="{{href}}" aria-label="마지막 쪽">»</a>{{/last}}
+      </nav>
+      {{/hasPager}}
+    </section>
+
+    <section class="pb">
+      <h2>다른 증상도 보세요</h2>
+      <p class="pd">{{#others}}<a href="{{href}}">{{label}}</a> {{/others}}</p>
+    </section>
+  </article>
+</div>

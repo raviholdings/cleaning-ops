@@ -1,0 +1,11 @@
+<div class="wrap">
+  <div class="flyer">
+    <span class="top">작업 기록</span>
+    <h1>실제 <span class="r">시공 사례</span></h1>
+    <p class="say">접수 증상과 실제 원인을 정리했습니다. 총 {{caseCount}}건.</p>
+  </div>
+  <div class="tab">
+    {{#cases}}<div><b><a href="{{href}}">{{title}}</a></b><span>{{#area}}{{area}} · {{/area}}{{summary}}</span></div>{{/cases}}
+  </div>
+  <div style="height:34px"></div>
+</div>

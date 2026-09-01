@@ -1,0 +1,16 @@
+<div class="wrap">
+  <div class="hero">
+    <span class="eyebrow">서비스 지역</span>
+    <h1>{{{hubHeading}}}</h1>
+    <p class="sub">{{hubLede}}</p>
+  </div>
+</div>
+
+<section><div class="wrap">
+  {{#sido}}
+  <div class="hubgrp">
+    <h3>{{label}}<em>{{count}}곳</em></h3>
+    <div class="chips">{{#items}}<a href="{{href}}">{{label}}</a>{{/items}}</div>
+  </div>
+  {{/sido}}
+</div></section>

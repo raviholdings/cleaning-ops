@@ -1,0 +1,143 @@
+<div class="wrap">
+  <div class="phead">
+    <div>
+      <p class="kicker rise" style="animation-delay:.05s">{{sidoLabel}} · 출동 지역</p>
+      <h1 class="rise" style="animation-delay:.12s">{{{regionH1}}}</h1>
+    <p class="rsub">{{sigunguLabel}} <span class="mk">{{regionTagline}}</span></p>
+      <p class="s rise" style="animation-delay:.3s">{{regionLede}}</p>
+    </div>
+    <div class="board rise" style="animation-delay:.42s">
+      <h2>접수 현황</h2>
+      <div class="row"><b>현재 시각</b><span id="clock">--:--:--</span></div>
+      <div class="row"><b>지역</b><span>{{sidoLabel}} {{sigunguLabel}}</span></div>
+      <div class="row"><b>동 단위</b><span>{{dongCount}}곳</span></div>
+      {{#board}}<div class="row"><b>{{k}}</b><span>{{v}}</span></div>{{/board}}
+    </div>
+  </div>
+</div>
+
+<section id="keyword"><div class="wrap">
+  <p class="tag">00 — 유형별</p>
+  <h3>{{{keywordHeading}}}</h3>
+  <p class="lede">{{keywordLede}}</p>
+  <div class="jobs">
+    {{#keywordBlurbs}}<div class="job"><div class="no">·</div><div><h4>{{h}}</h4><p>{{body}}</p></div></div>{{/keywordBlurbs}}
+  </div>
+</div></section>
+
+<section id="cause"><div class="wrap">
+  <p class="tag">03 — 원인</p>
+  <h3>{{{causeHeading}}}</h3>
+  <p class="lede">{{causeLede}}</p>
+  <div class="causes">
+    {{#causes}}<div class="cause">
+      <p class="sym">{{sym}}</p>
+      <h4>{{title}}</h4>
+      <p>{{body}}</p>
+    </div>{{/causes}}
+  </div>
+</div></section>
+
+<section id="dong"><div class="wrap">
+  <p class="tag">02 — {{sigunguLabel}} 출동 동네</p>
+  <h3>{{{dongHeading}}}</h3>
+  <p class="lede">{{dongLede}}</p>
+  <div class="dongs">
+    {{#dongs}}<div class="dong"><b>{{name}}</b><span>{{kw}}</span></div>{{/dongs}}
+  </div>
+</div></section>
+
+<section id="service"><div class="wrap">
+  <p class="tag">01 — 서비스</p>
+  <h3>{{{serviceHeading}}}</h3>
+  <p class="lede">{{serviceLede}}</p>
+  <div class="jobs">
+    {{#jobs}}<div class="job"><div class="no">{{no}}</div><div><h4>{{title}}</h4><p>{{body}}</p></div></div>{{/jobs}}
+  </div>
+  <p class="note">작업별 자세히 —
+    {{#serviceLinks}}<a class="more" href="{{href}}">{{label}}</a> {{/serviceLinks}}
+  </p>
+</div></section>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="tag">사진 — {{{photoHeading}}}</p>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="prevent"><div class="wrap">
+  <p class="tag">00 — 예방</p>
+  <h3>{{{preventHeading}}}</h3>
+  <p class="lede">{{preventLede}}</p>
+  <div class="jobs">
+    {{#prevent}}<div class="job"><div class="no">·</div><div><h4>{{t}}</h4><p>{{b}}</p></div></div>{{/prevent}}
+  </div>
+</div></section>
+
+<section id="price"><div class="wrap">
+  <p class="tag">04 — 요금</p>
+  <h3>{{{priceHeading}}}</h3>
+  <div class="price">
+    {{#price}}<div class="r"><i>{{item}}</i><u></u><s>{{basis}}</s></div>{{/price}}
+  </div>
+  <p class="note">{{priceNote}}</p>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="method"><div class="wrap">
+  <p class="tag">00 — 작업 방법</p>
+  <h3>{{{methodHeading}}}</h3>
+  <p class="lede">{{methodLede}}</p>
+  <div class="jobs">
+    {{#method}}<div class="job"><div class="no">·</div><div><h4>{{t}}</h4><p>{{b}}</p></div></div>{{/method}}
+  </div>
+</div></section>
+
+<section id="building"><div class="wrap">
+  <p class="tag">00 — 건물 유형</p>
+  <h3>{{{buildingHeading}}}</h3>
+  <p class="lede">{{buildingLede}}</p>
+  <div class="causes">
+    {{#building}}<div class="cause"><p class="sym">{{t}}</p><p>{{b}}</p></div>{{/building}}
+  </div>
+</div></section>
+
+<section id="season"><div class="wrap">
+  <p class="tag">00 — 시기</p>
+  <h3>{{{seasonHeading}}}</h3>
+  <div class="causes">
+    {{#season}}<div class="cause"><p class="sym">{{t}}</p><p>{{b}}</p></div>{{/season}}
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <p class="tag">07 — 자주 묻는 질문</p>
+  <h3>{{{faqHeading}}}</h3>
+  <div class="qa">
+    {{#faq}}<div class="q"><div class="m">Q</div><p class="qq">{{q}}</p></div>
+    <div class="q"><div class="a">A</div><p>{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>
+
+<section id="before"><div class="wrap">
+  <p class="tag">00 — 전화 주실 때</p>
+  <h3>{{{beforeHeading}}}</h3>
+  <p class="lede">{{beforeLede}}</p>
+  <div class="dongs">
+    {{#before}}<div class="dong"><b>·</b><span>{{text}}</span></div>{{/before}}
+  </div>
+</div></section>
+
+
+<section id="near"><div class="wrap">
+  <p class="tag">08 — 같은 지역 다른 시군구</p>
+  <h3>{{{nearHeading}}}</h3>
+  <div class="area">
+    {{#near}}<a href="{{href}}">{{label}}</a>{{/near}}
+  </div>
+  <p class="note"><a class="more" href="/area/">서비스 지역 전체 보기 ({{regionCount}}곳)</a></p>
+</div></section>

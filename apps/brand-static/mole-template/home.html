@@ -1,0 +1,87 @@
+<div class="wrap">
+  <div class="hero">
+    {{#heroBg}}<div class="herobg"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" fetchpriority="high" decoding="async"></div>{{/heroBg}}
+    
+    <div class="herobox">
+      <div>
+        <span class="hi">{{kicker}}</span>
+        <h1>{{h1a}} <span class="c">{{h1b}}</span></h1>
+        <p class="say">{{h1sub}}</p>
+        <div class="acts">
+          <a class="btn b1" href="tel:{{phoneRaw}}">{{ctaCall}}</a>
+          <a class="btn b2" href="#estimate">{{ctaForm}}</a>
+        </div>
+      </div>
+      <div>
+        {{#heroPhoto}}<div class="herofig"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" decoding="async"></div>{{/heroPhoto}}
+        <div class="vows">
+          {{#heroPromises}}<div><b>{{t}}</b><span>{{b}}</span></div>{{/heroPromises}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="symptom"><div class="wrap">
+  <span class="tag">증상 보기</span>
+  <h2>{{{symptomHeading}}}</h2>
+  <p class="say2">{{symptomLede}}</p>
+  <div class="symptoms">
+    {{#symptoms}}<a class="sym" href="{{href}}"><span class="q">{{q}}</span><span class="go">→</span></a>{{/symptoms}}
+  </div>
+</div></section>
+
+<section id="promise"><div class="wrap">
+  <span class="tag">상담 원칙</span>
+  <h2>{{{promiseHeading}}}</h2>
+  <p class="say2">{{promiseLede}}</p>
+  <div class="vowlist">
+    {{#promises}}<div class="vow"><div class="mk">✓</div><h3>{{t}}</h3><p>{{b}}</p></div>{{/promises}}
+  </div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="process"><div class="wrap">
+  <span class="tag">작업 과정</span>
+  <h2>{{{processHeading}}}</h2>
+  <p class="say2">{{processLede}}</p>
+  <div class="steps">
+    {{#process}}<div class="step"><div class="n">{{n}}</div><div><h3>{{t}}</h3><p>{{b}}</p></div></div>{{/process}}
+  </div>
+</div></section>
+
+
+
+<section id="shot"><div class="wrap">
+  <span class="tag">현장 사진</span>
+  <h2>이렇게 <span class="c">일합니다</span></h2>
+  <div class="shots">
+    {{#homeShots}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/homeShots}}
+  </div>
+</div></section>
+
+<section id="case"><div class="wrap">
+  <span class="tag">동네 사례</span>
+  <h2>{{{caseHeading}}}</h2>
+  <div class="cards">
+    {{#cases}}<div class="card"><div class="ic">{{id}}</div><h3>{{title}}</h3><p>{{body}}</p></div>{{/cases}}
+  </div>
+</div></section>
+
+
+<section id="area"><div class="wrap">
+  <span class="tag">방문 지역</span>
+  <h2>{{{areaHeading}}}</h2>
+  <p class="say2">{{areaLede}}</p>
+  <div class="pills">{{#areaLinks}}<a href="{{href}}">{{label}}</a>{{/areaLinks}}</div>
+  <p class="note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <span class="tag">처음이신 분</span>
+  <h2>{{{faqHeading}}}</h2>
+  <div class="qas">
+    {{#faq}}<div class="qa"><p class="q">{{q}}</p><p class="a">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>

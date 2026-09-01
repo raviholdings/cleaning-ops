@@ -1,0 +1,63 @@
+<div class="wrap">
+  <div class="rhead">
+    <span class="where">{{svcName}}</span>
+    <h1>{{{svcTitle}}}</h1>
+    <p class="sub">{{svcLede}}</p>
+    <div class="acts" style="margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn btn-2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+</div>
+<div class="stats">
+  <div><b>{{svcName}}</b><span>작업</span></div>
+  {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+</div>
+
+<section id="when"><div class="wrap">
+  <p class="kicker">이럴 때</p>
+  <h2>이런 증상이면 {{svcName}}입니다</h2>
+  <div class="hoods">
+    {{#when}}<div class="hood"><b>{{text}}</b></div>{{/when}}
+  </div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="how" class="alt"><div class="wrap">
+  <p class="kicker">작업 순서</p>
+  <h2>이 순서로 갑니다</h2>
+  <div class="rows">
+    {{#steps}}<div class="row"><div class="n">{{no}}</div><div><h3>{{t}}</h3><p>{{b}}</p></div></div>{{/steps}}
+  </div>
+  <p class="foot-note">{{svcNote}}</p>
+</div></section>
+
+<section id="avoid" class="ink"><div class="wrap">
+  <p class="kicker">하지 마세요</p>
+  <h2>이건 일을 키웁니다</h2>
+  <div class="rows">
+    {{#avoid}}<div class="row"><div class="n word">✕</div><div><p>{{text}}</p></div></div>{{/avoid}}
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <p class="kicker">{{svcName}} 문의</p>
+  <h2>미리 답합니다</h2>
+  <div class="faq">
+    {{#faq}}<details><summary>{{q}}</summary><p>{{a}}</p></details>{{/faq}}
+  </div>
+</div></section>
+
+<section id="others" class="alt"><div class="wrap">
+  <p class="kicker">다른 작업</p>
+  <h2>이런 것도 합니다</h2>
+  <div class="chips">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+</div></section>
+
+<section id="spots" class="ink"><div class="wrap">
+  <p class="kicker">출동 지역</p>
+  <h2>전국 어디든</h2>
+  <div class="chips">{{#spots}}<a href="{{href}}">{{label}}</a>{{/spots}}</div>
+  <p class="foot-note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
+</div></section>

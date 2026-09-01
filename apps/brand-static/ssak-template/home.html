@@ -1,0 +1,69 @@
+<div class="wrap">
+  <div class="flyer">
+    {{#heroBg}}<div class="herobg"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" fetchpriority="high" decoding="async"></div>{{/heroBg}}
+    
+    <span class="top">{{kicker}}</span>
+    <h1>{{h1a}} <span class="r">{{h1b}}</span></h1>
+    <p class="say">{{h1sub}}</p>
+    <div class="acts">
+      <a class="btn btn-r" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  {{#heroShot}}<div class="heroshot"><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" decoding="async"></div>{{/heroShot}}
+  <div class="boxes">{{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}</div>
+</div>
+
+<section id="price"><div class="wrap">
+  <div class="head">{{{priceHeading}}}</div>
+  <div class="tab">{{#price}}<div><b>{{item}}</b><span>{{basis}}</span></div>{{/price}}</div>
+  <p class="memo">{{priceNote}}</p>
+</div></section>
+
+<section id="service"><div class="wrap">
+  <div class="head">{{{serviceHeading}}}</div>
+  <p class="sub">{{serviceLede}}</p>
+  <div class="grid">
+    {{#jobs}}<div class="box"><span class="no">{{no}}</span><h3>{{title}}</h3><p>{{body}}</p></div>{{/jobs}}
+  </div>
+  <div class="tags">{{#serviceLinks}}<a href="{{href}}">{{label}}</a>{{/serviceLinks}}</div>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="cause"><div class="wrap">
+  <div class="head">{{{causeHeading}}}</div>
+  <p class="sub">{{causeLede}}</p>
+  <div class="grid">
+    {{#causes}}<div class="box"><span class="no">{{sym}}</span><h3>{{title}}</h3><p>{{body}}</p></div>{{/causes}}
+  </div>
+</div></section>
+
+<section id="shot"><div class="wrap">
+  <div class="head">현장 <span class="r">기록</span></div>
+  <div class="shots">
+    {{#homeShots}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/homeShots}}
+  </div>
+</div></section>
+
+<section id="case"><div class="wrap">
+  <div class="head">{{{caseHeading}}}</div>
+  <div class="grid">
+    {{#cases}}<div class="box"><span class="no">{{id}}</span><h3>{{title}}</h3><p>{{body}}</p></div>{{/cases}}
+  </div>
+</div></section>
+
+<section id="post"><div class="wrap">
+  <p class="tag">배관 정보 글</p>
+  <h2>{{{postHeading}}}</h2>
+  <p class="lede">{{postLede}}</p>
+  <ul class="brecent">{{#homePosts}}<li><a href="{{href}}">{{title}}</a></li>{{/homePosts}}</ul>
+  <p class="pd"><a href="/blog/">글 전체 보기</a></p>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <div class="head">{{{faqHeading}}}</div>
+  <div class="qs">
+    {{#faq}}<div><p class="q">{{q}}</p><p class="a">{{a}}</p></div>{{/faq}}
+  </div>
+</div></section>

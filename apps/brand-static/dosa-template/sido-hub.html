@@ -1,0 +1,25 @@
+<div class="wrap">
+  <div class="rsign dbl">
+    <span class="place">{{sidoLabel}}</span>
+    <h1>{{sidoLabel}} 배관막힘 출동</h1>
+    <p class="rsub">시·군·구 <span class="d">{{sidoCount}}</span>곳</p>
+    <p class="say">{{sidoLede}}</p>
+  </div>
+</div>
+
+<section id="spot"><div class="wrap">
+  <p class="mark">01 — 지역·증상별 바로가기</p>
+  <h2>{{sidoLabel}} 어디로 가나</h2>
+  {{#spots}}
+  <div class="grp">
+    <h3><a href="{{href}}">{{label}}</a></h3>
+    <div class="names">{{#items}}<a href="{{href}}">{{label}}</a>{{/items}}</div>
+  </div>
+  {{/spots}}
+</div></section>
+
+<section id="kw"><div class="wrap">
+  <p class="mark">02 — 하는 일</p>
+  <h2>{{sidoLabel}}에서 하는 일</h2>
+  <div class="names">{{#kwLinks}}<a href="{{href}}">{{label}}</a>{{/kwLinks}}</div>
+</div></section>

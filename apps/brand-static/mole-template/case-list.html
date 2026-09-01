@@ -1,0 +1,15 @@
+<div class="wrap">
+  <div class="hero">
+    <div class="herobox" style="grid-template-columns:1fr">
+      <div>
+      <span class="hi">다녀온 곳</span>
+      <h1>실제로 <span class="c">있었던 일</span></h1>
+      <p class="say">어떤 얘기로 부르셨고 실제로 뭐가 문제였는지 적어뒀습니다. 모두 {{caseCount}}건입니다.</p>
+      </div>
+    </div>
+  </div>
+  <div class="hoods">
+    {{#cases}}<div class="hoodz"><b><a href="{{href}}">{{title}}</a></b><span>{{#area}}{{area}} · {{/area}}{{summary}}</span></div>{{/cases}}
+  </div>
+  <div style="height:40px"></div>
+</div>

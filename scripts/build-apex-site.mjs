@@ -29,7 +29,13 @@ const valueOf = (flag, fallback = '') => {
   return i === -1 ? fallback : (args[i + 1] ?? fallback);
 };
 
-const content = JSON.parse(readFileSync(resolve(projectRoot, 'data/apex/apex-content.json'), 'utf8'));
+/*
+ * 콘텐츠 파일. 기본은 대량 네트워크의 루트 10개(data/apex/apex-content.json)다.
+ * 별도 브랜드 사이트는 --content 로 자기 파일을 쓴다 — 같은 파일에 섞으면
+ * --all 이나 일괄 스크립트가 언젠가 둘을 같이 긁는다.
+ */
+const contentPath = valueOf('--content', 'data/apex/apex-content.json');
+const content = JSON.parse(readFileSync(resolve(projectRoot, contentPath), 'utf8'));
 const reviewPool = loadReviewPool(projectRoot);
 // 네이버 IndexNow 키 (루트마다 다름). 없으면 키 파일을 안 굽는다.
 const indexNowKeys = (() => {
@@ -48,6 +54,7 @@ const partials = Object.fromEntries(readdirSync(join(templateDir, 'partials'))
 // --preview 는 로컬에서 파일을 그냥 열어볼 때 쓴다. 상대경로를 쓰고 .gz 를 안 만든다.
 const preview = args.includes('--preview');
 const buildAll = args.includes('--all');
+const hub = args.includes('--hub');
 const outBase = valueOf('--out-base', 'tmp/apex');
 const year = Number(valueOf('--year', String(new Date().getFullYear())));
 const clean = !args.includes('--keep');
@@ -156,20 +163,70 @@ function buildRoot(root, overrides = {}) {
   // nav 는 섹션 앵커로 간다.
   const navSections = sections.filter((s) => (conf.nav && conf.nav[s]) || content.navPool[s]).slice(0, 7);
 
+  /*
+   * 허브 모드 — nav 를 앵커가 아니라 실제 서브 페이지로 보낸다.
+   *   원페이지: 홈 하나에 전 섹션 · nav 는 #services 로 스크롤
+   *   허브    : /service/ /review/ … 로 페이지가 갈림 · 내용은 그대로
+   * 섹션 하나가 페이지 하나면 얇아지므로 성격이 가까운 것끼리 묶는다.
+   */
+  const hubMode = Boolean(conf.hub) || hub;
+  const HUB_GROUPS = [
+    { slug: '', sections: ['hero', 'intro', 'estimate'] },
+    { slug: 'service', sections: ['services', 'process'] },
+    { slug: 'review', sections: ['reviews', 'cases'] },
+    { slug: 'price', sections: ['price'] },
+    { slug: 'area', sections: ['area'] },
+    { slug: 'faq', sections: ['faq'] },
+  ];
+  // 섹션 -> 그 섹션이 사는 슬러그. nav href 를 만들 때 쓴다.
+  const hubSlugOf = new Map();
+  if (hubMode) for (const g of HUB_GROUPS) for (const sec of g.sections) hubSlugOf.set(sec, g.slug);
+
   // 밴드를 번갈아 어둡게 해서 리듬을 만들고, 레이아웃이 지정한 섹션은 좌우로 눕힌다.
   const splitSet = new Set(theme.split || []);
   const titleMode = overrides.titleMode || conf.titleMode || 'stacked';
   const bandClass = (sec, idx) => [idx % 2 === 1 ? 'alt' : '', splitSet.has(sec) ? 'split' : '']
     .filter(Boolean).join(' ');
 
-  const PAGES = [{ file: 'index.html', sections, home: true }];
+  const PAGES = hubMode
+    ? HUB_GROUPS
+      .map((g) => ({
+        file: g.slug ? `${g.slug}/index.html` : 'index.html',
+        sections: g.sections.filter((sec) => sections.includes(sec)),
+        home: !g.slug,
+        slug: g.slug,
+      }))
+      .filter((pg) => pg.sections.length)
+    : [{ file: 'index.html', sections, home: true }];
   if (embedForm) PAGES.push({ file: 'form/index.html', sections: ['formpage'], home: false });
 
+  /*
+   * 허브 모드의 서브 페이지 제목·설명. nav 라벨(루트마다 다름)을 그대로 쓰면
+   * 열 곳이 같은 제목을 갖는 일이 없다.
+   */
+  const HUB_META = {
+    service: (lbl) => [`${lbl} | ${brand}`, `${brand} 가 하는 일과 진행 순서. ${v.tagline}.`],
+    review: (lbl) => [`${lbl} | ${brand}`, `${brand} 이용 후기와 작업 사례.`],
+    price: (lbl) => [`${lbl} | ${brand}`, `${brand} 작업별 비용 안내. ${cta.note}`],
+    area: (lbl) => [`${lbl} | ${brand}`, `${brand} 서비스 지역 안내.`],
+    faq: (lbl) => [`${lbl} | ${brand}`, `${brand} 에 자주 묻는 질문과 답변.`],
+  };
   const TITLES = { 'index.html': brand, 'form/index.html': `무료 견적 신청 | ${brand}` };
   const DESCS = {
     'index.html': `${v.tagline}. ${areaMode === 'national' ? '전국 출동. ' : ''}${v.intro}`.slice(0, 155),
     'form/index.html': `${brand} 무료 견적 신청. ${cta.note}`.slice(0, 155),
   };
+  if (hubMode) {
+    for (const g of HUB_GROUPS) {
+      if (!g.slug) continue;
+      const lbl = navLabel(g.sections[0]);
+      const meta = HUB_META[g.slug];
+      if (!meta) continue;
+      const [t, d] = meta(lbl);
+      TITLES[`${g.slug}/index.html`] = t;
+      DESCS[`${g.slug}/index.html`] = d.slice(0, 155);
+    }
+  }
 
   const ctaData = {
     // 하단 연락 섹션 제목은 루트마다 다르게 고른다 (업종당 10개 풀).
@@ -227,8 +284,34 @@ function buildRoot(root, overrides = {}) {
     const pageHome = preview ? `${up}index.html` : '/';
     const pageAssets = preview ? `${up}assets` : assetBase;
     // 섹션 앵커는 홈에 있다. 견적 페이지에서는 홈으로 되돌아가는 링크가 돼야 한다.
-    const anchor = (id) => (page.home ? `#${id}` : `${pageHome}#${id}`);
-    const navItems = navSections.map((s) => ({ href: anchor(s), label: navLabel(s), current: false }));
+    /*
+     * 허브 모드에서는 nav 가 섹션 앵커가 아니라 그 섹션이 사는 페이지로 간다.
+     * 홈에 있는 섹션(hero·intro·estimate)은 그대로 앵커를 쓴다.
+     */
+    const anchor = (id) => {
+      if (hubMode) {
+        const slug = hubSlugOf.get(id);
+        if (slug === undefined) return page.home ? `#${id}` : `${pageHome}#${id}`;
+        if (!slug) return page.home ? `#${id}` : pageHome;
+        return preview ? `${up}${slug}/index.html` : `/${slug}/`;
+      }
+      return page.home ? `#${id}` : `${pageHome}#${id}`;
+    };
+    /*
+     * 허브 모드에서는 한 페이지에 섹션이 여럿 묶이므로, 같은 페이지로 가는
+     * nav 항목이 중복된다. 슬러그 기준으로 첫 항목만 남긴다.
+     */
+    const navSeen = new Set();
+    const navItems = navSections
+      .filter((s) => {
+        if (!hubMode) return true;
+        const slug = hubSlugOf.get(s);
+        if (slug === undefined) return true;
+        if (navSeen.has(slug)) return false;
+        navSeen.add(slug);
+        return true;
+      })
+      .map((s) => ({ href: anchor(s), label: navLabel(s), current: false }));
 
     // 견적 페이지에서 헤더 버튼이 자기 자신을 가리키면 상대경로가 겹쳐 깨진다
     // (form/ 안에서 form/index.html -> form/form/index.html -> 404).
@@ -293,10 +376,22 @@ function buildRoot(root, overrides = {}) {
       footerInfoLabel: pickFrom(content.footerPool, 'info'),
       footerContactLabel: pickFrom(content.footerPool, 'contact'),
       footerServices: v.services.map((s) => s.name),
-      footerInfo: sections
-        .filter((s) => (conf.nav && conf.nav[s]) || content.navPool[s])
-        .slice(0, 4)
-        .map((s) => ({ href: anchor(s), label: navLabel(s) })),
+      // 푸터도 허브 모드에서 같은 페이지가 겹치지 않게 슬러그로 한 번 거른다.
+      footerInfo: (() => {
+        const seen = new Set();
+        return sections
+          .filter((s) => (conf.nav && conf.nav[s]) || content.navPool[s])
+          .filter((s) => {
+            if (!hubMode) return true;
+            const slug = hubSlugOf.get(s);
+            if (slug === undefined) return true;
+            if (seen.has(slug)) return false;
+            seen.add(slug);
+            return true;
+          })
+          .slice(0, 4)
+          .map((s) => ({ href: anchor(s), label: navLabel(s) }));
+      })(),
       footerHours: cta.footerHours,
     }));
   }

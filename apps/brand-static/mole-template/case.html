@@ -1,0 +1,27 @@
+<div class="wrap">
+  <div class="rtop">
+    {{#caseArea}}<span class="where">{{caseArea}}</span>{{/caseArea}}
+    <h1>{{caseTitle}}</h1>
+    <p class="say">{{caseBody}}</p>
+  </div>
+  <div class="notes">{{#detail}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/detail}}</div>
+</div>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <span class="tag">사진</span>
+  <h2>현장</h2>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+{{{estimateForm}}}
+
+<section id="others"><div class="wrap">
+  <span class="tag">다른 이야기</span>
+  <h2>요런 일도 있었어요</h2>
+  <div class="pills">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
+  <p class="note"><a href="{{casesHref}}">다녀온 곳 전체 보기</a></p>
+</div></section>
