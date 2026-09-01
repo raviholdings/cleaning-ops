@@ -475,3 +475,68 @@ footer .fpv a{text-decoration:underline;text-underline-offset:3px}
 .terms-page dt{font-size:12.5px;letter-spacing:.14em;font-weight:700;margin-top:26px}
 .terms-page dt:first-child{margin-top:0}
 .terms-page dd{margin:8px 0 0;font-size:16.5px;line-height:1.9}
+
+/* 폼이 본문에 없는 페이지(목록·허브·방침)에서 /form/ 으로 보내는 줄.
+   목록 한가운데 긴 폼을 끼우면 읽는 흐름이 끊긴다. */
+.askbar{margin:clamp(20px,3vw,34px) 0 clamp(34px,5vw,60px);padding:clamp(20px,3vw,30px);
+  border:1px solid var(--line);display:flex;flex-wrap:wrap;gap:14px 20px;
+  align-items:center;justify-content:space-between}
+.askt{font-size:16.5px;line-height:1.7;margin:0}
+.aska{display:flex;gap:9px;flex-wrap:wrap;margin:0}
+.askc,.askf{display:inline-flex;align-items:center;min-height:46px;padding:0 22px;
+  font-size:16px;font-weight:700;text-decoration:none;white-space:nowrap}
+.askc{background:var(--ink);color:#fff;border:1px solid var(--ink)}
+.askf{border:1px solid var(--ink);color:var(--ink)}
+.askf:hover{background:var(--ink);color:#fff}
+@media(max-width:640px){
+  .askbar{flex-direction:column;align-items:stretch}
+  .aska{flex-direction:column}
+  .askc,.askf{justify-content:center}
+}
+
+/* ── 모바일 메뉴 접기 ──
+   좁은 화면에서 메뉴 항목이 그대로 다 펼쳐져 화면 절반을 먹었다.
+   <details> 는 닫힌 상태를 CSS 로 되돌릴 수 없어 데스크톱에서 항상 펼치기가
+   어렵다. 체크박스는 미디어쿼리로 양쪽을 다 제어할 수 있고 자바스크립트도 필요 없다. */
+.navchk{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.navbtn{display:none}
+@media(max-width:900px){
+  .navbtn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+    min-height:44px;padding:0 16px;font-size:15px;font-weight:700;
+    border:1px solid var(--line);border-radius:4px;user-select:none;order:2}
+  .navbars{display:block;width:17px;height:11px;position:relative}
+  .navbars::before,.navbars::after{content:"";position:absolute;left:0;right:0;height:2px;
+    background:currentColor}
+  .navbars::before{top:0;box-shadow:0 4.5px 0 currentColor}
+  .navbars::after{bottom:0}
+  .navchk:focus-visible + .navbtn{outline:3px solid currentColor;outline-offset:2px}
+  /* 닫혀 있을 때는 메뉴가 자리를 아예 안 차지한다 */
+  header nav{display:none}
+  .navchk:checked ~ nav{display:flex;width:100%;order:9;
+    flex-direction:column;align-items:stretch;gap:2px;
+    margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+    max-height:68vh;overflow:auto}
+  .navchk:checked + .navbtn{background:var(--line)}
+  /* 열었을 때 안쪽 묶음은 한 줄씩 */
+  .navchk:checked ~ nav > a,
+  .navchk:checked ~ nav > .navgrp > summary{padding:11px 4px;text-align:left;width:100%}
+}
+
+/* ── 목차 ──
+   레퍼런스(누수도사)가 제목 바로 아래에 둔다. 글이 2,700자에 소제목이 다섯이라
+   없으면 뭘 다루는 글인지 한눈에 안 들어온다. 접지 않고 늘 펼쳐 둔다. */
+.ptoc{margin:0 0 clamp(30px,4vw,44px);padding:20px 22px;
+  background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--accent)}
+.ptoct{margin:0 0 12px;font-size:12.5px;font-weight:700;letter-spacing:.16em;color:var(--mute)}
+.ptoc ol{margin:0;padding-left:20px}
+.ptoc li{margin:0;padding:5px 0;font-size:16px;line-height:1.55}
+.ptoc a{color:var(--ink);text-decoration:none}
+.ptoc a:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+/* 목차에서 눌러 갔을 때 제목이 헤더 밑에 가리지 않게 */
+.pb[id]{scroll-margin-top:84px}
+@media(max-width:640px){.ptoc li{font-size:15.5px}}
+
+/* 글머리 이미지 — 지역·키워드·전화번호가 박힌 한 장.
+   레퍼런스(하수구박사)도 글머리에 썸네일 한 장만 둔다. */
+.plead{margin:0 0 clamp(24px,3.5vw,34px)}
+.plead img{display:block;width:100%;height:auto;border:1px solid var(--line)}

@@ -64,6 +64,19 @@ const TIERED = site.structure === 'tiered';
  * 슬러그가 한글이고 평면 1단계다 — 3단계(클린배관형)와 정반대.
  */
 const BLOG = site.structure === 'blog';
+/*
+ * 글자를 박아 둔 이미지({지역명}{키워드}{전화번호}). scripts/make-stamped-images.py 가 만든다.
+ * 한 장을 3,072편에 돌려 쓰면 검색엔진이 같은 이미지로 본다 — 그래서 지역·키워드마다 따로다.
+ * 아직 안 만들었으면 그냥 안 붙인다 (빌드를 막지 않는다).
+ */
+const stampedPath = resolve(projectRoot, `data/brands/${siteKey}-stamped.json`);
+const stampedIndex = new Map();
+if (existsSync(stampedPath)) {
+  for (const x of JSON.parse(readFileSync(stampedPath, 'utf8')).images || []) {
+    stampedIndex.set(`${x.code}|${x.kw}`, x);
+  }
+}
+
 const blogData = BLOG
   ? JSON.parse(readFileSync(resolve(projectRoot, `data/brands/${siteKey}-blog.json`), 'utf8'))
   : null;
@@ -114,6 +127,7 @@ const templates = {
   ...optional('blog-index.html', 'blogIndex'),
   ...optional('blog-hub.html', 'blogHub'),
   ...optional('privacy.html', 'privacy'),
+  ...optional('form.html', 'form'),
 };
 
 /* ────────────────────────────────────────────────────────────
@@ -722,8 +736,25 @@ function buildGraph({ canonical, title, description, jsonLd, crumbs, published, 
   return { '@context': 'https://schema.org', '@graph': graph };
 }
 
+/*
+ * 본문에 처음 나오는 사진. 공유 카드에 쓴다.
+ * 각 페이지가 이미 자기 사진을 갖고 있으니 따로 고르지 않고 그것을 그대로 쓴다.
+ */
+function firstImageOf(html) {
+  const m = /<img[^>]*\ssrc="(\/assets\/[^"]+)"[^>]*>/.exec(html || '');
+  if (!m) return null;
+  const tag = m[0];
+  const attr = (name) => (new RegExp(`\s${name}="([^"]*)"`).exec(tag) || [])[1];
+  return {
+    src: m[1],
+    width: Number(attr('width')) || 1200,
+    height: Number(attr('height')) || 900,
+    alt: attr('alt') || '',
+  };
+}
+
 function page({
-  path, kind, title, description, main, jsonLd, crumbs, ogType, published, modified,
+  path, kind, title, description, main, jsonLd, crumbs, ogType, published, modified, image,
 }) {
   const canonical = `${siteUrl}${path}`;
   const html = renderTemplate(templates.layout, {
@@ -734,6 +765,35 @@ function page({
     canonical,
     // 홈·목록은 website, 글 성격의 페이지는 article (레퍼런스와 같다)
     ogType: ogType || (kind === 'home' ? 'website' : 'article'),
+    /*
+     * 공유 카드 이미지. 로고 하나를 3,000장이 같이 쓰면 어느 글을 공유해도
+     * 그림이 똑같다. 그래서 그 페이지 본문에 실제로 보이는 첫 사진을 쓴다.
+     * 사진이 하나도 없는 페이지(목록·폼·방침)만 로고로 떨어진다.
+     */
+    ...(() => {
+      const pick = image || firstImageOf(main);
+      if (!pick) {
+        // 목록·폼·방침처럼 본문에 사진이 없는 페이지. 로고보다 히어로 사진이 낫다 —
+        // 공유했을 때 로고만 뜨면 무슨 페이지인지 안 보인다.
+        if (site.heroImage) {
+          return {
+            ogImage: `${siteUrl}/assets/${site.assetVersion}/img/${site.heroImage.file}`,
+            ogImageW: site.heroImage.width,
+            ogImageH: site.heroImage.height,
+            ogImageAlt: `${site.brand} ${site.heroImage.label}`,
+          };
+        }
+        return {
+          ogImage: `${siteUrl}/assets/${site.assetVersion}/img/logo.png`,
+          ogImageW: 1200, ogImageH: 1200, ogImageAlt: `${site.brand} 로고`,
+        };
+      }
+      return {
+        ogImage: `${siteUrl}${pick.src}`,
+        ogImageW: pick.width, ogImageH: pick.height,
+        ogImageAlt: pick.alt || site.brand,
+      };
+    })(),
     publishedTime: published || '',
     hasPublished: published ? [{ t: published }] : [],
     modifiedTime: modified || published || BUILT_AT,
@@ -745,7 +805,8 @@ function page({
   const dir = join(outRoot, siteKey, path === '/' ? '' : path.replace(/^\/|\/$/g, ''));
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'index.html'), html);
-  return canonical;
+  // 사이트맵에 lastmod 를 넣으려면 날짜가 필요하다. 글이면 게시일, 아니면 굽는 시각.
+  return { loc: canonical, lastmod: (published || modified || BUILT_AT).slice(0, 10) };
 }
 
 /*
@@ -766,6 +827,11 @@ const resolveImages = (list, what) => (list || []).map((img) => {
  *          지역 페이지에 한 장씩 떼어 놓으면 문맥이 없다. 그래서 섞지 않는다.
  */
 const imagePool = resolveImages(site.images?.pool, '이미지');
+/*
+ * 글에 붙이는 사진 장수. 사이트마다 다르다 (운영자 지시 2026-09-01).
+ * 싹쓰리는 레퍼런스(하수구박사)를 따라 사진 대신 글이 본체라 여기서 안 쓴다.
+ */
+const SHOTS = site.shotsPerPage || 3;
 const casePool = resolveImages(site.images?.cases, '사례 이미지');
 
 const orgLd = {
@@ -847,7 +913,7 @@ urls.push(page({
     heroShot: imagePool.length
       ? [{ ...imagePool[0], alt: `${site.brand} ${imagePool[0].label}` }]
       : [],
-    homeShots: pickCombination(imagePool, 3, hash(`${siteKey}|home|shots`))
+    homeShots: pickCombination(imagePool, SHOTS, hash(`${siteKey}|home|shots`))
       .map((img) => ({ ...img, alt: `${site.brand} ${img.label}` })),
     // 블로그형 홈에만 쓰인다. 다른 템플릿은 이 값을 안 읽는다.
     postHeading: site.postHeading || '',
@@ -906,6 +972,30 @@ urls.push(page({
     })),
   }),
 }));
+
+/* ── /form/ ──
+   폼이 본문에 없는 페이지(목록·허브·방침)에서 보내는 곳이다. 목록 한가운데
+   긴 폼을 끼우면 읽는 흐름이 끊기므로, 링크로 빼고 여기 한 장에 모은다. */
+if (templates.form) {
+  urls.push(page({
+    path: '/form/',
+    kind: 'form',
+    crumbs: [{ name: '홈', href: '/' }, { name: '상담 접수' }],
+    title: `상담 접수 — ${site.brand}`,
+    description: `${site.brand} 상담 접수. 어디가 어떻게 막혔는지 적어 주시면 확인하고 연락드립니다.`,
+    jsonLd: orgLd,
+    main: renderTemplate(templates.form, {
+      ...base,
+      formHeading: site.formHeading || '상담 접수',
+      formLede: site.formLede || '어디가 어떻게 막혔는지 적어 주시면 확인하는 대로 연락드립니다. 급하시면 전화가 빠릅니다.',
+      estimateForm: estimateForm({
+        no: '01',
+        heading: site.estimateHeading || '',
+        lede: site.estimateLede || '',
+      }),
+    }),
+  }));
+}
 
 /* ── /privacy/ ──
    접수폼을 받는 이상 별도 페이지가 있어야 한다. 문구는 배관 프로젝트에서
@@ -1021,7 +1111,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
        * "인천 부평구 꺼낸 이물질" 이라고 적으면 거기서 찍은 사진이라는 말이 된다.
        * 사진에 실제로 있는 것만 적는다.
        */
-      photos: pickCombination(imagePool, 3, hash(`${siteKey}|photo|${r.code}`)).map((img) => ({
+      photos: pickCombination(imagePool, SHOTS, hash(`${siteKey}|photo|${r.code}`)).map((img) => ({
         ...img, alt: `${site.brand} ${img.label}`,
       })),
       caseHeading: one('caseHeadings'),
@@ -1097,6 +1187,10 @@ for (const svc of (TIERED ? [] : services)) {
     },
     main: renderTemplate(templates.service, {
       ...base,
+      hasPhotos: imagePool.length > 0,
+      photos: pickCombination(imagePool, SHOTS, hash(`${siteKey}|svcphoto|${svc.key}`)).map((img) => ({
+        ...img, alt: `${site.brand} ${img.label}`,
+      })),
       svcName: svc.name,
       svcTitle: svc.title,
       svcLede: svc.lede,
@@ -1292,7 +1386,7 @@ if (TIERED) {
         priceHeading: pools.priceHeadings[seed % pools.priceHeadings.length],
         priceNote: pools.priceNotes[seed % pools.priceNotes.length],
         hasPhotos: imagePool.length > 0,
-        photos: pickCombination(imagePool, 3, seed).map((img) => ({
+        photos: pickCombination(imagePool, SHOTS, seed).map((img) => ({
           ...img, alt: `${site.brand} ${img.label}`,
         })),
         sido: sidoGroups.map((sg) => ({
@@ -1399,7 +1493,7 @@ if (TIERED) {
         dongLede: one('dongLedes', 3),
         dongs: r.repDong.slice(0, 60).map((name) => ({ name })),
         hasPhotos: imagePool.length > 0,
-        photos: pickCombination(imagePool, 3, hash(`${siteKey}|photo|${r.code}`)).map((img) => ({
+        photos: pickCombination(imagePool, SHOTS, hash(`${siteKey}|photo|${r.code}`)).map((img) => ({
           ...img, alt: `${site.brand} ${img.label}`,
         })),
         price: fillDeep(pools.price, vars),
@@ -1504,7 +1598,7 @@ if (TIERED) {
            * alt 에 지역명을 넣지 않는다. 같은 사진이 3,328장을 도는데
            * "종로구 꺼낸 이물질" 이라고 적으면 거기서 찍었다는 말이 된다.
            */
-          photos: pickCombination(imagePool, 3, seed).map((img) => ({
+          photos: pickCombination(imagePool, SHOTS, seed).map((img) => ({
             ...img, alt: `${site.brand} ${img.label}`,
           })),
           faqHeading: `${r.sigunguLabel} ${k.label} 자주 묻는 것`,
@@ -1670,9 +1764,21 @@ if (BLOG) {
         const secs = useIdx.map((i, n) => {
           const s2 = g.sections[i];
           return {
+            // 목차에서 눌러 갈 자리. 한글 제목을 그대로 id 로 쓰면 주소가 지저분해진다.
+            id: `s${n + 1}`,
             h: fillPlaceholders(s2.h, vars),
             // 문단 5개 중 4개를 뽑아 순서까지 시드로 돌린다
-            p: pickCombination(s2.p, 5, seed + n * 31).map((t) => ({ t: fillPlaceholders(t, vars) })),
+            /*
+             * 구역 첫머리에 지역을 짚는 한 줄. 설명문단 29개 중 3개에만 지역명이
+             * 있어서 "횡성군 변기막힘" 으로 들어온 사람이 본문에서 자기 동네를 못 봤다.
+             * 문단 210개를 다 고치는 대신 구역마다 한 줄씩 넣는다.
+             */
+            p: [
+              { t: fillPlaceholders(
+                blogData.regionLines[(seed + n * 13) % blogData.regionLines.length], vars,
+              ) },
+              ...pickCombination(s2.p, 5, seed + n * 31).map((t) => ({ t: fillPlaceholders(t, vars) })),
+            ],
           };
         });
 
@@ -1706,10 +1812,28 @@ if (BLOG) {
           `#${kw.label}${kind.label}`,
         ];
 
+        /*
+         * 글 맨 위 한 장. 레퍼런스(하수구박사)도 글머리에 썸네일 한 장을 둔다.
+         * 이름을 lead 로 두면 도입 문구(lead)와 겹친다.
+         * page() 의 og:image 로도 쓰므로 렌더 데이터 밖에서 만든다.
+         */
+        const leadImage = (() => {
+          const x = stampedIndex.get(`${r.code}|${kw.slug}`);
+          if (!x) return [];
+          const lf = join(templateDir, 'assets', 'img', x.file);
+          if (!existsSync(lf)) throw new Error(`글머리 이미지가 없습니다: ${x.file}`);
+          return [{
+            src: `/assets/${site.assetVersion}/img/${x.file}`,
+            alt: `${blogLabel(r)} ${kw.label} ${site.brand}`,
+            width: x.width, height: x.height,
+          }];
+        })();
+
         urls.push(page({
           path: `/${slug}/`,
           kind: 'post',
           published: at.toISOString(),
+          image: leadImage[0] || null,
           crumbs: [{ name: '홈', href: '/' }, { name: `${blogLabel(r)}${kw.label}` }],
           title: `${blogLabel(r)}${kw.label} ${work} ${kind.label} - ${site.brand}`,
           description: `${full} ${kw.label} ${kind.label}. `
@@ -1731,6 +1855,12 @@ if (BLOG) {
             postH1: `${blogLabel(r)}${kw.label} ${work} ${kind.label}`,
             postedAt: ymd(at),
             postedAtISO: at.toISOString(),
+            leadImage,
+            /*
+             * 목차. 레퍼런스(누수도사)가 제목 바로 아래에 둔다.
+             * 글이 2,700자쯤 되고 소제목이 다섯이라, 없으면 뭘 다루는지 한눈에 안 들어온다.
+             */
+            toc: secs.map((x) => ({ id: x.id, h: x.h })),
             sidoLabel: r.sidoLabel,
             sigunguLabel: r.sigunguLabel,
             kwLabel: kw.label,
@@ -1770,7 +1900,13 @@ if (BLOG) {
 }
 
 /* ── 사이트맵 · robots · 자산 ── */
-const sitemapBody = urls.map((u) => `<url><loc>${u}</loc></url>`).join('\n');
+/*
+ * lastmod 를 넣는다. 크롤러가 "언제 바뀌었나" 를 보고 다시 올지 정한다.
+ * 없으면 매번 전부 새로 훑거나, 반대로 오래 안 온다.
+ */
+const sitemapBody = urls
+  .map((u) => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`)
+  .join('\n');
 writeFileSync(join(outRoot, siteKey, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n`
   + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapBody}\n</urlset>\n`);
@@ -1805,8 +1941,10 @@ if (site.heroImage) {
   if (!existsSync(hsrc)) throw new Error(`히어로 이미지가 없습니다: ${site.heroImage.file}`);
   copyFileSync(hsrc, join(assetOut, 'img', site.heroImage.file));
 }
-for (const img of [...imagePool, ...casePool]) {
-  copyFileSync(join(templateDir, 'assets', 'img', img.file), join(assetOut, 'img', img.file));
+for (const img of [...imagePool, ...casePool, ...stampedIndex.values()]) {
+  const dest = join(assetOut, 'img', img.file);
+  mkdirSync(dirname(dest), { recursive: true });   // kw/ 처럼 하위 폴더가 있다
+  copyFileSync(join(templateDir, 'assets', 'img', img.file), dest);
 }
 for (const f of readdirSync(join(templateDir, 'assets'), { withFileTypes: true })
   .filter((e) => e.isFile() && e.name !== 'README.md').map((e) => e.name)) {

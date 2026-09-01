@@ -53,6 +53,13 @@
   <div class="names">{{#others}}<a href="{{href}}">{{label}}</a>{{/others}}</div>
 </div></section>
 
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="mark">현 장</p>
+  <h2>손대는 자리</h2>
+  <div class="shots">{{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}</div>
+</div></section>
+{{/hasPhotos}}
 {{{estimateForm}}}
 
 <section id="spots"><div class="wrap">

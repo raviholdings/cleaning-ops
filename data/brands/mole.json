@@ -9,7 +9,7 @@
   "siteUrl": "https://TBD.co.kr",
   "phone": "070-7106-5227",
   "phoneRaw": "07071065227",
-  "assetVersion": "mole-v10",
+  "assetVersion": "mole-v16",
   "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
   "slugWords": [
     "mole",
@@ -23,61 +23,61 @@
     "pool": [
       {
         "file": "mole-01.webp",
-        "label": "toilet unclogging",
+        "label": "변기 뚫는 중",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-02.webp",
-        "label": "removed foreign objects",
+        "label": "꺼낸 이물질",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-03.webp",
-        "label": "open drain trap",
+        "label": "열어 둔 배수 트랩",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-04.webp",
-        "label": "removed sediment",
+        "label": "걷어낸 침전물",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-05.webp",
-        "label": "kitchen sink drain",
+        "label": "주방 싱크대 배수",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-06.webp",
-        "label": "hardened grease",
+        "label": "굳어 붙은 기름",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-07.webp",
-        "label": "washbasin pipe",
+        "label": "세면대 배관",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-08.webp",
-        "label": "pipe camera",
+        "label": "관 속을 보는 내시경",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-09.webp",
-        "label": "full equipment",
+        "label": "챙겨 간 장비",
         "width": 1200,
         "height": 900
       },
       {
         "file": "mole-10.webp",
-        "label": "after cleanup",
+        "label": "정리하고 나온 자리",
         "width": 1200,
         "height": 900
       },
@@ -673,13 +673,13 @@
   "footerNote": "연중무휴 · 밤에도 받습니다",
   "regionKeywords": [
     "하수구막힘",
-    "변기막힘",
     "싱크대막힘",
-    "배수구막힘",
-    "세면대막힘",
-    "화장실역류",
-    "주방배수구",
-    "욕실배수구"
+    "변기막힘",
+    "개수대막힘",
+    "하수막힘",
+    "세면대청소",
+    "배관세척",
+    "하수도청소"
   ],
   "_navModelNote": "메뉴가 구역 앵커다(원페이지형). 홈 하나에서 다 읽히고 나머지는 하단 링크로 간다.",
   "navModel": "sections",
@@ -782,5 +782,6 @@
     "height": 900
   },
   "_heroNote": "히어로 배경. output/hero-concepts 에서 골라 넣었다. 글자가 얹히므로 왼쪽이 비어 있는 컷을 썼다.",
-  "naverVerification": ""
+  "naverVerification": "",
+  "shotsPerPage": 6
 }

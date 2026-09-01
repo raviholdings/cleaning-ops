@@ -65,3 +65,7 @@ data/dev_tasks.json
 /output/
 /apps/brand-static/*/assets/img/
 /assets/branding/
+
+# 파이썬 캐시
+__pycache__/
+*.pyc

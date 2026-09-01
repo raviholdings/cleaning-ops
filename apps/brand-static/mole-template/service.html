@@ -47,6 +47,13 @@
   </div>
 </div></section>
 
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <span class="tag">현장</span>
+  <h2>이런 자리에서 해요</h2>
+  <div class="shots">{{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}</div>
+</div></section>
+{{/hasPhotos}}
 {{{estimateForm}}}
 
 <section id="others"><div class="wrap">

@@ -86,7 +86,7 @@ for (const key of keys) {
    *   area     서비스 지역 목록
    *   privacy  개인정보 동의. 법적 문구라 사이트마다 다르게 쓸 이유가 없다
    */
-  const SHARED_PATHS = ['assets', 'area', 'privacy'];
+  const SHARED_PATHS = ['assets', 'area', 'privacy', 'form'];
   const slugs = new Set(readdirSync(root, { withFileTypes: true })
     .filter((e) => e.isDirectory() && !SHARED_PATHS.includes(e.name))
     .map((e) => e.name));
@@ -97,7 +97,9 @@ for (const key of keys) {
   const freq = new Map();
   for (const f of pages) {
     // 개인정보 동의 문구는 다섯이 같은 게 맞다. 사이트 간 중복으로 세지 않는다.
-    if (f.split(String.fromCharCode(92)).join('/').includes('/privacy/')) continue;
+    // 다섯이 같아야 하는 페이지는 사이트 간 중복으로 세지 않는다.
+    const rel2 = f.split(String.fromCharCode(92)).join('/');
+    if (rel2.includes('/privacy/') || rel2.includes('/form/')) continue;
     for (const s of new Set(cutSentences(visibleText(f)))) {
       freq.set(s, (freq.get(s) || 0) + 1);
     }

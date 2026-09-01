@@ -29,6 +29,13 @@
   <p class="memo">{{svcNote}}</p>
 </div></section>
 
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="tag">현장</p>
+  <h2>이런 데를 다녀요</h2>
+  <div class="shots">{{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}</div>
+</div></section>
+{{/hasPhotos}}
 {{{estimateForm}}}
 
 <section id="avoid"><div class="wrap">
