@@ -21,12 +21,27 @@ import IndexStatusTab from './components/IndexStatusTab';
 
 import type { SessionUser } from './components/AuthGate';
 
+/*
+ * 업종 목록. 여기가 화면 버튼이자 통계 조회 단위다.
+ * group_key 는 DB(naver_project_groups)의 값과 글자까지 같아야 한다 — 다르면
+ * 버튼은 보이는데 숫자가 0으로 나온다.
+ */
 const GROUPS = [
   { id: 'all', label: '전체 업종' },
   { id: 'cleaning-ravi', label: '청소' },
   { id: 'moving-ravi', label: '이사' },
   { id: 'demolition-ravi', label: '철거' },
+  { id: 'piping-ravi', label: '배관' },
+  { id: 'piping-ravi-shared', label: '배관(공유)' },
+  { id: 'brand-ravi', label: '브랜드' },
 ];
+
+/** 선택된 업종을 사람 말로. GROUPS 를 그대로 쓰므로 업종을 더해도 손댈 데가 없다. */
+const groupLabel = (id: string) => {
+  const g = GROUPS.find((x) => x.id === id);
+  if (!g) return id;
+  return g.id === 'all' ? g.label : `${g.label} (${g.id})`;
+};
 
 export default function App({ user }: { user: SessionUser }) {
   const [activeTab, setActiveTab] = useState<
@@ -370,7 +385,7 @@ export default function App({ user }: { user: SessionUser }) {
               </div>
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              선택된 업종: <code style={{ color: '#818cf8', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: '4px' }}>{selectedGroupKey === 'all' ? '전체 업종' : selectedGroupKey === 'cleaning-ravi' ? '청소 (cleaning-ravi)' : selectedGroupKey === 'moving-ravi' ? '이사 (moving-ravi)' : '철거 (demolition-ravi)'}</code>
+              선택된 업종: <code style={{ color: '#818cf8', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: '4px' }}>{groupLabel(selectedGroupKey)}</code>
             </div>
           </div>
         )}

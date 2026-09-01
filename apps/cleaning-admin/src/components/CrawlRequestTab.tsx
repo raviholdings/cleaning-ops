@@ -21,6 +21,7 @@ const PROJECTS = [
   { key: 'moving-ravi', label: '이사', accent: '#67e8f9', bg: 'rgba(6, 182, 212, 0.12)' },
   { key: 'piping-ravi', label: '배관', accent: '#fbbf24', bg: 'rgba(245, 158, 11, 0.12)' },
   { key: 'piping-ravi-shared', label: '배관(공유)', accent: '#fb923c', bg: 'rgba(249, 115, 22, 0.12)' },
+  { key: 'brand-ravi', label: '브랜드', accent: '#f472b6', bg: 'rgba(236, 72, 153, 0.12)' },
 ];
 
 function Metric({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
