@@ -26,7 +26,6 @@ import { fileURLToPath } from 'node:url';
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
 import { assignSlugs } from './lib/region-slug.mjs';
 import { romanize, romanizeUnique } from './lib/romanize.mjs';
-import { SITEMAP_XSL } from './lib/sitemap-xsl.mjs';
 import { robotsTxt } from './lib/robots-txt.mjs';
 import {
   makeVars, composeArticle, renderArticleHtml, faqEntities, charCount,
@@ -746,6 +745,7 @@ function longArticle({
     seed,
     share: site.libraryShare,
     sitePools,
+    dispatchLine: site.facts?.dispatchLine || '',
     extras: { price: priceRows(vars) },
   });
   return {
@@ -936,8 +936,8 @@ const orgLd = {
 const siteOut = join(outRoot, siteKey);
 if (existsSync(siteOut)) {
   const entries = readdirSync(siteOut);
-  // sitemap_index.xml · <종류>-sitemap<N>.xml · main-sitemap.xsl 도 우리가 쓰는 것이다
-  const OURS = /^(index\.html|robots\.txt|sitemap\.xml|sitemap_index\.xml|main-sitemap\.xsl|[a-zA-Z]+-sitemap\d+\.xml)$/;
+  // sitemap_index.xml · <종류>-sitemap<N>.xml 도 우리가 쓰는 것이다
+  const OURS = /^(index\.html|robots\.txt|sitemap\.xml|sitemap_index\.xml|[a-zA-Z]+-sitemap\d+\.xml)$/;
   const ours = entries.every((e) => e === 'assets' || OURS.test(e)
     || statSync(join(siteOut, e)).isDirectory());
   if (!ours) {
@@ -2083,7 +2083,6 @@ for (const u of urls) {
   byGroup.get(g).push(u);
 }
 
-const XSL_HREF = '/main-sitemap.xsl';
 const children = [];
 for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1].length)) {
   for (let i = 0; i < list.length; i += SITEMAP_CHUNK) {
@@ -2094,7 +2093,6 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
       .join('\n');
     writeFileSync(join(outRoot, siteKey, file),
       '<?xml version="1.0" encoding="UTF-8"?>\n'
-      + `<?xml-stylesheet type="text/xsl" href="${XSL_HREF}"?>\n`
       + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
     // 그 묶음에서 가장 늦은 날짜가 그 사이트맵의 lastmod 다
     children.push({
@@ -2106,7 +2104,6 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
 }
 
 const indexXml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-  + `<?xml-stylesheet type="text/xsl" href="${XSL_HREF}"?>\n`
   + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
   + children
     .map((c) => `<sitemap><loc>${siteUrl}/${c.file}</loc><lastmod>${c.lastmod}</lastmod></sitemap>`)
@@ -2118,7 +2115,6 @@ writeFileSync(join(outRoot, siteKey, 'sitemap_index.xml'), indexXml);
  * (네이버 콘솔에 넣은 것 포함), 색인으로 바뀌었다고 404 를 내면 그쪽이 통째로 끊긴다.
  */
 writeFileSync(join(outRoot, siteKey, 'sitemap.xml'), indexXml);
-writeFileSync(join(outRoot, siteKey, 'main-sitemap.xsl'), SITEMAP_XSL);
 
 writeFileSync(join(outRoot, siteKey, 'robots.txt'), robotsTxt({
   brand: site.brand,

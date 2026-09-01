@@ -61,7 +61,7 @@ for (const key of SITES) {
   const kids = existsSync(outDir)
     ? readdirSync(outDir).filter((f) => /-sitemap\d+\.xml$/.test(f))
     : [];
-  const files = ['/robots.txt', '/sitemap.xml', '/sitemap_index.xml', '/main-sitemap.xsl',
+  const files = ['/robots.txt', '/sitemap.xml', '/sitemap_index.xml',
     ...kids.map((f) => `/${f}`)]
     .map((p) => `https://${host}${p}`);
 

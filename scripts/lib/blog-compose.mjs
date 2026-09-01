@@ -224,7 +224,7 @@ const boxTitle = (name) => (name.includes('주의') ? '⚠️ 주의하세요' :
  */
 export function composeArticle(o) {
   const {
-    lib, plan, vars, seed, extras = {},
+    lib, plan, vars, seed, extras = {}, dispatchLine = '',
   } = o;
   /*
    * share = { i, n } 이면 묶음을 n 등분해서 i 번째만 쓴다.
@@ -381,15 +381,13 @@ export function composeArticle(o) {
   /*
    * 출동시간은 구조화 데이터(LocalBusiness.slogan)에도 들어간다. 화면에 없는 말을
    * 스키마에만 적으면 구조화 데이터 위반이라, 마지막 구역에 한 줄로 노출한다.
-   * facts.dispatch 가 없는 사이트에서는 아무것도 안 붙는다.
+   *
+   * 문안은 사이트 json 의 facts.dispatchLine 에서 온다. 여기에 문장을 박아 두면
+   * 세 사이트에 똑같은 줄이 실린다 — 처음에 그렇게 썼다가 검사에서 시군구 수만큼
+   * (256건씩) 겹치는 것으로 잡혔다. 사실은 같아도 말투는 브랜드 것이어야 한다.
    */
-  if (vars.출동시간 && secs.length) {
-    const last = secs[secs.length - 1];
-    last.blocks.push({
-      isP: true,
-      p: [{ t: `${vars.지역} 어디든 ${vars.출동시간}으로 움직입니다. 운영은 ${vars.운영시간}이고, `
-        + `접수는 ${vars.전화번호}로 주시면 됩니다.` }],
-    });
+  if (vars.출동시간 && dispatchLine && secs.length) {
+    secs[secs.length - 1].blocks.push({ isP: true, p: [{ t: F(dispatchLine) }] });
   }
 
   /* 도입부 = 공감 문단 + 본문으로 넘기는 한 줄 (레퍼런스의 "그렇다면 …") */
