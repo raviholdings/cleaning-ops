@@ -8,8 +8,11 @@
 
   1. 그룹이 brand-ravi 하나뿐이고 계정은 501~505 다. 한 계정이 도메인 하나씩 든다.
 
-       501 dreamcome.kr    502 thunderdrain.kr   503 beaverpipe.kr
+       506 dreamcome.kr    502 thunderdrain.kr   503 beaverpipe.kr
        504 ssac3.kr        505 dosadosa.kr
+
+     501 은 2026-09-01 에 정지되어 506 으로 이관했다.
+     이관은 scripts/migrate-brand-account.mjs 로 한다.
 
   2. URL 은 각 사이트의 /sitemap_index.xml 에서 읽는다 (사이트맵 모드).
      이건 Yoast 꼴 **색인**이라 <loc> 이 페이지가 아니라 자식 사이트맵이다.
@@ -26,8 +29,8 @@
   ⚠ 그룹의 crawl_request_enabled 가 true 여야 대상이 잡힌다.
 
 .EXAMPLE
-  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 501 -To 505 -DryRun
-  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 501 -To 505
+  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 501 -To 510 -DryRun
+  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 501 -To 510
 #>
 param(
 	[Parameter(Mandatory = $true)][int]$From,
@@ -49,8 +52,11 @@ if ($From -gt $To) {
 	throw "-From 이 -To 보다 큽니다. 입력값: -From $From -To $To"
 }
 # 범위를 벗어나면 조용히 0건이 된다. 원인을 찾느라 시간을 버리지 않게 막는다.
-if ($From -lt 501 -or $To -gt 505) {
-	throw "브랜드(brand-ravi)는 계정 501~505 입니다. 입력값: -From $From -To $To"
+# 501~505 가 원래 배정이고, 정지된 계정은 506 부터로 이관한다
+# (501 정지 -> 506, 2026-09-01). 그래서 510 까지 열어 둔다.
+# 도메인이 없는 순번은 그룹 필터에서 0건이 되어 무해하다.
+if ($From -lt 501 -or $To -gt 510) {
+	throw "브랜드(brand-ravi)는 계정 501~510 입니다. 입력값: -From $From -To $To"
 }
 
 Write-Host "계정 순번 $From ~ $To 의 계정 ID 를 조회합니다..."

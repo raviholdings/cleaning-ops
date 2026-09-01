@@ -50,6 +50,37 @@ interface BrandRow {
   failed: number;
   done: number;
   last_at: string | null;
+  fail_status: string | null;
+  fail_code: string | null;
+  fail_reason: string | null;
+  failed_at: string | null;
+}
+
+/*
+ * 네이버가 주는 코드와 러너가 남긴 말은 사람이 읽을 것이 못 된다.
+ * 무엇을 해야 하는지까지 적어 준다 — 숫자만 보고 원인을 DB 에서 뒤진 적이 있다.
+ */
+function explainFail(row: BrandRow): { text: string; how: string; tone: string } | null {
+  const raw = row.fail_reason || row.fail_code || '';
+  if (!raw) return null;
+  if (/login is required|session|NID_/i.test(raw)) {
+    return {
+      tone: '#f87171',
+      text: '세션이 죽었습니다 (네이버 로그인 필요)',
+      how: `node scripts/capture-naver-session.mjs --account ${row.naver_account_id ?? ''}`,
+    };
+  }
+  if (/FAIL_MAX_DOCUMENT_COUNT|quota/i.test(raw)) {
+    return {
+      tone: '#fbbf24',
+      text: `오늘 한도(${DAILY_LIMIT}건)를 다 썼습니다. 자정(KST)에 풀립니다`,
+      how: '다음 실행에서 이어서 나갑니다 — 따로 할 일 없습니다',
+    };
+  }
+  if (/blocked|정지/i.test(raw)) {
+    return { tone: '#f87171', text: '계정이 정지된 것으로 보입니다', how: '다른 계정으로 이관이 필요합니다' };
+  }
+  return { tone: '#f87171', text: raw.slice(0, 120), how: '' };
 }
 
 function Metric({ label, value, color, icon, suffix = '건' }: {
@@ -76,6 +107,7 @@ function BrandCard({ row }: { row: BrandRow }) {
   /* 남은 장수 ÷ 하루 50건. 오늘 다 썼으면 내일부터라 올림한다. */
   const daysLeft = row.page_count > row.done
     ? Math.ceil((row.page_count - row.done) / DAILY_LIMIT) : 0;
+  const fail = explainFail(row);
 
   return (
     <div className="glass-panel" style={{ padding: '20px' }}>
@@ -110,6 +142,29 @@ function BrandCard({ row }: { row: BrandRow }) {
           <div style={{ width: `${pct}%`, height: '100%', background: brand.accent, transition: 'width .3s' }} />
         </div>
       </div>
+
+      {fail && (
+        <div style={{
+          background: 'rgba(0,0,0,0.25)', border: `1px solid ${fail.tone}33`,
+          borderLeft: `3px solid ${fail.tone}`, borderRadius: '10px',
+          padding: '12px 14px', marginBottom: '14px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: fail.tone, fontSize: '0.85rem', fontWeight: 700 }}>
+            <AlertTriangle size={14} /> {fail.text}
+          </div>
+          {fail.how && (
+            <code style={{ display: 'block', marginTop: '6px', fontSize: '0.78rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+              {fail.how}
+            </code>
+          )}
+          {row.failed_at && (
+            <div style={{ marginTop: '4px', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              마지막 {new Date(row.failed_at).toLocaleString('ko-KR')}
+              {row.fail_code ? ` · ${row.fail_code}` : ''}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
         <Metric label="오늘 제출" value={row.submitted} color="#34d399" icon={<CheckCircle2 size={14} />} />

@@ -7,13 +7,14 @@
 
 | 키 | 브랜드 | 도메인 | 전화 | 계정 | 구조 | 장수 |
 |---|---|---|---|---|---|---|
-| `dream` | 드림컴뚜러 | dreamcome.kr | 070-7106-5225 | 501 `xcwhq4150` | 평면 · **글형식** | 286 |
+| `dream` | 드림컴뚜러 | dreamcome.kr | 070-7106-5225 | **506** `yuzjplo3322` | 평면 · **글형식** | 286 |
 | `thunder` | 썬더배관 | thunderdrain.kr | 070-7106-5226 | 502 `dynfbs403` | 평면 · 카드형 | 303 |
 | `mole` | 비버배관 | beaverpipe.kr | 070-7106-5227 | 503 `zfbbt34` | 평면 · 카드형 | 286 |
 | `ssak` | 싹쓰리배관 | ssac3.kr | 070-7106-5228 | 504 `saennl02` | 블로그 · **글형식** | 3,325 |
 | `dosa` | 하수구도사 | dosadosa.kr | 070-7106-5229 | 505 `jukkl07` | 3단계 · **글형식** | 3,632 |
 
-- 그룹 키 `brand-ravi` · 실행 기계 **VM1** · 계정 범위 **501~505**
+- 그룹 키 `brand-ravi` · 실행 기계 **VM1** · 계정 범위 **501~510**
+- 이관 체인: **501 → 506** (501 정지, 2026-09-01). 정지되면 506 부터 순서대로 쓴다
 - 한 계정이 도메인 하나씩 든다 (계정당 100개까지 가능하지만 그렇게 안 쓴다)
 - 합계 **7,832장**, 그중 본문(글형식) **6,656장**
 
@@ -85,6 +86,22 @@ Yoast 꼴 색인이다. 네이버 웹마스터도구 문서의 2번 형식.
 **배포 뒤에는 반드시 퍼지**한다. 사이트맵·robots 는 Cloudflare 가 캐시한다
 (HTML 은 DYNAMIC 이라 안 한다). 2026-09-01 에 dosadosa.kr 만 옛 robots.txt 를
 계속 내보내고 있었다 — 도메인마다 캐시 상태가 달라 한 곳만 보고 판단하면 안 된다.
+
+## 계정이 정지되면
+
+    node scripts/migrate-brand-account.mjs --from <옛계정> --to <새계정>          무엇이 바뀌는지만
+    node scripts/migrate-brand-account.mjs --from <옛계정> --to <새계정> --apply
+
+DB 세 줄만 바꾸고(소유 계정 · 옛 계정 blocked · 등록 상태 pending) 나머지는 사람이 한다.
+토큰을 지우는 것이 핵심이다 — 서치어드바이저에서 사이트는 **등록한 계정의 것**이라,
+소유자만 바꾸고 옛 토큰을 두면 새 계정 세션에서는 남의 사이트가 된다.
+
+    1. 세션 캡처   capture-naver-session.mjs --account <새계정>
+    2. 사이트 등록  register-naver-searchadvisor-sites.mjs --account <새계정> --group-key brand-ravi
+    3. 토큰 옮기기  sync-brand-verification.mjs --apply
+    4. 굽기·배포    brands:build → deploy-brand-sites → purge-brand-cache
+    5. 소유확인     verify-naver-searchadvisor-sites.mjs --account <새계정> --group-key brand-ravi
+    6. 수집요청     run-brand-crawl-range.ps1 -From 501 -To 510
 
 ## 함정
 

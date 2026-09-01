@@ -148,6 +148,19 @@ function dbApiPlugin() {
                 from public.naver_searchadvisor_crawl_request_results
                where host in (select host from d)
                group by 1
+            ),
+            /*
+             * 실패 사유. 숫자만 보면 왜 0건인지 알 수가 없다 — 드림이 14건 실패했을 때
+             * 화면에는 "오늘 실패 14" 뿐이라 세션이 죽은 것을 DB 를 뒤져야 알았다.
+             * 가장 최근 것 하나를 그대로 싣는다. note 에 실제 사유가 들어 있다.
+             */
+            lastfail as (
+              select distinct on (host)
+                     host, status, api_code, api_message, note, requested_at as failed_at
+                from public.naver_searchadvisor_crawl_request_results
+               where host in (select host from d)
+                 and status not in ('submitted', 'already-present')
+               order by host, requested_at desc
             )
             select d.host, d.page_count, d.naver_account_id, d.account_order,
                    coalesce(t.processed, 0)   as processed,
@@ -155,10 +168,15 @@ function dbApiPlugin() {
                    coalesce(t.quota_stop, 0)  as quota_stop,
                    coalesce(t.failed, 0)      as failed,
                    coalesce(l.done, 0)        as done,
-                   l.last_at
+                   l.last_at,
+                   f.status                   as fail_status,
+                   f.api_code                 as fail_code,
+                   coalesce(nullif(f.api_message, ''), f.note) as fail_reason,
+                   f.failed_at
               from d
               left join today t    on t.host = d.host
               left join lifetime l on l.host = d.host
+              left join lastfail f on f.host = d.host
              order by d.account_order nulls last, d.host
           `);
           res.setHeader('Content-Type', 'application/json');
