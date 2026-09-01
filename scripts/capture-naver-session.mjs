@@ -70,6 +70,11 @@ const noAutoClick = Boolean(options.noAutoClick);
  */
 const allowNewIp = Boolean(options.allowNewIp);
 const newIpAttempts = Math.max(1, Number(options.newIpAttempts || 6));
+// ⚠ 이 화살표 함수는 반드시 여기(최상위 실행 블록 위)에 있어야 한다. 아래
+// ensureIpForAccount 옆에 뒀다가 TDZ 로 "Cannot access 'netOf' before
+// initialization" 이 났다 (2026-08-31). function 선언은 끌어올려지지만
+// const 는 아니다 — 파일 맨 위 주석이 경고하는 그 함정이다.
+const netOf = (ip, parts) => String(ip).split('.').slice(0, parts).join('.');
 
 /*
  * 아래 상수들은 반드시 최상위 실행 블록(try { ... captureOne ... })보다 위에 있어야 한다.
@@ -711,8 +716,6 @@ async function verifySearchAdvisor(statePath) {
     await browser.close().catch(() => {});
   }
 }
-
-const netOf = (ip, parts) => String(ip).split('.').slice(0, parts).join('.');
 
 /** 이 IP 를 다른 계정이 물고 있나. 물고 있으면 그 계정 목록을 준다. */
 async function ipOwners(accountId, ip) {
