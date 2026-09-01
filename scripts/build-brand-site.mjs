@@ -908,6 +908,13 @@ const imagePool = resolveImages(site.images?.pool, '이미지');
 const SHOTS = site.shotsPerPage || 3;
 const casePool = resolveImages(site.images?.cases, '사례 이미지');
 
+/*
+ * facts 는 운영자가 확인해 준 것만 담는다 (data/brands/<키>.json 의 facts._confirmed).
+ * 여기 없는 것은 지어내지 않는다 — 경력·고객수·성공률·자격증·후기 따위.
+ *
+ * dispatch(출동시간)는 구조화 데이터에만 넣으면 "화면에 없는 주장" 이 되어
+ * 구조화 데이터 위반이다. 그래서 본문 상담 구역에도 같은 말을 노출한다.
+ */
 const orgLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
@@ -916,6 +923,9 @@ const orgLd = {
   url: siteUrl,
   areaServed: { '@type': 'Country', name: '대한민국' },
   openingHours: 'Mo-Su 00:00-24:00',
+  ...(site.facts?.dispatch ? { slogan: site.facts.dispatch } : {}),
+  ...(site.facts?.equipment?.length
+    ? { knowsAbout: site.facts.equipment.map((x) => `${x} 작업`) } : {}),
 };
 
 /*

@@ -165,6 +165,7 @@ export function makeVars({
     업체명: site.brand,
     전화번호: site.phone,
     운영시간: facts.hours || '',
+    출동시간: facts.dispatch || '',
     사용장비: equip.length ? pickN(equip, 2, seed + 71).join('와 ') : '',
     서비스목록: (site.serviceList || []).join(' · '),
   };
@@ -376,6 +377,20 @@ export function composeArticle(o) {
 
     secs.push({ id, h: F(h), label: F(label), blocks });
   });
+
+  /*
+   * 출동시간은 구조화 데이터(LocalBusiness.slogan)에도 들어간다. 화면에 없는 말을
+   * 스키마에만 적으면 구조화 데이터 위반이라, 마지막 구역에 한 줄로 노출한다.
+   * facts.dispatch 가 없는 사이트에서는 아무것도 안 붙는다.
+   */
+  if (vars.출동시간 && secs.length) {
+    const last = secs[secs.length - 1];
+    last.blocks.push({
+      isP: true,
+      p: [{ t: `${vars.지역} 어디든 ${vars.출동시간}으로 움직입니다. 운영은 ${vars.운영시간}이고, `
+        + `접수는 ${vars.전화번호}로 주시면 됩니다.` }],
+    });
+  }
 
   /* 도입부 = 공감 문단 + 본문으로 넘기는 한 줄 (레퍼런스의 "그렇다면 …") */
   const intro = take('도입부', 1, 3)[0];
