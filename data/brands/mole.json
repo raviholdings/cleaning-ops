@@ -783,5 +783,16 @@
   },
   "_heroNote": "히어로 배경. output/hero-concepts 에서 골라 넣었다. 글자가 얹히므로 왼쪽이 비어 있는 컷을 썼다.",
   "naverVerification": "",
-  "shotsPerPage": 6
+  "shotsPerPage": 6,
+  "facts": {
+    "equipment": [
+      "석션기",
+      "전동 스프링",
+      "플렉스 샤프트",
+      "배관 내시경",
+      "고압세척기"
+    ],
+    "hours": "24시간 연중무휴",
+    "_confirmed": "운영자 확인 2026-09-01"
+  }
 }

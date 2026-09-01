@@ -695,5 +695,16 @@
   "siteDescription": "하수구막힘·변기막힘·싱크대막힘 원인과 비용을 지역별로 정리했습니다.",
   "postHeading": "이런 것들을 <span class=\"a\">적어 뒀어요</span>",
   "postLede": "막히는 이유는 몇 가지로 정해져 있어요. 증상별로, 지역별로 정리해 뒀으니 비슷한 상황이면 읽어 보세요.",
-  "naverVerification": ""
+  "naverVerification": "",
+  "facts": {
+    "equipment": [
+      "석션기",
+      "전동 스프링",
+      "플렉스 샤프트",
+      "배관 내시경",
+      "고압세척기"
+    ],
+    "hours": "24시간 연중무휴",
+    "_confirmed": "운영자 확인 2026-09-01"
+  }
 }

@@ -14,15 +14,20 @@
  *   본문 문단                  → text
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(projectRoot, 'blog-section-reference-library.md');
+/* 확장본이 늘어나면 여기에 더한다. 같은 묶음 이름이면 뒤에 이어 붙는다. */
+const SRCS = [
+  'blog-section-reference-library.md',
+  'blog-section-reference-library-2.md',
+].map((f) => join(projectRoot, f)).filter((f) => existsSync(f));
 const OUT = join(projectRoot, 'data/brands/_blog-library.json');
 
-const lines = readFileSync(SRC, 'utf8').replace(/\r\n/g, '\n').split('\n');
+const lines = SRCS.map((f) => readFileSync(f, 'utf8').replace(/\r\n/g, '\n'))
+  .join('\n').split('\n');
 
 /* "# 3. 막힘 원인 설명 레퍼런스" 에서 "막힘 원인 설명" 만 뽑는다. */
 const groupName = (h) => h
@@ -73,6 +78,16 @@ for (const arr of Object.values(groups)) {
   for (const x of arr) x.text = x.text.replace(/`/g, '');
 }
 
+/*
+ * "사례 사용 규칙" 처럼 글에 실을 문안이 아니라 작성 지침인 항목은 뺀다.
+ * 그대로 두면 "완벽 제거 같은 표현을 피합니다" 가 손님 눈에 보이는 본문으로 나간다.
+ */
+const GUIDE = /(사용 규칙|조합법|편집 원칙|권장 순서)/;
+for (const [k, arr] of Object.entries(groups)) {
+  groups[k] = arr.filter((x) => !GUIDE.test(x.name));
+  if (!groups[k].length) delete groups[k];
+}
+
 const summary = Object.entries(groups)
   .map(([k, v]) => `${k}(${v.length})`)
   .join(' · ');
@@ -81,7 +96,7 @@ const total = Object.values(groups).reduce((n, v) => n + v.length, 0);
 writeFileSync(OUT, `${JSON.stringify({
   _note: 'blog-section-reference-library.md 에서 만든다. 직접 고치지 말고 .md 를 고친 뒤 '
     + 'node scripts/import-blog-library.mjs 를 다시 돌릴 것.',
-  _source: 'blog-section-reference-library.md',
+  _source: SRCS.map((f) => f.split(/[\\/]/).pop()),
   groups,
 }, null, 1)}\n`);
 
