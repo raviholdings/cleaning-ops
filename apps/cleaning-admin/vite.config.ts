@@ -132,21 +132,41 @@ function dbApiPlugin() {
               where.push(`(l.group_key = 'moving' or l.group_key = 'moving-ravi' or d.group_key = 'moving' or d.group_key = 'moving-ravi' or exists (select 1 from unnest(coalesce(l.indexed_post_urls_sample, array[]::text[])) u where u like '%/%EC%9D%B4%EC%82%AC/%' or u like '%/이사/%' or u like '%/move/%' or u like '%/moving/%'))`);
             } else if (groupKey === 'demolition' || groupKey === 'demolition-ravi') {
               where.push(`(l.group_key = 'demolition' or l.group_key = 'demolition-ravi' or d.group_key = 'demolition' or d.group_key = 'demolition-ravi' or exists (select 1 from unnest(coalesce(l.indexed_post_urls_sample, array[]::text[])) u where u like '%/%EC%B2%A0%EA%B1%B0/%' or u like '%/철거/%' or u like '%/demolition/%'))`);
+            } else {
+              /*
+               * 배관·브랜드처럼 나중에 생긴 그룹은 group_key 가 그대로 들어 있어
+               * URL 모양을 볼 필요가 없다. 청소·이사·철거는 한 도메인을 나눠 쓰던 시절이 있어
+               * 샘플 URL 로도 찾아야 해서 위가 길다.
+               *
+               * 이 else 가 없으면 모르는 업종을 골랐을 때 필터가 통째로 빠져
+               * 전체가 그 업종인 것처럼 보였다.
+               */
+              params.push(groupKey);
+              where.push(`(l.group_key = $${params.length} or d.group_key = $${params.length})`);
             }
           }
           const clause = where.length ? `where ${where.join(' and ')}` : '';
+          /*
+           * "전체 N개 중 조사 완료 M개" 의 N 도 고른 업종을 따라야 한다.
+           * 전에는 항상 전체 도메인(2만)을 셌다 — 브랜드 5개를 조사해도
+           * "5 / 20005" 로 보여 진도율이 0% 처럼 보였다.
+           */
+          const summaryParams = [...params, groupKey && groupKey !== 'all' ? groupKey : null];
+          const gk = `$${summaryParams.length}`;
 
           const [summaryRes, bucketRes, rootRes, rowsRes, countRes] = await Promise.all([
             pool.query(`
               with l as (${LATEST_INDEX})
-              select (select count(*)::int from public.naver_project_domains where is_visible = true) as total_domains,
+              select (select count(*)::int from public.naver_project_domains dd
+                              where dd.is_visible = true
+                                and (${gk}::text is null or dd.group_key = ${gk}::text)) as total_domains,
                      count(*)::int                                    as checked,
                      count(*) filter (where l.indexed)::int           as indexed,
                      coalesce(sum(l.indexed_post_count), 0)::int      as indexed_posts,
                      max(l.checked_at)                                as last_checked
                 from l
                 ${clause.includes('d.') ? `join public.naver_project_domains d on d.host = l.domain ${clause}` : clause}
-            `, params),
+            `, summaryParams),
             pool.query(`
               with l as (${LATEST_INDEX}),
                    r as (select host, count(*) filter (where status = 'submitted')::int n
