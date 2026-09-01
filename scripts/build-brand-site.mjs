@@ -653,12 +653,26 @@ const base = {
  * 들어온 사람에게 같은 걸 또 고르게 할 이유가 없다.
  */
 function estimateForm({
-  no, heading, lede, sido = '', sigungu = '',
+  no, heading, lede, sido = '', sigungu = '', dongs = [],
 }) {
+  /*
+   * 자리표시자를 여기서 마저 채운다. 호출부 열한 군데가 각자 채우게 두었더니
+   * 몇 곳이 빠져 "{구} 접수 여기서도 받습니다" 가 3,000장 넘게 나갔다 (2026-09-01).
+   * 지역이 없는 페이지(전국 키워드·/form/)는 "전국" 으로 둔다.
+   */
+  const where = [sido, sigungu].filter(Boolean).join(' ');
+  const fVars = {
+    지역: where || '전국',
+    구: sigungu || sido || '전국',
+    시도: sido || '전국',
+    동: dongs[0] || sigungu || sido || '전국',
+    동2: dongs[1] || dongs[0] || sigungu || sido || '전국',
+    동3: dongs[2] || dongs[0] || sigungu || sido || '전국',
+  };
   return renderTemplate(templates.estimate, {
     estimateNo: no,
-    estimateHeading: heading,
-    estimateLede: lede,
+    estimateHeading: fillPlaceholders(heading, fVars),
+    estimateLede: fillPlaceholders(lede, fVars),
     leadApi: site.leadApi,
     leadProject: site.leadProject,
     leadArea: [sido, sigungu].filter(Boolean).join(' '),
@@ -1122,6 +1136,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
         lede: one('estimateLedes', 17),
         sido: r.sidoLabel,
         sigungu: r.sigunguLabel,
+          dongs: dongPick,
       }),
       /*
        * 지역 페이지 본문. 레퍼런스(하림배관 5,300~7,000자 / 하수구박사 4,500~5,000자)에
@@ -1383,8 +1398,8 @@ if (TIERED) {
         faqHeading: '자주 묻는 것',
         faq: g.faq,
         price: fillDeep(pools.price, vars),
-        priceHeading: pools.priceHeadings[seed % pools.priceHeadings.length],
-        priceNote: pools.priceNotes[seed % pools.priceNotes.length],
+        priceHeading: fillPlaceholders(pools.priceHeadings[seed % pools.priceHeadings.length], vars),
+        priceNote: fillPlaceholders(pools.priceNotes[seed % pools.priceNotes.length], vars),
         hasPhotos: imagePool.length > 0,
         photos: pickCombination(imagePool, SHOTS, seed).map((img) => ({
           ...img, alt: `${site.brand} ${img.label}`,
@@ -1421,7 +1436,16 @@ if (TIERED) {
         ...base,
         sidoLabel: sg.label,
         sidoCount: sg.items.length,
-        sidoLede: fillPlaceholders(pools.heroLedes[seed % pools.heroLedes.length], vars),
+        /*
+         * 시도 허브에는 동이 없다. 그 시도의 시군구 이름을 대신 넣는다 —
+         * 안 그러면 "{동}·{동2} 아울러 부산 전역을" 처럼 그대로 나간다.
+         */
+        sidoLede: fillPlaceholders(pools.heroLedes[seed % pools.heroLedes.length], {
+          ...vars,
+          동: sg.items[0]?.sigunguLabel || sg.label,
+          동2: sg.items[1]?.sigunguLabel || sg.items[0]?.sigunguLabel || sg.label,
+          동3: sg.items[2]?.sigunguLabel || sg.items[0]?.sigunguLabel || sg.label,
+        }),
         /*
          * 시도 허브는 목록이다. 레퍼런스(클린배관)도 본문이 50자뿐이고 링크만 240개다.
          * 여기에 긴 글을 쓰면 아래 시군구 페이지와 내용이 겹친다.
@@ -1507,6 +1531,7 @@ if (TIERED) {
           lede: one('estimateLedes', 17),
           sido: r.sidoLabel,
           sigungu: r.sigunguLabel,
+          dongs: dongPick,
         }),
       }),
     }));
@@ -1613,6 +1638,7 @@ if (TIERED) {
             lede: oneOf(pools.estimateLedes, 29),
             sido: r.sidoLabel,
             sigungu: r.sigunguLabel,
+          dongs: dongPick,
           }),
         }),
       }));
@@ -1891,6 +1917,7 @@ if (BLOG) {
               lede: pools.estimateLedes[seed % pools.estimateLedes.length],
               sido: r.sidoLabel,
               sigungu: r.sigunguLabel,
+          dongs: dongPick,
             }),
           }),
         }));

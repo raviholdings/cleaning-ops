@@ -9,7 +9,7 @@
   "siteUrl": "https://TBD.co.kr",
   "phone": "070-7106-5226",
   "phoneRaw": "07071065226",
-  "assetVersion": "thunder-v16",
+  "assetVersion": "thunder-v17",
   "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
   "_slugNote": "드림과 다른 단어 묶음을 쓴다. 같은 단어(drain, pipe…)가 두 사이트에 걸치면 URL 만 보고도 한 곳에서 만든 티가 난다.",
   "slugWords": [
