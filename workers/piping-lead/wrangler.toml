@@ -10,7 +10,6 @@ routes = [
   { pattern = "*daddul.com/api/lead",        zone_name = "daddul.com" },
   { pattern = "*ddulea.com/api/lead",        zone_name = "ddulea.com" },
   { pattern = "*naoheg.com/api/lead",        zone_name = "naoheg.com" },
-  { pattern = "*neverfoul.com/api/lead",     zone_name = "neverfoul.com" },
   { pattern = "*one-qfast.com/api/lead",     zone_name = "one-qfast.com" },
   { pattern = "*oneshot-sewer.com/api/lead", zone_name = "oneshot-sewer.com" },
   { pattern = "*pipe-oneshot.com/api/lead",  zone_name = "pipe-oneshot.com" },

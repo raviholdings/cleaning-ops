@@ -838,9 +838,42 @@ function firstImageOf(html) {
   };
 }
 
+/*
+ * 설명문 길이. 네이버 서치어드바이저가 80자를 권하고, 넘으면 콘솔에서 지적한다.
+ * 홈(사이트 설명)은 그 화면에 그대로 실리므로 넘으면 굽기를 멈춘다.
+ * 나머지는 세어만 두고 끝에 몇 장인지 알린다 — 3,000장을 하나씩 막을 일은 아니다.
+ */
+const DESC_LIMIT = 80;
+const clampedDescriptions = [];
+
+/**
+ * 80자에 맞춰 문장 경계에서 자른다.
+ *
+ * 사례·서비스 페이지는 본문 앞머리를 설명으로 쓰는데, 문장 길이가 제각각이라
+ * 100자를 넘는 것이 사이트마다 열댓 장 나온다. 글자 수로 뚝 자르면 말이 끊기므로
+ * 마지막 종결(다. 요. .)에서 끊고, 그런 자리가 없으면 띄어쓰기에서 끊는다.
+ * 홈은 자르지 않는다 — 사이트 설명은 손으로 쓴 것이라 잘리면 안 된다.
+ */
+function clampDescription(text) {
+  if (!text || text.length <= DESC_LIMIT) return text;
+  const head = text.slice(0, DESC_LIMIT);
+  const end = Math.max(head.lastIndexOf('다. '), head.lastIndexOf('요. '), head.lastIndexOf('. '));
+  if (end > DESC_LIMIT * 0.5) return head.slice(0, end + 2).trim();
+  const sp = head.lastIndexOf(' ');
+  return `${(sp > DESC_LIMIT * 0.5 ? head.slice(0, sp) : head).trim()}…`;
+}
+
 function page({
   path, kind, title, description, main, jsonLd, crumbs, ogType, published, modified, image,
 }) {
+  if (description && description.length > DESC_LIMIT) {
+    if (kind === 'home') {
+      throw new Error(`홈 설명이 ${description.length}자입니다 (권장 ${DESC_LIMIT}자). `
+        + `data/brands/${siteKey}.json 의 homeDescription 을 줄이세요.\n  ${description}`);
+    }
+    clampedDescriptions.push(path);
+    description = clampDescription(description);
+  }
   const canonical = `${siteUrl}${path}`;
   const html = renderTemplate(templates.layout, {
     ...base,
@@ -964,7 +997,17 @@ urls.push(page({
   path: '/',
   kind: 'home',
   title: `${site.brand} — 변기·하수구 막힘 24시간 출동`,
-  description: `${site.h1sub} ${site.brand}. 전국 출동, 현장 확인 후 견적.`,
+  /*
+   * 홈 설명은 따로 쓴다 (homeDescription).
+   *
+   * 전에는 h1sub(브랜드 말투 한 줄) 뒤에 브랜드명을 붙여 만들었는데 두 가지가 틀렸다.
+   *   - 네 곳이 80자를 넘었다 (최대 90자). 네이버 서치어드바이저가 80자를 권한다.
+   *   - 메인 키워드가 문장 끝에 붙거나 아예 없었다. 사이트 설명은 "이 사이트가
+   *     무엇을 하는 곳인가" 를 먼저 말해야 한다.
+   * og:description 도 이 값을 그대로 쓴다.
+   */
+  description: site.homeDescription
+    || `${site.h1sub} ${site.brand}. 전국 출동, 현장 확인 후 견적.`,
   jsonLd: orgLd,
   main: renderTemplate(templates.home, {
     ...base,
@@ -2224,6 +2267,9 @@ for (const f of readdirSync(join(templateDir, 'assets'), { withFileTypes: true }
 
 console.log(`${site.brand} (${siteKey})  →  ${join(outRoot, siteKey)}`);
 console.log(`  호스트     ${siteUrl}${host === 'TBD.co.kr' ? '   ⚠ 도메인 미정' : ''}`);
+if (clampedDescriptions.length) {
+  console.log(`  설명     ${clampedDescriptions.length}장을 ${DESC_LIMIT}자에 맞춰 문장 경계에서 잘랐습니다`);
+}
 // 3단계와 평면은 만드는 것이 달라서 요약도 따로 적는다. 평면 문구를 그대로 쓰면
 // 3단계에서 "서비스 5" 처럼 만들지도 않은 것이 찍힌다.
 // 구조마다 만드는 것이 다르니 요약도 따로 적는다. 한 문구로 돌려 쓰면
