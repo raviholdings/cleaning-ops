@@ -846,6 +846,20 @@ function firstImageOf(html) {
 const DESC_LIMIT = 80;
 const clampedDescriptions = [];
 
+/*
+ * 사이트 설명에 반드시 들어가야 하는 키워드 (운영자 지정 2026-09-02).
+ *
+ * 서치어드바이저의 "사이트 설명" 이 검색 결과에 그대로 실린다. 브랜드 말투만
+ * 적어 두면 무엇을 하는 곳인지 안 보인다. 문안을 다듬다 조용히 빠지기 쉬운
+ * 자리라 굽는 자리에서 막는다.
+ *
+ * 전부 실제로 하는 일이다 — <키>-services.json 에 있는 항목만 넣었다.
+ */
+const HOME_KEYWORDS = [
+  '싱크대수전교체', '세면대수전교체', '하수구냄새제거',
+  '변기뚫는법', '하수구막힘', '변기교체', '수전교체',
+];
+
 /**
  * 80자에 맞춰 문장 경계에서 자른다.
  *
@@ -866,11 +880,17 @@ function clampDescription(text) {
 function page({
   path, kind, title, description, main, jsonLd, crumbs, ogType, published, modified, image,
 }) {
-  if (description && description.length > DESC_LIMIT) {
-    if (kind === 'home') {
+  if (kind === 'home') {
+    if (description.length > DESC_LIMIT) {
       throw new Error(`홈 설명이 ${description.length}자입니다 (권장 ${DESC_LIMIT}자). `
         + `data/brands/${siteKey}.json 의 homeDescription 을 줄이세요.\n  ${description}`);
     }
+    const missing = HOME_KEYWORDS.filter((w) => !description.includes(w));
+    if (missing.length) {
+      throw new Error(`홈 설명에 키워드가 빠졌습니다: ${missing.join(' · ')}\n`
+        + `  data/brands/${siteKey}.json 의 homeDescription 을 고치세요.\n  ${description}`);
+    }
+  } else if (description && description.length > DESC_LIMIT) {
     clampedDescriptions.push(path);
     description = clampDescription(description);
   }
