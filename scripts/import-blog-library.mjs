@@ -25,6 +25,7 @@ const SRCS = [
   'blog-section-reference-library-2.md',
   'blog-section-reference-library-3.md',
   'blog-section-reference-library-4.md',
+  'blog-section-reference-library-5.md',
 ].map((f) => join(projectRoot, f)).filter((f) => existsSync(f));
 const OUT = join(projectRoot, 'data/brands/_blog-library.json');
 

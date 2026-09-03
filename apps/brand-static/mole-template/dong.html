@@ -1,0 +1,59 @@
+<div class="wrap">
+  <div class="rtop">
+    <span class="where">{{sidoLabel}} {{sigunguLabel}} · {{dongLabel}}</span>
+    <h1>{{{dongH1}}}</h1>
+    <p class="rsub">{{dongLabel}} <span class="c">{{kwLabel}}</span></p>
+    <p class="say">{{dongLede}}</p>
+    <div class="acts" style="margin-top:26px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+      <a class="btn b1" href="tel:{{phoneRaw}}">{{phone}}</a>
+      <a class="btn b2" href="#estimate">접수 남기기</a>
+    </div>
+  </div>
+  <div class="notes">
+    <div><b>{{postedAt}}</b><span>올린 날</span></div>
+    {{#board}}<div><b>{{v}}</b><span>{{k}}</span></div>{{/board}}
+  </div>
+</div>
+
+<section id="read"><div class="wrap">
+  <p class="tag">01 — {{dongLabel}} {{kwLabel}}</p>
+  {{{article}}}
+</div></section>
+
+{{#hasPhotos}}
+<section id="photo"><div class="wrap">
+  <p class="tag">02 — 일하는 모습</p>
+  <div class="shots">
+    {{#photos}}<figure><img src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}" loading="lazy" decoding="async"><figcaption>{{label}}</figcaption></figure>{{/photos}}
+  </div>
+</div></section>
+{{/hasPhotos}}
+
+<section id="price"><div class="wrap">
+  <p class="tag">03 — 값</p>
+  <h3>{{{priceHeading}}}</h3>
+  <div class="price">
+    {{#price}}<div class="r"><i>{{item}}</i><u></u><s>{{basis}}</s></div>{{/price}}
+  </div>
+  <p class="note">{{priceNote}}</p>
+</div></section>
+
+{{{estimateForm}}}
+
+<section id="siblings"><div class="wrap">
+  <p class="tag">04 — {{sigunguLabel}} 다른 동네</p>
+  <h3>{{{siblingHeading}}}</h3>
+  <div class="area">
+    {{#siblings}}<a href="{{href}}">{{label}}</a>{{/siblings}}
+  </div>
+  <p class="note"><a class="more" href="{{regionHref}}">{{sigunguLabel}} 전체 보기</a></p>
+</div></section>
+
+<section id="near"><div class="wrap">
+  <p class="tag">05 — 인근</p>
+  <h3>{{{nearHeading}}}</h3>
+  <div class="area">
+    {{#near}}<a href="{{href}}">{{label}}</a>{{/near}}
+  </div>
+  <p class="note"><a class="more" href="/area/">서비스 지역 전체 보기 ({{regionCount}}곳)</a></p>
+</div></section>

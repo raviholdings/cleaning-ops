@@ -24,7 +24,7 @@ import {
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
-import { assignSlugs } from './lib/region-slug.mjs';
+import { assignSlugs, regionSlug } from './lib/region-slug.mjs';
 import { romanize, romanizeUnique } from './lib/romanize.mjs';
 import { robotsTxt } from './lib/robots-txt.mjs';
 import {
@@ -128,6 +128,8 @@ const templates = {
   ...optional('detail.html', 'detail'),
   // 블로그형 전용
   ...optional('post.html', 'post'),
+  // 동 단위 글 (평면 사이트 셋)
+  ...optional('dong.html', 'dong'),
   ...optional('blog-index.html', 'blogIndex'),
   ...optional('blog-hub.html', 'blogHub'),
   ...optional('privacy.html', 'privacy'),
@@ -171,17 +173,120 @@ for (const sido of regions.sido) {
  */
 const SIDO_KEYS = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산',
   '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+/*
+ * ── 동 단위 글 ──
+ *
+ * 레퍼런스(하림배관)는 동 페이지를 갖고 있다 (/dangu-dong-clogged-sink/).
+ * 우리는 지역 페이지 본문에 이름만 실었을 뿐이라 검색 결과에 동이 안 나왔다
+ * (운영자 확인 2026-09-03). 동 하나에 글 한 편을 만든다.
+ *
+ * 키워드는 **시군구 안에서 돌려** 배정한다 (운영자 지시, A안).
+ * 무작위로 뿌리면 어떤 구에서는 한 키워드가 다섯 번, 다른 건 0번이 된다.
+ * 0번이 된 키워드는 그 지역에서 못 잡힌다. 돌려 쓰면 겉보기는 흩어지면서도
+ * 빈 키워드가 안 생긴다. 시작점은 시드로 달리해 구마다 순서가 다르다.
+ */
+const dongPages = [];
+if (site.dongPages) {
+  const kws = site.regionKeywords;
+  for (const r of allRegions) {
+    const start = hash(`${siteKey}|dongstart|${r.code}`) % kws.length;
+    /* repDong 은 시군구가 가진 대표 동네다. 빈 값이 하나 섞여 있어 걸러낸다. */
+    const names = r.repDong.filter((n) => n && n.trim());
+    names.forEach((name, i) => {
+      dongPages.push({
+        r,
+        dong: name,
+        kw: kws[(start + i) % kws.length],
+        key: `g:${r.code}:${name}`,
+      });
+    });
+  }
+}
+
 const slugKeys = [
   ...allRegions.map((r) => `r:${r.code}`),
   ...services.map((s2) => `s:${s2.key}`),
   ...realCases.map((c, i) => `c:${c.id || i}`),
   ...SIDO_KEYS.map((n) => `p:${n}`),
+  ...dongPages.map((d) => d.key),
   'c:index',
 ];
 const slugs = assignSlugs(siteKey, slugKeys, { words: site.slugWords });
 for (const r of allRegions) r.slug = slugs.get(`r:${r.code}`);
 for (const s2 of services) s2.slug = slugs.get(`s:${s2.key}`);
 realCases.forEach((c, i) => { c.slug = slugs.get(`c:${c.id || i}`); });
+/*
+ * 동 글 주소가 다른 브랜드와 겹치지 않게 한다.
+ *
+ * assignSlugs 는 한 사이트 안에서만 충돌을 피한다. 사이트당 5,000개가 되니
+ * 사이트 간에도 부딪히기 시작했다 (2026-09-03, 넷). 같은 주소가 두 브랜드에
+ * 있으면 그것만으로 한 운영자가 만든 티가 난다.
+ *
+ * 슬러그 만드는 규칙 자체는 못 건드린다 — 바꾸면 이미 제출한 지역 주소가
+ * 통째로 바뀐다 (실제로 139개가 날아가는 것을 확인하고 되돌렸다).
+ * 그래서 **새로 만드는 동 글에만** 다른 사이트 목록을 피하게 한다.
+ */
+const otherSlugs = (() => {
+  /*
+   * 다른 브랜드가 쓰는 슬러그를 그 자리에서 계산한다.
+   *
+   * 구운 폴더를 읽으면 굽는 순서에 흔들린다 — 처음 도는 사이트는 남들의 지난
+   * 결과를 보고, 남들이 아직 동 글을 안 만들었으면 그 충돌을 못 잡는다.
+   * 슬러그는 결정적이라 데이터만 있으면 다시 셀 수 있다.
+   */
+  const out = new Set();
+  const others = readdirSync(join(projectRoot, 'data/brands'))
+    .filter((f) => /^[a-z]+.json$/.test(f))
+    .map((f) => f.replace(/.json$/, ''))
+    .filter((k) => k !== siteKey);
+  for (const other of others) {
+    const oj = JSON.parse(readFileSync(join(projectRoot, `data/brands/${other}.json`), 'utf8'));
+    /* 3단계(도사)는 주소가 로마자라 평면 슬러그를 안 쓴다 */
+    if (oj.structure === 'tiered') continue;
+    const osvcPath = join(projectRoot, `data/brands/${other}-services.json`);
+    const ocasePath = join(projectRoot, `data/brands/${other}-cases.json`);
+    const osvc = existsSync(osvcPath) ? JSON.parse(readFileSync(osvcPath, 'utf8')).services || [] : [];
+    const ocase = existsSync(ocasePath)
+      ? (JSON.parse(readFileSync(ocasePath, 'utf8')).cases || []).filter((c) => c.title && c.body) : [];
+    const okeys = [
+      ...allRegions.map((r) => `r:${r.code}`),
+      ...osvc.map((x) => `s:${x.key}`),
+      ...ocase.map((c, i) => `c:${c.id || i}`),
+      ...SIDO_KEYS.map((n) => `p:${n}`),
+      'c:index',
+    ];
+    if (oj.dongPages) {
+      for (const r of allRegions) {
+        for (const name of r.repDong.filter((n) => n && n.trim())) okeys.push(`g:${r.code}:${name}`);
+      }
+    }
+    for (const v of assignSlugs(other, okeys, { words: oj.slugWords }).values()) out.add(v);
+  }
+  return out;
+})();
+{
+  /*
+   * 규칙 자체는 못 건드린다 — 바꾸면 이미 제출한 지역 주소가 통째로 바뀐다
+   * (실제로 139개가 날아가는 것을 확인하고 되돌렸다).
+   * 그래서 **새로 만드는 동 글에만** 다른 사이트 것을 피하게 한다.
+   */
+  const mine = new Set(slugs.values());
+  let moved = 0;
+  for (const d of dongPages) {
+    let slug = slugs.get(d.key);
+    let salt = 0;
+    while ((otherSlugs.has(slug) || salt === 0) && otherSlugs.has(slug)) {
+      salt += 1;
+      const cand = regionSlug(siteKey, `${d.key}#x${salt}`, { words: site.slugWords });
+      if (mine.has(cand) || otherSlugs.has(cand)) continue;
+      slug = cand;
+      moved += 1;
+    }
+    mine.add(slug);
+    d.slug = slug;
+  }
+  if (moved) console.log(`  동 글 주소 ${moved}개를 다른 브랜드와 안 겹치게 옮겼습니다`);
+}
 const casesIndexSlug = slugs.get('c:index');
 
 /*
@@ -722,10 +827,12 @@ function renumberSections(html) {
  * 잘라 간다. 같은 문장이 두 브랜드에 실리면 한 운영자가 만든 티가 난다.
  */
 const articlePlan = site.articlePlan || null;
-const blogLib = articlePlan
+/* 동 글도 같은 조립기를 쓴다. 카드형 사이트(썬더·비버)도 동 글이 있으면 읽어야 한다. */
+const needsLib = Boolean(articlePlan || site.dongPages);
+const blogLib = needsLib
   ? JSON.parse(readFileSync(resolve(projectRoot, 'data/brands/_blog-library.json'), 'utf8')).groups
   : null;
-const blogDict = articlePlan
+const blogDict = needsLib
   ? JSON.parse(readFileSync(resolve(projectRoot, 'data/brands/_blog-vars.json'), 'utf8'))
   : null;
 
@@ -1282,7 +1389,8 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     },
     main: renderTemplate(templates.region, {
       // articlePlan 이 있는 사이트만 긴 본문을 낸다 (지금은 드림)
-      article: regionArticle ? regionArticle.html : '',
+      // 썬더·비버는 지역 페이지를 카드형으로 둔다 (운영자 지시). 동 글에만 붙인다.
+      article: (regionArticle && site.regionArticle !== false) ? regionArticle.html : '',
       ...base,
       sidoLabel: r.sidoLabel,
       sigunguLabel: r.sigunguLabel,
@@ -1368,6 +1476,136 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
       before: pickRotated(pools.before, 4, seed + 53).map((t) => ({ text: fillPlaceholders(t, vars) })),
       nearHeading: `${r.sidoLabel} 다른 지역`,
       near,
+    }),
+  }));
+}
+
+/* ── 동 단위 글 × 4,761 ── */
+/*
+ * 레퍼런스(하림배관)가 갖고 있는 것이고, 검색 결과에 동이 안 나오는 원인이었다.
+ * 시군구 페이지는 그대로 두고 동마다 글 한 편을 더한다.
+ *
+ * 본문은 블로그형과 같은 조립기를 쓴다 (lib/blog-compose). 설명 문단은 사이트가
+ * 이미 들고 있는 카드에서 가져오므로 라이브러리를 더 쪼개지 않아도 된다 —
+ * 다섯이 나눠 쓰면 묶음당 한두 개가 되어 4,761장에 같은 글이 실린다.
+ */
+for (const d of dongPages) {
+  const { r, dong, kw } = d;
+  const full = `${r.sidoLabel} ${r.sigunguLabel}`;
+  const seed = hash(`${siteKey}|dong|${r.code}|${dong}`);
+  const vars = {
+    지역: full, 구: r.sigunguLabel, 시도: r.sidoLabel, 키워드: kw,
+    동: dong, 동2: dong, 동3: dong,
+  };
+  const one2 = (name, off = 0) => fillPlaceholders(
+    pools[name][(seed + off) % pools[name].length], vars,
+  );
+
+  /* 같은 시군구의 다른 동네로 건너가는 줄. 이게 없으면 4,761장이 서로 안 이어진다. */
+  const family = dongPages.filter((x) => x.r.code === r.code && x.dong !== dong);
+  const fs2 = family.length ? seed % family.length : 0;
+  const siblings = [];
+  for (let i = 0; i < Math.min(12, family.length); i += 1) {
+    const x = family[(fs2 + i) % family.length];
+    siblings.push({ href: `/${x.slug}/`, label: `${x.dong} ${x.kw}` });
+  }
+
+  const group2 = sidoGroups.find((g) => g.label === r.sidoLabel).items;
+  const others2 = group2.filter((x) => x.code !== r.code);
+  const ns = others2.length ? seed % others2.length : 0;
+  const near2 = [];
+  for (let i = 0; i < Math.min(8, others2.length); i += 1) {
+    const n = others2[(ns + i) % others2.length];
+    near2.push({ href: `/${n.slug}/`, label: `${n.sigunguLabel} ${kw}` });
+  }
+
+  const article = longArticle({
+    kwLabel: kw,
+    sido: r.sidoLabel,
+    sigungu: r.sigunguLabel,
+    shortLabel: dong,
+    dongs: [dong],
+    neighbors: others2.map((x) => x.sigunguLabel),
+    seed,
+    vars,
+    sitePools: {
+      원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
+      유형: pools.keywordBlurbs.map((x) => x.body),
+      작업: pools.jobs.map((x) => `${x.title}. ${x.body}`),
+      건물: pools.building.map((x) => `${x.t}. ${x.b}`),
+      예방: pools.prevent.map((x) => `${x.t}. ${x.b}`),
+      접수전: pools.before.slice(),
+      철: pools.season.map((x) => `${x.t}. ${x.b}`),
+      연장: pools.method.map((x) => `${x.t}. ${x.b}`),
+      문답: pools.faq.map((x) => `${x.q} ${x.a}`),
+    },
+  });
+
+  /*
+   * 제목에 키워드를 여럿 싣는다 (레퍼런스 하림배관이 그렇게 한다).
+   *   도봉동 싱크대막힘 하수구막힘 역류 해결 장비
+   * 배정된 키워드를 맨 앞에 두고 같은 시군구에서 안 쓰는 것 둘을 더 붙인다.
+   * 동 이름과 키워드는 띄운다 — 붙이면 한 낱말로 읽혀 오히려 안 잡힌다.
+   */
+  const extra = pickRotated(site.regionKeywords.filter((x) => x !== kw), 2, seed + 71);
+  const kwList = [kw, ...extra];
+  const at = postedAt(seed);
+  urls.push(page({
+    path: `/${d.slug}/`,
+    kind: 'dong',
+    published: at.toISOString(),
+    crumbs: [
+      { name: '홈', href: '/' },
+      { name: r.sigunguLabel, href: `/${r.slug}/` },
+      { name: dong },
+    ],
+    title: `${dong} ${kwList.join(' ')} - ${site.brand}`,
+    /* 설명에 동 이름을 반드시 넣는다 (운영자 지시 2026-09-03). */
+    description: `${full} ${dong} ${kw}. ${site.brand} 현장 확인 후 견적.`,
+    jsonLd: [{
+      ...orgLd,
+      '@type': 'Service',
+      serviceType: kw,
+      provider: { '@type': 'LocalBusiness', name: site.brand, telephone: site.phone },
+      areaServed: { '@type': 'AdministrativeArea', name: `${full} ${dong}` },
+      url: `${siteUrl}/${d.slug}/`,
+    },
+    ...(article.faq.length ? [{
+      '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: article.faq,
+    }] : [])],
+    main: renderTemplate(templates.dong, {
+      ...base,
+      sidoLabel: r.sidoLabel,
+      sigunguLabel: r.sigunguLabel,
+      dongLabel: dong,
+      kwLabel: kw,
+      dongH1: `${dong} ${kwList.join(' ')}`,
+      dongLede: one2('heroLedes', 3),
+      postedAt: ymd(at),
+      board: site.board,
+      article: article.html,
+      hasPhotos: imagePool.length > 0,
+      photoHeading: imagePool.length ? one2('photoHeadings', 19) : '',
+      photos: pickCombination(imagePool, SHOTS, hash(`${siteKey}|dphoto|${d.key}`)).map((img) => ({
+        ...img, alt: `${site.brand} ${img.label}`,
+      })),
+      price: fillDeep(pools.price, vars),
+      priceHeading: one2('priceHeadings', 4),
+      priceNote: one2('priceNotes', 5),
+      siblingHeading: `${r.sigunguLabel}의 다른 동네`,
+      siblings,
+      regionHref: `/${r.slug}/`,
+      nearHeading: `${r.sidoLabel} 다른 지역`,
+      near: near2,
+      regionCount: allRegions.length,
+      estimateForm: estimateForm({
+        no: '06',
+        heading: one2('estimateHeadings', 13),
+        lede: one2('estimateLedes', 17),
+        sido: r.sidoLabel,
+        sigungu: r.sigunguLabel,
+        dongs: [dong],
+      }),
     }),
   }));
 }

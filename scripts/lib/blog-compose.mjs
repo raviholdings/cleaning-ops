@@ -244,11 +244,24 @@ export function composeArticle(o) {
   };
   const F = (t) => fillVars(t, vars);
 
-  /* 소제목은 "증상 1" 처럼 앞말로 묶여 있다. */
-  const heads = {};
-  for (const x of G('소제목')) {
+  /*
+   * 소제목은 "증상 1" 처럼 앞말로 묶여 있다.
+   *
+   * 나누기를 **종류 안에서** 한다. 전체 목록을 통으로 잘라 나누면 어떤 사이트는
+   * FAQ 소제목이 0개가 되어 굽기가 멈춘다 (5등분에서 실제로 났다).
+   * 종류마다 따로 나누면 어느 사이트든 모든 종류를 최소 하나는 갖는다.
+   */
+  const allHeads = {};
+  for (const x of (lib['소제목'] || [])) {
     const kind = x.name.replace(/\s*\d+$/, '').trim();
-    (heads[kind] ||= []).push(x);
+    (allHeads[kind] ||= []).push(x);
+  }
+  const heads = {};
+  for (const [kind, arr] of Object.entries(allHeads)) {
+    const mine = (!share || share.n <= 1)
+      ? arr
+      : arr.filter((_, i) => i % share.n === share.i % Math.max(1, Math.min(share.n, arr.length)));
+    heads[kind] = mine.length ? mine : arr;
   }
 
   /*
