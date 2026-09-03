@@ -85,9 +85,30 @@ for (const arr of Object.values(groups)) {
  * 그대로 두면 "완벽 제거 같은 표현을 피합니다" 가 손님 눈에 보이는 본문으로 나간다.
  */
 const GUIDE = /(사용 규칙|조합법|편집 원칙|권장 순서)/;
+/*
+ * 항목 이름이 아니라 '본문 안에 섞인 작성 지침' 을 잡는다.
+ * 이름으로만 거르면 FAQ 답변 끝에 붙은 "…같은 표현을 사용하지 않습니다" 가
+ * 그대로 손님에게 나간다. 실제로 드림 256장에 나가 있었다 (2026-09-03).
+ */
+const GUIDE_LINE = /(표현을 사용하지 않습니다|표현은 피하는|처럼 작성합니다|라고 표시합니다|명확히 고지해야|작성하지 않습니다|지나치게 반복하지 않습니다)/;
+const leaked = [];
 for (const [k, arr] of Object.entries(groups)) {
+  for (const x of arr) {
+    // 이름으로 이미 버릴 항목과 인용(>) 줄은 본문으로 안 나가므로 검사에서 뺀다
+    if (GUIDE.test(x.name)) continue;
+    for (const line of x.text.split('\n')) {
+      if (line.trim().startsWith('>')) continue;
+      if (GUIDE_LINE.test(line)) leaked.push(`${k} / ${x.name}  ${line.trim().slice(0, 70)}`);
+    }
+  }
   groups[k] = arr.filter((x) => !GUIDE.test(x.name));
   if (!groups[k].length) delete groups[k];
+}
+
+if (leaked.length) {
+  console.error('\n본문에 작성 지침이 섞여 있습니다 — 손님 눈에 그대로 나갑니다:');
+  for (const l of leaked) console.error('  ' + l);
+  process.exit(1);
 }
 
 const summary = Object.entries(groups)

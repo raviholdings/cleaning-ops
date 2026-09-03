@@ -325,10 +325,18 @@ export function composeArticle(o) {
       const [kind, want] = String(x).split(':');
       return { kind, want };
     });
+    /*
+     * 힌트에 맞는 것이 **둘 이상일 때만** 힌트를 쓴다.
+     *
+     * 하나만 맞으면 그 하나가 모든 글에 실린다 — 실제로 드림의 100% 반복 상위가
+     * 이것이었다 (2026-09-03). 라이브러리를 삼등분하면 "ol:해결" 에 맞는 것이
+     * 사이트당 한 개뿐인 일이 흔하다. 주제가 조금 어긋나는 것보다 256장에 같은
+     * 목록이 박히는 편이 나쁘다.
+     */
     const prefer = (group, want, n, s2) => {
       if (!want) return take(group, n, s2);
       const hit = G(group).filter((x) => x.name.includes(want));
-      if (!hit.length) return take(group, n, s2);
+      if (hit.length < 2) return take(group, n, s2);
       const got = pickN(hit, n, seed + s2);
       for (const x of got) used.add(`${group}|${x.name}`);
       return got;
