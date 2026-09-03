@@ -1,0 +1,12 @@
+{
+ "_note": "네이버 IndexNow 키. 도메인마다 달라야 한다 (웹마스터 가이드). 공개값이라 숨길 것이 없다 — 루트에 <키>.txt 로 올라가 있어야 제출이 통한다.",
+ "_endpoint": "https://searchadvisor.naver.com/indexnow",
+ "_howto": "키를 웹루트에 놓는 것은 굽기가 한다 (build-brand-site 가 <키>.txt 를 쓴다). 만든 뒤에는 반드시 다시 굽고 배포해야 제출이 된다.",
+ "keys": {
+  "dosadosa.kr": "1148ca35647a2c2c22703e30e509d69b",
+  "dreamcome.kr": "c6a49eb6a03832f0003a61751b8bca67",
+  "beaverpipe.kr": "424e1ab89097b6cae85881551cd3335c",
+  "ssac3.kr": "2e3fb3a0d91acb80285313b53fb94de8",
+  "thunderdrain.kr": "de11ec506d13a9d6df6ce380d3d47e8e"
+ }
+}

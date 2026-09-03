@@ -1011,7 +1011,7 @@ const siteOut = join(outRoot, siteKey);
 if (existsSync(siteOut)) {
   const entries = readdirSync(siteOut);
   // sitemap_index.xml · <종류>-sitemap<N>.xml 도 우리가 쓰는 것이다
-  const OURS = /^(index\.html|robots\.txt|sitemap\.xml|sitemap_index\.xml|[a-zA-Z]+-sitemap\d+\.xml)$/;
+  const OURS = /^(index\.html|robots\.txt|sitemap\.xml|sitemap_index\.xml|[a-zA-Z]+-sitemap\d+\.xml|[0-9a-f]{32}\.txt)$/;
   const ours = entries.every((e) => e === 'assets' || OURS.test(e)
     || statSync(join(siteOut, e)).isDirectory());
   if (!ours) {
@@ -2256,6 +2256,20 @@ writeFileSync(join(outRoot, siteKey, 'sitemap_index.xml'), indexXml);
  * (네이버 콘솔에 넣은 것 포함), 색인으로 바뀌었다고 404 를 내면 그쪽이 통째로 끊긴다.
  */
 writeFileSync(join(outRoot, siteKey, 'sitemap.xml'), indexXml);
+
+/*
+ * IndexNow 키 파일. 루트에 <키>.txt 가 있어야 네이버가 소유를 인정한다.
+ * 내용은 파일 이름과 같은 문자열 하나뿐이다 (33바이트).
+ *
+ * 굽기가 쓰는 이유: 배포가 폴더를 통째로 새로 푸는 방식이라, 따로 올려두면
+ * 다음 배포에서 지워진다. 키가 사라지면 제출이 403 으로 막힌다.
+ */
+const indexNowPath = resolve(projectRoot, 'data/brands/_indexnow-keys.json');
+if (existsSync(indexNowPath)) {
+  const { keys: inKeys } = JSON.parse(readFileSync(indexNowPath, 'utf8'));
+  const inKey = inKeys[host];
+  if (inKey) writeFileSync(join(outRoot, siteKey, `${inKey}.txt`), inKey);
+}
 
 writeFileSync(join(outRoot, siteKey, 'robots.txt'), robotsTxt({
   brand: site.brand,
