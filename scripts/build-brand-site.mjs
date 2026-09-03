@@ -851,9 +851,11 @@ function priceRows(vars) {
  */
 function longArticle({
   kwLabel, sido, sigungu, dongs, neighbors = [], seed, shortLabel, vars, sitePools,
+  varOverrides,
 }) {
   const v = makeVars({
     dict: blogDict, site, kwLabel, sido, sigungu, dongs, neighbors, seed, shortLabel,
+    overrides: varOverrides || {},
   });
   const art = composeArticle({
     lib: blogLib,
@@ -1366,7 +1368,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
       작업: pools.jobs.map((x) => `${x.title}. ${x.body}`),
       건물: pools.building.map((x) => `${x.t}. ${x.b}`),
       예방: pools.prevent.map((x) => `${x.t}. ${x.b}`),
-      접수전: pools.before.slice(),
+      접수전: (pools.beforeSentences || pools.before).slice(),
       // 계절·장비·문답도 제 것이 넉넉하다 (10 · 8 · 14). 라이브러리는 3등분 뒤 2개뿐이다.
       철: pools.season.map((x) => `${x.t}. ${x.b}`),
       연장: pools.method.map((x) => `${x.t}. ${x.b}`),
@@ -1489,12 +1491,20 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
  * 이미 들고 있는 카드에서 가져오므로 라이브러리를 더 쪼개지 않아도 된다 —
  * 다섯이 나눠 쓰면 묶음당 한두 개가 되어 4,761장에 같은 글이 실린다.
  */
+/* 제목이 이미 쓰인 것인지 본다 — 아래에서 겹치면 키워드를 한 칸 옮긴다. */
+const dongTitles = new Set();
+
 for (const d of dongPages) {
   const { r, dong, kw } = d;
   const full = `${r.sidoLabel} ${r.sigunguLabel}`;
   const seed = hash(`${siteKey}|dong|${r.code}|${dong}`);
+  /*
+   * {구} 를 "중구 남산동" 으로 둔다. 동으로 갈아치우지 않고 뒤에 붙이는 것은
+   * 시군구 검색도 함께 잡기 위해서다 (운영자 지시 2026-09-03).
+   */
+  const guDong = `${r.sigunguLabel} ${dong}`;
   const vars = {
-    지역: full, 구: r.sigunguLabel, 시도: r.sidoLabel, 키워드: kw,
+    지역: `${full} ${dong}`, 구: guDong, 시도: r.sidoLabel, 키워드: kw,
     동: dong, 동2: dong, 동3: dong,
   };
   const one2 = (name, off = 0) => fillPlaceholders(
@@ -1528,13 +1538,14 @@ for (const d of dongPages) {
     neighbors: others2.map((x) => x.sigunguLabel),
     seed,
     vars,
+    varOverrides: { 구: guDong, 지역: `${full} ${dong}` },
     sitePools: {
       원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
       유형: pools.keywordBlurbs.map((x) => x.body),
       작업: pools.jobs.map((x) => `${x.title}. ${x.body}`),
       건물: pools.building.map((x) => `${x.t}. ${x.b}`),
       예방: pools.prevent.map((x) => `${x.t}. ${x.b}`),
-      접수전: pools.before.slice(),
+      접수전: (pools.beforeSentences || pools.before).slice(),
       철: pools.season.map((x) => `${x.t}. ${x.b}`),
       연장: pools.method.map((x) => `${x.t}. ${x.b}`),
       문답: pools.faq.map((x) => `${x.q} ${x.a}`),
@@ -1547,8 +1558,18 @@ for (const d of dongPages) {
    * 배정된 키워드를 맨 앞에 두고 같은 시군구에서 안 쓰는 것 둘을 더 붙인다.
    * 동 이름과 키워드는 띄운다 — 붙이면 한 낱말로 읽혀 오히려 안 잡힌다.
    */
-  const extra = pickRotated(site.regionKeywords.filter((x) => x !== kw), 2, seed + 71);
-  const kwList = [kw, ...extra];
+  const rest = site.regionKeywords.filter((x) => x !== kw);
+  const titleOf = (l) => `${dong} ${l.join(' ')}`;
+  let kwList = [kw, ...pickRotated(rest, 2, seed + 71)];
+  /*
+   * 같은 동 이름이 다른 시군구에도 있는데 키워드 셋까지 같이 뽑히면 제목과 h1 이
+   * 글자까지 똑같아진다 (실측 78장, 2026-09-03). 겹치면 뽑는 자리를 한 칸씩
+   * 옮겨 다르게 만든다. 제목에 시군구를 넣지 않는 형식은 그대로 둔다.
+   */
+  for (let bump = 1; bump <= rest.length && dongTitles.has(titleOf(kwList)); bump += 1) {
+    kwList = [kw, ...pickRotated(rest, 2, seed + 71 + bump * 13)];
+  }
+  dongTitles.add(titleOf(kwList));
   const at = postedAt(seed);
   urls.push(page({
     path: `/${d.slug}/`,
@@ -1559,7 +1580,12 @@ for (const d of dongPages) {
       { name: r.sigunguLabel, href: `/${r.slug}/` },
       { name: dong },
     ],
-    title: `${dong} ${kwList.join(' ')} - ${site.brand}`,
+    /*
+     * 브랜드명을 안 붙인다. 레퍼런스(하림배관)가 title·h1·og:title 을 같은
+     * 문장으로 두고 업체명을 넣지 않는다 — 검색 결과에서 앞 글자가 키워드로
+     * 채워지는 편이 낫다는 판단으로 보인다. 운영자 지시로 그쪽에 맞춘다.
+     */
+    title: `${dong} ${kwList.join(' ')}`,
     /* 설명에 동 이름을 반드시 넣는다 (운영자 지시 2026-09-03). */
     description: `${full} ${dong} ${kw}. ${site.brand} 현장 확인 후 견적.`,
     jsonLd: [{

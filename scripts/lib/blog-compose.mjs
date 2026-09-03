@@ -119,6 +119,7 @@ export function fillVars(text, vars) {
  */
 export function makeVars({
   dict, site, kwLabel, sido, sigungu, dongs = [], neighbors = [], seed, shortLabel,
+  overrides = {},
 }) {
   const profile = (() => {
     const p = dict.keywords[kwLabel];
@@ -168,6 +169,14 @@ export function makeVars({
     출동시간: facts.dispatch || '',
     사용장비: equip.length ? pickN(equip, 2, seed + 71).join('와 ') : '',
     서비스목록: (site.serviceList || []).join(' · '),
+
+    /*
+     * 동 페이지가 {구} 를 "중구 남산동" 으로 덮어쓴다 — 시군구만 부르면 본문이
+     * 시군구 글이 되어 동 이름이 제목에만 남는다 (실측 평균 1.0~1.9회).
+     * 동으로 바꿔치우지 않고 뒤에 붙이는 것은 시군구 검색도 같이 잡기 위해서다
+     * (운영자 지시 2026-09-03).
+     */
+    ...overrides,
   };
 }
 
