@@ -560,6 +560,16 @@ const zoneOf = (sidoLabel) => (BLOG_ZONES.find((z) => z.sido.includes(sidoLabel)
  * 실제 작업 날짜가 아니라 글을 올린 날이다 (운영자 확인 2026-08-31).
  * 고르게 나누지 않고 시드로 흩는다 — 매일 같은 편수가 올라오는 블로그는 없다.
  */
+/*
+ * 게시일. 다섯 사이트가 같은 범위를 쓴다 (운영자 지시 2026-09-03).
+ *
+ * 원래 블로그형(싹쓰리)만 쓰던 값인데, 나머지 넷도 "과거에 한 작업" 으로 보이게
+ * 하라는 지시로 지역·상세 페이지에도 붙인다. 시드로 정하므로 다시 구워도
+ * 같은 페이지는 같은 날짜다.
+ *
+ * ⚠ 도메인 다섯은 2026-09-01 에 등록됐다 (whois 확인). 즉 이 게시일은 도메인보다
+ *   앞선다. 운영자가 그 사실을 알고 B(3~8월)로 정했다. 바꾸려면 이 두 줄만 고친다.
+ */
 const BLOG_OPEN = Date.UTC(2026, 2, 1);          // 2026-03-01
 const BLOG_LAST = Date.UTC(2026, 7, 31);         // 오늘
 const BLOG_DAYS = Math.round((BLOG_LAST - BLOG_OPEN) / 86400000);
@@ -585,7 +595,7 @@ if (BLOG) {
         blogPosts.push({
           r, kw, kind, work, seed,
           slug: blogPostSlug(r, kw, kind),
-          title: `${blogLabel(r)}${kw.label} ${work} ${kind.label}`,
+          title: `${blogLabel(r)} ${kw.label} ${work} ${kind.label}`,
           zone: zoneOf(r.sidoLabel),
           area: `${r.sidoLabel} ${r.sigunguLabel}`,
           at: postedAt(seed),
@@ -1208,6 +1218,13 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     return { name, kw: `${name} ${kws[a]} · ${name} ${kws[b]}` };
   });
 
+  /*
+   * 제목에 쓸 키워드 셋. 전에는 늘 kws[0..2] 라 256장이 같은 세 낱말이었고,
+   * 지역명도 두 번 들어갔다 ("의성군하수구막힘 의성군 싱크대막힘 변기막힘").
+   * 여덟 종을 시드로 돌려 뽑고 지역명은 맨 앞에 한 번만 붙인다.
+   */
+  const titleKws = pickRotated(kws, 3, seed + 61);
+
   const group = sidoGroups.find((g) => g.label === r.sidoLabel).items;
   const others = group.filter((x) => x.code !== r.code);
   const start = others.length ? hash(`${siteKey}|near|${r.code}`) % others.length : 0;
@@ -1243,14 +1260,19 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
       건물: pools.building.map((x) => `${x.t}. ${x.b}`),
       예방: pools.prevent.map((x) => `${x.t}. ${x.b}`),
       접수전: pools.before.slice(),
+      // 계절·장비·문답도 제 것이 넉넉하다 (10 · 8 · 14). 라이브러리는 3등분 뒤 2개뿐이다.
+      철: pools.season.map((x) => `${x.t}. ${x.b}`),
+      연장: pools.method.map((x) => `${x.t}. ${x.b}`),
+      문답: pools.faq.map((x) => `${x.q} ${x.a}`),
     },
   }) : null;
 
   urls.push(page({
     path: `/${r.slug}/`,
     kind: 'region',
+    published: postedAt(seed).toISOString(),
     crumbs: [{ name: '홈', href: '/' }, { name: `${r.sidoLabel} ${r.sigunguLabel}` }],
-    title: `${r.sigunguLabel}${kws[0]} ${r.sigunguLabel}${kws[1]} ${kws[2]} - ${site.brand}`,
+    title: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]} ${titleKws[2]} - ${site.brand}`,
     description: `${full} 하수구·변기 막힘 24시간 출동. `
       + `${dongPick.join(' · ')} 등 ${r.repDong.length}개 동네. 현장 확인 후 견적.`,
     jsonLd: {
@@ -1269,7 +1291,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
        * 브랜드 문구를 H1 에 넣으면 검색엔진이 보는 가장 강한 자리에 키워드가 없어진다.
        * 붙여쓰기(강남구하수구막힘)를 앞에 두는 것도 레퍼런스와 같다 — 실제로 그렇게 검색한다.
        */
-      regionH1: `${r.sigunguLabel}${kws[0]} ${r.sigunguLabel} ${kws[1]} ${kws[2]}`,
+      regionH1: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]} ${titleKws[2]}`,
       regionTagline: one('heroTaglines'),
       regionLede: one('heroLedes'),
       dongCount: r.dongCount,
@@ -1323,27 +1345,27 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
        * 그 말이 제목에만 있고 본문 헤딩에는 하나도 없었다. 키워드마다 H3 를 세워
        * "{구} {키워드}" 가 본문에 실제로 박히게 한다. 레퍼런스가 하는 방식이다.
        */
-      keywordHeading: fillPlaceholders(pools.keywordHeading, vars),
-      keywordLede: fillPlaceholders(pools.keywordLede, vars),
-      keywordBlurbs: pools.keywordBlurbs.map((b) => ({
+      keywordHeading: one('keywordHeading', 103),
+      keywordLede: one('keywordLede', 107),
+      keywordBlurbs: pickRotated(pools.keywordBlurbs, 3, seed + 59).map((b) => ({
         kw: b.kw,
         h: `${r.sigunguLabel} ${b.kw}`,
         body: fillPlaceholders(b.body, vars),
       })),
-      preventHeading: fillPlaceholders(pools.preventHeading, vars),
-      preventLede: fillPlaceholders(pools.preventLede, vars),
+      preventHeading: one('preventHeading', 61),
+      preventLede: one('preventLede', 67),
       prevent: many('prevent', 4, 29),
-      buildingHeading: fillPlaceholders(pools.buildingHeading, vars),
-      buildingLede: fillPlaceholders(pools.buildingLede, vars),
-      building: fillDeep(pools.building, vars),
-      seasonHeading: fillPlaceholders(pools.seasonHeading, vars),
-      season: fillDeep(pools.season, vars),
-      methodHeading: fillPlaceholders(pools.methodHeading, vars),
-      methodLede: fillPlaceholders(pools.methodLede, vars),
-      method: fillDeep(pools.method, vars),
-      beforeHeading: fillPlaceholders(pools.beforeHeading, vars),
-      beforeLede: fillPlaceholders(pools.beforeLede, vars),
-      before: pools.before.map((t) => ({ text: fillPlaceholders(t, vars) })),
+      buildingHeading: one('buildingHeading', 71),
+      buildingLede: one('buildingLede', 73),
+      building: many('building', 3, 41),
+      seasonHeading: one('seasonHeading', 79),
+      season: many('season', 3, 43),
+      methodHeading: one('methodHeading', 83),
+      methodLede: one('methodLede', 89),
+      method: many('method', 3, 47),
+      beforeHeading: one('beforeHeading', 97),
+      beforeLede: one('beforeLede', 101),
+      before: pickRotated(pools.before, 4, seed + 53).map((t) => ({ text: fillPlaceholders(t, vars) })),
       nearHeading: `${r.sidoLabel} 다른 지역`,
       near,
     }),
@@ -1767,8 +1789,9 @@ if (TIERED) {
       urls.push(page({
         path: detailHref(r, k),
         kind: 'detail',
+        published: postedAt(seed).toISOString(),
         crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel, href: regionHref(r) }, { name: k.label }],
-        title: `${r.sigunguLabel}${k.label} ${r.sigunguLabel} ${k.label} 출동 — ${site.brand}`,
+        title: `${r.sigunguLabel}${k.label} — ${full} ${k.label} 출동 · ${site.brand}`,
         description: `${full} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
           + `연락 주십시오. ${dongPick.join(' · ')} 등 ${r.dongCount}개 동네 출동.`,
         jsonLd: [{
@@ -2068,14 +2091,14 @@ if (BLOG) {
           kind: 'post',
           published: at.toISOString(),
           image: leadImage[0] || null,
-          crumbs: [{ name: '홈', href: '/' }, { name: `${blogLabel(r)}${kw.label}` }],
-          title: `${blogLabel(r)}${kw.label} ${work} ${kind.label} - ${site.brand}`,
+          crumbs: [{ name: '홈', href: '/' }, { name: `${blogLabel(r)} ${kw.label}` }],
+          title: `${blogLabel(r)} ${kw.label} ${work} ${kind.label} - ${site.brand}`,
           description: `${full} ${kw.label} ${kind.label}. `
             + `${dongPick.join(' · ')} 등 ${r.dongCount}개 동네. 원인부터 해결까지 정리했어요.`,
           jsonLd: [{
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
-            headline: `${blogLabel(r)}${kw.label} ${work} ${kind.label}`,
+            headline: `${blogLabel(r)} ${kw.label} ${work} ${kind.label}`,
             about: kw.label,
             datePublished: at.toISOString(),
             dateModified: at.toISOString(),
@@ -2093,7 +2116,7 @@ if (BLOG) {
           }] : [])],
           main: renderTemplate(templates.post, {
             ...base,
-            postH1: `${blogLabel(r)}${kw.label} ${work} ${kind.label}`,
+            postH1: `${blogLabel(r)} ${kw.label} ${work} ${kind.label}`,
             postedAt: ymd(at),
             postedAtISO: at.toISOString(),
             leadImage,
