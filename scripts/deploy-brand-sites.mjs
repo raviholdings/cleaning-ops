@@ -25,6 +25,11 @@ import { execSync } from 'node:child_process';
 import { resolve, dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepareOriginSsh } from './lib/origin-ssh.mjs';
+import { loadLocalEnv } from './lib/local-env.mjs';
+import pg from 'pg';
+
+/* DATABASE_URL 을 잡으려고 읽는다. 셸에 이미 있으면 그쪽이 이긴다. */
+loadLocalEnv();
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE_ROOT = '/srv/group-page-origin/sites';
@@ -35,6 +40,8 @@ const valueOf = (flag, fallback = '') => {
   return i >= 0 ? args[i + 1] : fallback;
 };
 const dryRun = args.includes('--dry-run');
+/* 장수를 DB 에 안 쓰고 파일만 올리고 싶을 때. */
+const skipDb = args.includes('--no-db');
 const only = valueOf('--site', '');
 const useSsm = args.includes('--ssm');
 
@@ -149,6 +156,8 @@ const origin = await prepareOriginSsh({ mode: useSsm ? 'ssm' : 'direct' });
 console.log(`\nssh: ${origin.mode} · 내 IP ${origin.myIp || '-'} · 오리진 ${origin.originIp || '-'}`);
 
 let failed = 0;
+/* 실제로 올라간 것만 DB 에 반영한다. */
+const sent = [];
 for (const p of plan) {
   /*
    * --delete 대신 지우고 새로 푼다. 슬러그가 바뀌면 옛 페이지가 남아
@@ -165,21 +174,80 @@ for (const p of plan) {
     + ` | ${origin.sshCommand} ${shellQuote(remote)}`;
 
   const t0 = Date.now();
-  let sent = false;
+  let ok = false;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       execSync(cmd, { shell: 'bash', stdio: 'inherit' });
-      sent = true;
+      ok = true;
       break;
     } catch (e) {
       console.log(`  ${p.key} 전송 실패 ${attempt}/3: ${String(e.message).split('\n')[0].slice(0, 120)}`);
       if (attempt < 3) execSync('sleep 15', { shell: 'bash' });
     }
   }
-  if (!sent) { failed += 1; continue; }
+  if (!ok) { failed += 1; continue; }
+  sent.push(p);
   console.log(`  ${p.key.padEnd(8)} ${p.host.padEnd(18)} 완료 ${((Date.now() - t0) / 1000).toFixed(0)}초`);
 }
 
 if (typeof origin.cleanup === 'function') origin.cleanup();
 console.log(failed ? `\n✗ ${failed}곳 실패` : '\n✅ 전부 올렸습니다');
+/*
+ * 장수를 DB 에 맞춘다.
+ *
+ * 관리자 화면(배포·수집요청·색인 카드)은 naver_project_domains.page_count 를 읽는데
+ * 여기서 갱신하지 않아 9-01 값이 그대로 남아 있었다 — 동 글로 286 -> 5,046 이
+ * 됐는데 화면은 286 이었다 (운영자 지적 2026-09-03).
+ * naver_index_check_target_domains 는 이 표를 읽는 뷰라 따로 손댈 게 없다.
+ *
+ * p.html 은 이번에 올린 .html 개수이고 사이트맵 URL 수와 같다 (실측 5,046 · 5,063 ·
+ * 5,046 · 3,325 · 3,632). 전송에 실패한 사이트는 sent 에 안 들어가므로 손대지 않는다.
+ */
+if (!skipDb && sent.length) {
+  const conn = process.env.DATABASE_URL || process.env.DIRECT_URL;
+  if (!conn) {
+    console.log('');
+    console.log('DATABASE_URL 이 없어 장수 갱신을 건너뜁니다 (--no-db 로 끌 수 있습니다).');
+  } else {
+    const db = new pg.Client({
+      connectionString: conn, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 20000,
+    });
+    await db.connect();
+    /* pg Client 의 statement_timeout 옵션은 서버 세션에 안 먹는다 — 접속 뒤에 건다. */
+    await db.query("set statement_timeout = '1200s'");
+    console.log('');
+    console.log('장수를 DB 에 맞춥니다');
+    let changed = 0;
+    for (const p of sent) {
+      /*
+       * deployed_at 은 장수가 그대로여도 갱신한다 — 방금 올린 게 사실이다.
+       * 무엇이 몇 장에서 몇 장이 됐는지 남기려고 먼저 읽는다 (returning 안에서
+       * 다시 읽으면 이미 갱신된 값이 나온다).
+       */
+      const prev = await db.query(
+        'select page_count from naver_project_domains where host = $1', [p.host],
+      );
+      if (!prev.rowCount) {
+        console.log(`  ${p.key.padEnd(8)} ${p.host.padEnd(18)} DB 에 없습니다 — 건너뜁니다`);
+        continue;
+      }
+      const before = Number(prev.rows[0].page_count);
+      await db.query(
+        `update naver_project_domains
+            set page_count = $2, static_page_count = $2, sitemap_url_count = $2,
+                deployed_at = now(), updated_at = now()
+          where host = $1`,
+        [p.host, p.html],
+      );
+      if (before !== p.html) {
+        changed += 1;
+        console.log(`  ${p.key.padEnd(8)} ${p.host.padEnd(18)} `
+          + `${before.toLocaleString()} -> ${p.html.toLocaleString()}장`);
+      }
+    }
+    await db.end();
+    console.log(changed ? `  ${changed}곳 갱신` : '  이미 맞습니다');
+  }
+}
+
 process.exit(failed ? 1 : 0);
