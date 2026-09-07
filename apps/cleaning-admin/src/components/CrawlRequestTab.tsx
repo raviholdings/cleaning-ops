@@ -30,6 +30,8 @@ const BRANDS: Record<string, { label: string; accent: string; bg: string }> = {
   'beaverpipe.kr': { label: '비버배관', accent: '#34d399', bg: 'rgba(16, 185, 129, 0.12)' },
   'ssac3.kr': { label: '싹쓰리배관', accent: '#f87171', bg: 'rgba(239, 68, 68, 0.12)' },
   'dosadosa.kr': { label: '하수구도사', accent: '#22d3ee', bg: 'rgba(6, 182, 212, 0.12)' },
+  // ttureo 는 운영자 개인 계정으로 직접 관리한다 — account_order 가 없어 카드가 맨 뒤에 온다.
+  'ttureo.kr': { label: '닥터뚜러뻥', accent: '#fb923c', bg: 'rgba(249, 115, 22, 0.12)' },
 };
 
 const OTHER_PROJECTS = [
