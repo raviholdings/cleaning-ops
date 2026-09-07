@@ -70,3 +70,16 @@
   </div>
   <p class="note"><a class="more" href="/area/">서비스 지역 전체 보기 ({{regionCount}}곳)</a></p>
 </div></section>
+{{#kwBlock}}
+<section id="kwmap"><div class="wrap">
+  <p class="tag">09 — 지역별 키워드</p>
+  <h3>{{heading}}</h3>
+  {{#groups}}
+  <p class="kwt">{{title}}</p>
+  <table class="kwtable"><tbody>
+    {{#rows}}<tr>{{#cells}}<td>{{text}}</td>{{/cells}}</tr>{{/rows}}
+  </tbody></table>
+  {{/groups}}
+</div></section>
+{{/kwBlock}}
+

@@ -481,19 +481,38 @@ const esc = (s) => String(s)
  * 표는 가로로 넘칠 수 있어 감싸는 상자에 스크롤을 준다. 모바일에서 표 하나가
  * 페이지 전체를 옆으로 밀어버리는 일을 막는다.
  */
-export function renderArticleHtml(art, { tocTitle = '목차' } = {}) {
+/*
+ * regionEcho — 본문에 지역명을 되풀이한다 (운영자 지시 2026-09-07).
+ *
+ * 레퍼런스(하림배관 /yeonghwa-dong-toilet/)를 실제로 세어 보니 한 장에 "영화동" 이
+ * 156회, 키워드가 345회 나온다. 우리는 같은 잣대로 13회 · 83회였다. 차이는 하단
+ * 블록이 아니라 본문에 있었다 — 저쪽은 제목 문장을 일곱 번 되풀이하고 소제목마다
+ * 동+키워드를 박는다. 그 방식을 그대로 따른다.
+ *
+ * 글이 읽기 나빠지는 건 알고 넣는 것이다. UI 보다 노출을 먼저 본다는 결정이 있었다.
+ * 켜는 사이트는 <키>.json 의 bodyRegionEcho 로 고른다 — 지금은 드림·비버뿐이다.
+ *
+ *   { line: '산수동 하수구뚫기 배수구뚫기', tag: '산수동하수구뚫기', dong: '산수동' }
+ */
+export function renderArticleHtml(art, { tocTitle = '목차', regionEcho = null } = {}) {
   const out = [];
+  const echo = regionEcho && regionEcho.line ? regionEcho : null;
   out.push(`<p class="alead">${esc(art.intro)}</p>`);
 
   out.push(`<nav class="atoc" aria-label="${esc(tocTitle)}"><p class="atoct">${esc(tocTitle)}</p><ol>`);
-  for (const t of art.toc) out.push(`<li><a href="#${t.id}">${esc(t.h)}</a></li>`);
+  /* 목차도 소제목과 같은 문장이어야 한다 — 안 맞으면 어긋나 보인다. */
+  for (const t of art.toc) {
+    out.push(`<li><a href="#${t.id}">${esc(echo ? `${t.h} ${echo.tag}` : t.h)}</a></li>`);
+  }
   out.push('</ol></nav>');
 
   out.push(`<p class="abridge">${esc(art.bridge)}</p>`);
 
-  for (const s of art.secs) {
-    out.push(`<section class="asec" id="${s.id}"><h2>${esc(s.h)}</h2>`);
-    if (s.label) out.push(`<p class="alab">${esc(s.label)}</p>`);
+  art.secs.forEach((s, si) => {
+    /* 소제목 끝에 동+키워드를 붙인다. 레퍼런스가 "…완성하는 영화동변기막힘 통수" 로 쓴다. */
+    const head = echo ? `${s.h} ${echo.tag}` : s.h;
+    out.push(`<section class="asec" id="${s.id}"><h2>${esc(head)}</h2>`);
+    if (s.label) out.push(`<p class="alab">${esc(echo ? `${echo.dong} ${s.label}` : s.label)}</p>`);
     for (const b of s.blocks) {
       if (b.isP) for (const x of b.p) out.push(`<p>${esc(x.t)}</p>`);
       if (b.isOl) {
@@ -530,8 +549,10 @@ export function renderArticleHtml(art, { tocTitle = '목차' } = {}) {
         out.push('</div>');
       }
     }
+    /* 구역 끝마다 제목 문장을 한 번 더 둔다 — 레퍼런스가 일곱 번 되풀이한다. */
+    if (echo && si % 2 === 0) out.push(`<p class="aecho">${esc(echo.line)}</p>`);
     out.push('</section>');
-  }
+  });
   return out.join('\n');
 }
 

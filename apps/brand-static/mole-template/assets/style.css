@@ -62,7 +62,7 @@ nav>a:hover{color:var(--accent);border-color:var(--line)}
   font-size:16px;font-weight:800;letter-spacing:.02em;text-decoration:none;white-space:nowrap;
   color:var(--ink);background:var(--accent);border-radius:var(--r);
   box-shadow:0 0 22px rgba(0,229,255,.45);transition:box-shadow .15s,transform .15s}
-.call:hover{box-shadow:0 0 34px rgba(0,229,255,.7);transform:translateY(-1px)}
+.call:hover{box-shadow:0 0 34px rgba(0,229,255,.7)}
 @media(max-width:900px){header .wrap{justify-content:space-between}}
 
 /* ── 히어로 ── */
@@ -88,7 +88,7 @@ nav>a:hover{color:var(--accent);border-color:var(--line)}
   padding:0 26px;font-size:16px;font-weight:800;letter-spacing:.02em;text-decoration:none;
   border-radius:var(--r);transition:box-shadow .15s,transform .15s,background .15s}
 .b1,.btn{background:var(--accent);color:var(--ink);box-shadow:0 0 22px rgba(0,229,255,.45)}
-.b1:hover,.btn:hover{box-shadow:0 0 34px rgba(0,229,255,.75);transform:translateY(-1px)}
+.b1:hover,.btn:hover{box-shadow:0 0 34px rgba(0,229,255,.75)}
 .b2{background:transparent;color:var(--paper);border:1px solid var(--line)}
 .b2:hover{border-color:var(--accent);color:var(--accent)}
 .herofig{margin-top:26px}
@@ -296,7 +296,7 @@ footer .copy{width:100%;margin-top:12px;padding-top:12px;border-top:1px solid va
 .lf-send{min-height:50px;font-size:16px;font-weight:800;letter-spacing:.03em;color:var(--ink);
   background:var(--accent);border:0;border-radius:var(--r);padding:0 34px;cursor:pointer;
   box-shadow:0 0 22px rgba(0,229,255,.45);transition:box-shadow .15s,transform .15s}
-.lf-send:hover{box-shadow:0 0 34px rgba(0,229,255,.75);transform:translateY(-1px)}
+.lf-send:hover{box-shadow:0 0 34px rgba(0,229,255,.75)}
 .lf-send:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
 .lf-status{margin-top:14px;font-size:15.5px;font-weight:600}
 .lf-status[data-kind="error"]{color:#FF6B6B}
@@ -334,7 +334,7 @@ footer .copy{width:100%;margin-top:12px;padding-top:12px;border-top:1px solid va
 }
 
 /* ── 공통 인터랙션 ── */
-.js [data-reveal]{opacity:0;transform:translateY(18px)}
+.js [data-reveal]{opacity:0}
 .js [data-reveal].in{opacity:1;transform:none;
   transition:opacity .6s cubic-bezier(.2,.7,.3,1) var(--d,0s),
              transform .6s cubic-bezier(.2,.7,.3,1) var(--d,0s)}
@@ -345,7 +345,7 @@ footer .copy{width:100%;margin-top:12px;padding-top:12px;border-top:1px solid va
   box-shadow:0 0 28px rgba(0,229,255,.55);
   animation:fab-in .5s .7s cubic-bezier(.2,1.3,.4,1) both;
   transition:box-shadow .15s,transform .15s}
-.fab:hover{box-shadow:0 0 42px rgba(0,229,255,.85);transform:translateY(-2px)}
+.fab:hover{box-shadow:0 0 42px rgba(0,229,255,.85)}
 .fab:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
 .fab svg{width:20px;height:20px;flex:none}
 @keyframes fab-in{from{opacity:0;transform:translateY(20px) scale(.92)}to{opacity:1}}
@@ -368,3 +368,84 @@ header.shrunk{box-shadow:0 0 26px rgba(0,229,255,.32)}
 .vows b{display:block;font-size:16.5px;font-weight:800;color:var(--accent);
   letter-spacing:-.02em;text-shadow:0 0 12px rgba(0,229,255,.4)}
 .vows span{display:block;margin-top:4px;font-size:13.5px;color:var(--mute);line-height:1.6}
+
+/* 하단 키워드 블록 — UI 보다 노출을 우선한 자리다 (2026-09-07 운영자 지시). */
+#kwmap .kwt{margin:16px 0 8px;font-weight:700;font-size:.9rem;opacity:.75}
+#kwmap .kwchips{display:flex;flex-wrap:wrap;gap:5px}
+#kwmap .kwchips a,#kwmap .kwchips span{display:inline-block;padding:3px 9px;border-radius:999px;
+  background:rgba(0,0,0,.04);font-size:.75rem;color:#5a6572;text-decoration:none;line-height:1.6}
+#kwmap .kwchips a:hover{background:rgba(0,0,0,.09)}
+
+/* 하단 고정 바를 키웠다 — 54px 은 작아서 눌리지 않는다 (2026-09-07 운영자 지시). */
+.dock{display:flex;z-index:70;box-shadow:0 -8px 26px rgba(0,0,0,.3)}
+.dock a{flex-direction:column;gap:2px;min-height:72px;line-height:1.25}
+.dock .d1{flex:1.6}
+.dock .d1 b{font-size:15px;font-weight:800}
+.dock .d1 span{font-size:20px;font-weight:900;letter-spacing:.4px}
+body{padding-bottom:72px}
+@media(max-width:760px){.dock a{min-height:66px}.dock .d1 span{font-size:19px}body{padding-bottom:66px}}
+
+/* 본문 중간에 되풀이하는 제목 문장 — 노출용이다 (2026-09-07 운영자 지시). */
+.aecho{margin:14px 0 0;font-size:.82rem;font-weight:700;opacity:.5}
+
+/*
+ * 요금 목록.
+ * 동 템플릿에 <s> 를 쓰는 마크업이 들어왔는데 이 사이트엔 규칙이 없어서
+ * 브라우저 기본 취소선이 그대로 나갔다 (운영자 발견 2026-09-07, 4,760장).
+ * <s> 는 취소가 아니라 '값' 자리다 — text-decoration 을 반드시 지운다.
+ */
+.price{margin-top:26px;font-size:16px}
+.price .r{display:flex;align-items:baseline;gap:10px;padding:14px 0;
+  border-bottom:1px solid var(--line-2)}
+.price .r i{flex:0 0 auto;font-style:normal;font-weight:700}
+.price .r u{flex:1 1 auto;border-bottom:1px dotted var(--line-2);
+  text-decoration:none}
+.price .r s{flex:0 0 auto;text-decoration:none;color:var(--accent);font-weight:800}
+
+/* 동 템플릿에서 넘어온 클래스. 이 사이트에는 규칙이 없어 민짜로 나갔다 (2026-09-07 점검). */
+.area{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.area a{display:inline-block;padding:6px 12px;border-radius:999px;
+  background:rgba(0,229,255,.09);border:1px solid var(--line);
+  font-size:14px;text-decoration:none;color:var(--paper)}
+.area a:hover{background:rgba(0,229,255,.18)}
+a.more{color:var(--accent);font-weight:700}
+
+/*
+ * 하단 바 강조 — 눌러야 할 곳으로 보이게 한다 (2026-09-07 운영자 지시).
+ * 빛이 한 번 훑고 지나가고, 그림자가 천천히 숨을 쉰다.
+ * 동작을 줄여 달라고 설정한 사람에게는 둘 다 멈춘다.
+ */
+.dock{overflow:hidden;animation:dock-beat 1.3s ease-in-out infinite}
+/*
+ * 두근-두근. 심장처럼 두 번 치고 쉰다 (운영자 지시 2026-09-07).
+ * 첫 박이 크고 둘째 박이 작다 — 그래야 박동으로 읽힌다.
+ */
+@keyframes dock-beat{
+  0%{box-shadow:0 -8px 26px rgba(0,0,0,.3)}
+  8%{box-shadow:0 -8px 32px rgba(0,229,255,.5)}
+  16%{box-shadow:0 -8px 26px rgba(0,0,0,.3)}
+  24%{box-shadow:0 -8px 32px rgba(0,229,255,.5)}
+  34%,100%{box-shadow:0 -8px 26px rgba(0,0,0,.3)}
+}
+.dock .d1{position:relative;overflow:hidden}
+.dock .d1::after{content:"";position:absolute;top:0;bottom:0;width:38%;
+  background:linear-gradient(100deg,transparent,rgba(0,229,255,.6),transparent);
+  transform:skewX(-18deg);animation:dock-shine 2.8s ease-in-out infinite;
+  pointer-events:none}
+@keyframes dock-shine{0%{left:-45%}55%{left:115%}100%{left:115%}}
+
+@media(prefers-reduced-motion:reduce){
+  .dock{animation:none}
+  .dock .d1::after{display:none}
+}
+
+/* 번호가 두근거린다. 바를 움직이면 화면 아래에 틈이 생기므로 글자만 뛴다. */
+.dock .d1 span{display:inline-block;animation:dock-beat-t 1.3s ease-in-out infinite}
+@keyframes dock-beat-t{
+  0%{transform:scale(1)}
+  8%{transform:scale(1.09)}
+  16%{transform:scale(1)}
+  24%{transform:scale(1.05)}
+  34%,100%{transform:scale(1)}
+}
+@media(prefers-reduced-motion:reduce){.dock .d1 span{animation:none}}

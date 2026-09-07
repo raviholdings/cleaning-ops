@@ -38,3 +38,14 @@
     <p class="aska"><a class="askc" href="tel:{{phoneRaw}}">{{phone}}</a><a class="askf" href="/form/">글로 남기기</a></p>
   </div>
 </div></section>
+
+{{#kwBlock}}
+<section id="kwmap"><div class="wrap">
+  <p class="eyebrow">지역별 키워드</p>
+  <h2>{{heading}}</h2>
+  {{#groups}}
+  <p class="kwt">{{title}}</p>
+  <ul class="kwcols">{{#rows}}{{#cells}}<li>{{text}}</li>{{/cells}}{{/rows}}</ul>
+  {{/groups}}
+</div></section>
+{{/kwBlock}}

@@ -9,7 +9,7 @@
  "siteUrl": "https://thunderdrain.kr",
  "phone": "070-7106-5226",
  "phoneRaw": "07071065226",
- "assetVersion": "thunder-v17",
+ "assetVersion": "thunder-v21",
  "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
  "_slugNote": "드림과 다른 단어 묶음을 쓴다. 같은 단어(drain, pipe…)가 두 사이트에 걸치면 URL 만 보고도 한 곳에서 만든 티가 난다.",
  "slugWords": [
@@ -786,5 +786,7 @@
    "n": 1
   }
  ],
- "regionArticle": false
+ "regionArticle": false,
+ "keywordBlock": false,
+ "_keywordBlockNote": "대조군이다 (운영자 지시 2026-09-07). 드림·비버에 하단 키워드 블록·긴 설명·본문 반복을 넣고, 썬더는 안 넣은 채로 둬서 노출 차이가 콘텐츠 때문인지 도메인 파워 때문인지 가른다. 동 페이지 4,760장으로 셋의 조건이 같다. CSS 버그 수정과 하단 고정 바는 색인과 무관하므로 썬더에도 그대로 들어간다."
 }

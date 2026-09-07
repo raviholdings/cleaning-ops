@@ -37,7 +37,7 @@
 <body>
 
 <div class="marquee"><div class="wrap">
-  {{#strip}}<span>{{text}}</span>{{/strip}}{{#strip}}<span>{{text}}</span>{{/strip}}
+  {{#strip}}<span>{{text}}</span>{{/strip}}
 </div></div>
 
 <header><div class="wrap">
@@ -68,6 +68,11 @@
   <span class="fpv"><a href="/privacy/">개인정보 수집 및 이용 동의</a></span>
   <span class="copy">&copy; {{year}} {{brand}}. All rights reserved.</span>
 </div></footer>
+
+<div class="dock">
+  <a class="d1" href="tel:{{phoneRaw}}"><b>바로 전화</b><span>{{phone}}</span></a>
+  <a class="d2" href="/#estimate">상담 신청</a>
+</div>
 
 <script src="/assets/{{assetVersion}}/app.js" defer></script>
 </body>

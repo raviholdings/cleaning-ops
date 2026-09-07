@@ -290,6 +290,134 @@ const otherSlugs = (() => {
 const casesIndexSlug = slugs.get('c:index');
 
 /*
+ * 하단 키워드 블록 (2026-09-07, 운영자 지시).
+ *
+ * 레퍼런스(하림배관 cloggedpipe.co.kr)가 글 아래에 "동+키워드" 를 수십 개
+ * 깔아 둔다. 우리 페이지는 같은 잣대로 재면 키워드가 그쪽의 1/10 이었다
+ * (레퍼런스 492회 · 우리 30~48회). UI 가 무너져도 노출을 우선하기로 했다.
+ *
+ * 두 가지 모양을 만든다.
+ *   시군구  그 구의 동 전부 × 키워드 몇 개      (레퍼런스 강남구 표)
+ *   동      그 동 × 키워드, 그리고 같은 구 다른 동  (레퍼런스 인사동 목록)
+ *
+ * 동 페이지가 있는 조합만 링크한다. 없는 곳까지 걸면 404 가 생긴다.
+ */
+/*
+ * 동 이름과 키워드를 붙인다. "산수동하수구뚫기" 처럼 띄우지 않는다 — 레퍼런스가 그렇다.
+ *
+ * 링크는 걸지 않는다 (운영자 지시 2026-09-07). 한 페이지에서 수십 개씩,
+ * 22,112장에 걸쳐 같은 모양의 내부 링크가 쏟아지면 사람이 만든 길이 아니라
+ * 기계가 깐 백링크로 보인다. 텍스트만 둔다.
+ */
+const kwItem = (regionCode, name, kw, suffix = '') => ({ text: `${name}${kw}${suffix}` });
+
+/** 배열을 n 개씩 끊어 표의 행으로 만든다. */
+const toRows = (items, cols) => {
+  const rows = [];
+  for (let i = 0; i < items.length; i += cols) {
+    rows.push({ cells: items.slice(i, i + cols) });
+  }
+  return rows;
+};
+
+const KW_COLS = 7;
+/* 레퍼런스가 105칸이다. 동이 많은 구는 동당 키워드를 줄여 이 근처로 맞춘다. */
+const KW_TARGET = 105;
+
+/** 시군구 페이지용 — 그 구의 동 전부를 반드시 한 번씩 싣는다. */
+function regionKeywordBlock(r, seed) {
+  const kws = site.regionKeywords;
+  const names = r.repDong.filter((n) => n && n.trim());
+  if (!names.length) return null;
+  const per = Math.max(1, Math.min(kws.length - 1, Math.floor(KW_TARGET / names.length)));
+  const items = [];
+  names.forEach((name, i) => {
+    /* 동마다 시작 키워드를 옮겨 같은 열에 같은 키워드가 서지 않게 한다. */
+    const start = (hash(`${siteKey}|kwb|${r.code}|${name}`) + i) % kws.length;
+    for (let j = 0; j < per; j += 1) items.push(kwItem(r.code, name, kws[(start + j) % kws.length]));
+  });
+  return {
+    heading: `${r.sigunguLabel} 동네별 ${kws[seed % kws.length]} 안내`,
+    groups: [{ title: `${r.sidoLabel} ${r.sigunguLabel} 전체 동네`, rows: toRows(items, KW_COLS) }],
+  };
+}
+
+/*
+ * 긴 설명 (2026-09-07, 운영자 지시).
+ *
+ * 레퍼런스(하림배관)의 시군구 설명이 142자이고 동을 11개 싣는다. 우리는 80자에
+ * 동이 3개뿐이었다. 80자 제한은 홈(사이트 대표설명)에만 남기고, 지역·동
+ * 페이지는 동을 전부 싣는다 — 검색결과엔 앞부분만 보이지만 색인에는 다 들어간다.
+ */
+const longDescription = Boolean(site.keywordBlock);
+
+/*
+ * 설명 끝에 붙일 동 목록. 전부 넣는다 — 검색결과엔 앞부분만 보이지만 색인에는
+ * 다 들어간다 (운영자 지시 2026-09-07).
+ */
+const dongList = (r) => (longDescription
+  ? r.repDong.filter((n) => n && n.trim()).join(',')
+  : `${r.repDong.slice(0, 3).join(' · ')} 등 ${r.repDong.length}개 동네`);
+
+/** 설명에 끼울 짧은 조각. 사이트 문안이 없으면 조용히 건너뛴다. */
+const descBit = (name, seed2) => {
+  const arr = pools[name];
+  if (!Array.isArray(arr) || !arr.length) return '';
+  return String(arr[seed2 % arr.length]);
+};
+
+function regionLongDescription(r, seed, titleKws) {
+  const bits = [
+    `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]} ${titleKws[2]}`,
+    descBit('descSituations', seed + 3),
+    descBit('descQuestions', seed + 5),
+    descBit('descEquip', seed + 7),
+    r.repDong.filter((n) => n && n.trim()).join(','),
+  ];
+  return bits.filter(Boolean).join(' ');
+}
+
+function dongLongDescription(r, dong, seed, kwList) {
+  const others = r.repDong.filter((n) => n && n.trim() && n !== dong);
+  const bits = [
+    `${dong}${kwList[0]} ${kwList[1]} ${kwList[2]}`,
+    descBit('descSituations', seed + 13),
+    descBit('descQuestions', seed + 17),
+    descBit('descEquip', seed + 19),
+    `${r.sidoLabel} ${r.sigunguLabel}`,
+    others.join(','),
+  ];
+  return bits.filter(Boolean).join(' ');
+}
+
+/** 동 페이지용 — 그 동을 여러 각도로, 그리고 같은 구의 다른 동으로 잇는다. */
+function dongKeywordBlock(r, dong, seed) {
+  const kws = site.regionKeywords;
+  const mine = kws.map((k) => kwItem(r.code, dong, k));
+  const cost = [];
+  for (const k of kws) {
+    cost.push(kwItem(r.code, dong, k, '업체'));
+    cost.push(kwItem(r.code, dong, k, '비용'));
+  }
+  const others = r.repDong.filter((n) => n && n.trim() && n !== dong);
+  const near = [];
+  const start = seed % Math.max(1, others.length);
+  for (let i = 0; i < Math.min(24, others.length * 2); i += 1) {
+    const name = others[(start + i) % others.length];
+    const kw = kws[(start + i) % kws.length];
+    const item = kwItem(r.code, name, kw);
+    if (!near.some((x) => x.text === item.text)) near.push(item);
+  }
+  const groups = [
+    { title: `${dong} 주요 막힘`, rows: toRows(mine, KW_COLS) },
+    { title: `${dong} 업체·비용`, rows: toRows(cost, KW_COLS) },
+  ];
+  if (near.length) groups.push({ title: `${r.sigunguLabel} 다른 동네`, rows: toRows(near, KW_COLS) });
+  return { heading: `${dong} 막힘 키워드 안내`, groups };
+}
+
+
+/*
  * 3단계에서는 URL 이 의미를 갖는다 (/seoul/gangnamgu/toilet-clog).
  * 평면 사이트의 난수 슬러그와 정반대다. 시군구 이름이 여러 시도에 겹치면
  * (중구·동구·고성군) 상위 지역을 앞에 붙여 가른다.
@@ -851,7 +979,7 @@ function priceRows(vars) {
  */
 function longArticle({
   kwLabel, sido, sigungu, dongs, neighbors = [], seed, shortLabel, vars, sitePools,
-  varOverrides,
+  varOverrides, regionEcho,
 }) {
   const v = makeVars({
     dict: blogDict, site, kwLabel, sido, sigungu, dongs, neighbors, seed, shortLabel,
@@ -868,7 +996,7 @@ function longArticle({
     extras: { price: priceRows(vars) },
   });
   return {
-    html: renderArticleHtml(art),
+    html: renderArticleHtml(art, { regionEcho: site.bodyRegionEcho ? regionEcho : null }),
     faq: faqEntities(art),
     hashtags: art.hashtags,
     chars: charCount(art),
@@ -1009,7 +1137,12 @@ function page({
       throw new Error(`홈 설명에 키워드가 빠졌습니다: ${missing.join(' · ')}\n`
         + `  data/brands/${siteKey}.json 의 homeDescription 을 고치세요.\n  ${description}`);
     }
-  } else if (description && description.length > DESC_LIMIT) {
+  } else if (!longDescription && description && description.length > DESC_LIMIT) {
+    /*
+     * 긴 설명을 켠 사이트(드림·비버)는 자르지 않는다 — 동을 전부 싣는 게 목적이라
+     * 80자에 맞추면 그 목적이 없어진다. 홈은 위에서 따로 막으므로 영향이 없다
+     * (운영자 지시 2026-09-07).
+     */
     clampedDescriptions.push(path);
     description = clampDescription(description);
   }
@@ -1361,6 +1494,11 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     neighbors: others.map((x) => x.sigunguLabel),
     seed,
     vars,
+    regionEcho: {
+      line: `${r.sidoLabel} ${r.sigunguLabel} ${kws[seed % kws.length]} 현장`,
+      tag: `${r.sigunguLabel}${kws[seed % kws.length]}`,
+      dong: r.sigunguLabel,
+    },
     sitePools: {
       원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
       // keywordBlurbs 는 {kw, body} 다. body 가 이미 "{구}에서 …" 로 시작하므로 그대로 쓴다.
@@ -1382,8 +1520,10 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     published: postedAt(seed).toISOString(),
     crumbs: [{ name: '홈', href: '/' }, { name: `${r.sidoLabel} ${r.sigunguLabel}` }],
     title: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]} ${titleKws[2]} - ${site.brand}`,
-    description: `${full} 하수구·변기 막힘 24시간 출동. `
-      + `${dongPick.join(' · ')} 등 ${r.repDong.length}개 동네. 현장 확인 후 견적.`,
+    description: longDescription
+      ? regionLongDescription(r, seed, titleKws)
+      : `${full} 하수구·변기 막힘 24시간 출동. `
+        + `${dongPick.join(' · ')} 등 ${r.repDong.length}개 동네. 현장 확인 후 견적.`,
     jsonLd: {
       ...orgLd,
       areaServed: { '@type': 'AdministrativeArea', name: full },
@@ -1396,6 +1536,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
       ...base,
       sidoLabel: r.sidoLabel,
       sigunguLabel: r.sigunguLabel,
+      kwBlock: site.keywordBlock ? regionKeywordBlock(r, seed) : null,
       /*
        * H1 은 "지역 + 키워드 나열" 이다. 레퍼런스(하림배관)가 H1 을 그렇게 쓴다.
        * 브랜드 문구를 H1 에 넣으면 검색엔진이 보는 가장 강한 자리에 키워드가 없어진다.
@@ -1539,6 +1680,7 @@ for (const d of dongPages) {
     seed,
     vars,
     varOverrides: { 구: guDong, 지역: `${full} ${dong}` },
+    regionEcho: { line: `${dong} ${kw} ${r.sigunguLabel} 현장`, tag: `${dong}${kw}`, dong },
     sitePools: {
       원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
       유형: pools.keywordBlurbs.map((x) => x.body),
@@ -1587,7 +1729,9 @@ for (const d of dongPages) {
      */
     title: `${dong} ${kwList.join(' ')}`,
     /* 설명에 동 이름을 반드시 넣는다 (운영자 지시 2026-09-03). */
-    description: `${full} ${dong} ${kw}. ${site.brand} 현장 확인 후 견적.`,
+    description: longDescription
+      ? dongLongDescription(r, dong, seed, kwList)
+      : `${full} ${dong} ${kw}. ${site.brand} 현장 확인 후 견적.`,
     jsonLd: [{
       ...orgLd,
       '@type': 'Service',
@@ -1605,6 +1749,7 @@ for (const d of dongPages) {
       sigunguLabel: r.sigunguLabel,
       dongLabel: dong,
       kwLabel: kw,
+      kwBlock: site.keywordBlock ? dongKeywordBlock(r, dong, seed) : null,
       dongH1: `${dong} ${kwList.join(' ')}`,
       dongLede: one2('heroLedes', 3),
       postedAt: ymd(at),
@@ -1949,8 +2094,8 @@ if (TIERED) {
       kind: 'sigungu',
       crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel }],
       title: `${r.sigunguLabel} 하수구막힘 ${r.sigunguLabel} 변기막힘 싱크대막힘 — ${site.brand}`,
-      description: `${full} 배관 막힘 출동. ${dongPick.join(' · ')} 등 ${r.dongCount}개 동네. `
-        + `${keywords.length}가지 증상별 안내.`,
+      description: `${full} 배관 막힘 출동. ${keywords.length}가지 증상별 안내. `
+        + dongList(r),
       jsonLd: {
         ...orgLd,
         areaServed: { '@type': 'AdministrativeArea', name: full },
@@ -1958,6 +2103,7 @@ if (TIERED) {
       },
       main: renderTemplate(templates.sigunguHub, {
         ...base,
+        kwBlock: site.keywordBlock ? regionKeywordBlock(r, seed) : null,
         sidoLabel: r.sidoLabel,
         sidoHref: `/${r.sidoSlug}/`,
         sigunguLabel: r.sigunguLabel,
@@ -2057,7 +2203,7 @@ if (TIERED) {
         crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel, href: regionHref(r) }, { name: k.label }],
         title: `${r.sigunguLabel}${k.label} — ${full} ${k.label} 출동 · ${site.brand}`,
         description: `${full} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
-          + `연락 주십시오. ${dongPick.join(' · ')} 등 ${r.dongCount}개 동네 출동.`,
+          + `연락 주십시오. ${dongList(r)}`,
         jsonLd: [{
           ...orgLd,
           '@type': 'Service',
@@ -2072,6 +2218,7 @@ if (TIERED) {
         }] : [])],
         main: renderTemplate(templates.detail, {
           ...base,
+          kwBlock: site.keywordBlock ? regionKeywordBlock(r, seed) : null,
           /*
            * 본문. 레퍼런스(뚜러썬설비 공주 신관동 글)처럼 질문형 소제목 · 목차 ·
            * 값 표 · 체크리스트 · 강조상자 · 문답을 갖춘 4,000자대 글이다.
@@ -2357,8 +2504,8 @@ if (BLOG) {
           image: leadImage[0] || null,
           crumbs: [{ name: '홈', href: '/' }, { name: `${blogLabel(r)} ${kw.label}` }],
           title: `${blogLabel(r)} ${kw.label} ${work} ${kind.label} - ${site.brand}`,
-          description: `${full} ${kw.label} ${kind.label}. `
-            + `${dongPick.join(' · ')} 등 ${r.dongCount}개 동네. 원인부터 해결까지 정리했어요.`,
+          description: `${full} ${kw.label} ${kind.label}. 원인부터 해결까지 정리했어요. `
+            + dongList(r),
           jsonLd: [{
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
@@ -2380,6 +2527,7 @@ if (BLOG) {
           }] : [])],
           main: renderTemplate(templates.post, {
             ...base,
+            kwBlock: site.keywordBlock ? regionKeywordBlock(r, seed) : null,
             postH1: `${blogLabel(r)} ${kw.label} ${work} ${kind.label}`,
             postedAt: ymd(at),
             postedAtISO: at.toISOString(),

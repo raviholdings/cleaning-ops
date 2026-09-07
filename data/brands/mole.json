@@ -9,7 +9,7 @@
  "siteUrl": "https://beaverpipe.kr",
  "phone": "070-7106-5227",
  "phoneRaw": "07071065227",
- "assetVersion": "mole-v20",
+ "assetVersion": "mole-v24",
  "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
  "slugWords": [
   "mole",
@@ -875,5 +875,7 @@
    "n": 1
   }
  ],
- "regionArticle": false
+ "regionArticle": false,
+ "keywordBlock": true,
+ "bodyRegionEcho": true
 }

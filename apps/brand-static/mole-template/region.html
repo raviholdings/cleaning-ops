@@ -130,3 +130,16 @@
   <div class="pills">{{#near}}<a href="{{href}}">{{label}}</a>{{/near}}</div>
   <p class="note"><a href="/area/">전체 {{regionCount}}곳 보기</a></p>
 </div></section>
+{{#kwBlock}}
+<section id="kwmap"><div class="wrap">
+  <span class="tag">지역별 키워드</span>
+  <h2>{{heading}}</h2>
+  {{#groups}}
+  <p class="kwt">{{title}}</p>
+  <div class="kwchips">
+    {{#rows}}{{#cells}}<span>{{text}}</span>{{/cells}}{{/rows}}
+  </div>
+  {{/groups}}
+</div></section>
+{{/kwBlock}}
+

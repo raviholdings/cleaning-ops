@@ -41,4 +41,16 @@
   <div class="names">{{#near}}<a href="{{href}}">{{label}}</a>{{/near}}</div>
 </div></section>
 
+{{#kwBlock}}
+<section id="kwmap"><div class="wrap">
+  <h2>{{heading}}</h2>
+  <dl class="kwdl">
+    {{#groups}}
+    <dt>{{title}}</dt>
+    <dd>{{#rows}}{{#cells}}{{text}} · {{/cells}}{{/rows}}</dd>
+    {{/groups}}
+  </dl>
+</div></section>
+{{/kwBlock}}
+
 {{{estimateForm}}}

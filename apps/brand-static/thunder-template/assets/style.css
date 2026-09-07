@@ -314,7 +314,7 @@ section.alt .lead-form{background:var(--bg)}
 
 /* ── 공통 인터랙션 (apex 와 같은 방식) ──
    .js 는 스크립트가 돌았다는 표시다. 자바스크립트가 없으면 아무것도 숨기지 않는다. */
-.js [data-reveal]{opacity:0;transform:translateY(18px)}
+.js [data-reveal]{opacity:0}
 .js [data-reveal].in{opacity:1;transform:none;
   transition:opacity .6s cubic-bezier(.2,.7,.3,1) var(--d,0s),
              transform .6s cubic-bezier(.2,.7,.3,1) var(--d,0s)}
@@ -420,3 +420,89 @@ footer .fpv a{text-decoration:underline;text-underline-offset:3px}
   .navchk:checked ~ nav > a,
   .navchk:checked ~ nav > .navgrp > summary{padding:11px 4px;text-align:left;width:100%}
 }
+
+/* 하단 키워드 블록 — UI 보다 노출을 우선한 자리다 (2026-09-07 운영자 지시). */
+#kwmap .kwt{margin:14px 0 4px;font-weight:700;font-size:.85rem;opacity:.7}
+#kwmap .kwline{font-size:.75rem;line-height:1.9;color:#8a94a6;word-break:keep-all}
+
+/* 하단 고정 바를 키우고 데스크톱에서도 띄운다 (2026-09-07 운영자 지시). */
+.dock{display:grid;grid-template-columns:1.6fr 1fr;position:fixed;left:0;right:0;bottom:0;
+  z-index:70;border-top:3px solid var(--line);box-shadow:0 -8px 26px rgba(0,0,0,.28)}
+.dock a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  min-height:72px;text-decoration:none;font-family:var(--disp);font-weight:900;line-height:1.2}
+.dock .d1{background:var(--blue);color:#fff}
+.dock .d1 b{font-size:15px}
+.dock .d1 span{font-size:21px;letter-spacing:.4px}
+.dock .d2{background:var(--bolt);color:var(--ink);font-size:18px}
+body{padding-bottom:72px}
+@media(max-width:760px){.dock a{min-height:66px}.dock .d1 span{font-size:19px}body{padding-bottom:66px}}
+
+/*
+ * 요금 목록.
+ * 동 템플릿에 <s> 를 쓰는 마크업이 들어왔는데 이 사이트엔 규칙이 없어서
+ * 브라우저 기본 취소선이 그대로 나갔다 (운영자 발견 2026-09-07, 4,760장).
+ * <s> 는 취소가 아니라 '값' 자리다 — text-decoration 을 반드시 지운다.
+ */
+.price{margin-top:26px;font-family:var(--disp);font-size:17px}
+.price .r{display:flex;align-items:baseline;gap:10px;padding:14px 0;
+  border-bottom:2px solid var(--line-soft)}
+.price .r i{flex:0 0 auto;font-style:normal;font-weight:800}
+.price .r u{flex:1 1 auto;border-bottom:2px dotted var(--line-soft);
+  text-decoration:none}
+.price .r s{flex:0 0 auto;text-decoration:none;color:var(--blue);font-weight:900}
+
+/*
+ * 동 템플릿에서 넘어온 클래스들. 이 사이트에는 규칙이 없어 민짜로 나갔다
+ * (2026-09-07 점검). 요금표 취소선과 같은 원인이다.
+ */
+#read .tag,#price .tag,#siblings .tag,#near .tag,#kwmap .tag{
+  display:inline-block;font-family:var(--disp);font-weight:900;font-size:12px;
+  letter-spacing:.14em;color:var(--blue);margin-bottom:8px}
+.note{margin-top:16px;color:var(--ink-2);font-size:16px;max-width:60ch}
+.area{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.area a{display:inline-block;padding:7px 13px;border:2px solid var(--line-soft);
+  font-weight:800;font-size:14px;text-decoration:none;color:var(--ink)}
+.area a:hover{border-color:var(--blue);color:var(--blue)}
+a.more{font-weight:800;color:var(--blue)}
+.phead{margin-bottom:14px}
+.phead .s{color:var(--ink-2);font-size:15px}
+
+/*
+ * 하단 바 강조 — 눌러야 할 곳으로 보이게 한다 (2026-09-07 운영자 지시).
+ * 빛이 한 번 훑고 지나가고, 그림자가 천천히 숨을 쉰다.
+ * 동작을 줄여 달라고 설정한 사람에게는 둘 다 멈춘다.
+ */
+.dock{overflow:hidden;animation:dock-beat 1.2s ease-in-out infinite}
+/*
+ * 두근-두근. 심장처럼 두 번 치고 쉰다 (운영자 지시 2026-09-07).
+ * 첫 박이 크고 둘째 박이 작다 — 그래야 박동으로 읽힌다.
+ */
+@keyframes dock-beat{
+  0%{box-shadow:0 -8px 26px rgba(0,0,0,.28)}
+  8%{box-shadow:0 -8px 32px rgba(255,210,0,.55)}
+  16%{box-shadow:0 -8px 26px rgba(0,0,0,.28)}
+  24%{box-shadow:0 -8px 32px rgba(255,210,0,.55)}
+  34%,100%{box-shadow:0 -8px 26px rgba(0,0,0,.28)}
+}
+.dock .d1{position:relative;overflow:hidden}
+.dock .d1::after{content:"";position:absolute;top:0;bottom:0;width:38%;
+  background:linear-gradient(100deg,transparent,rgba(255,210,0,.65),transparent);
+  transform:skewX(-18deg);animation:dock-shine 2.4s ease-in-out infinite;
+  pointer-events:none}
+@keyframes dock-shine{0%{left:-45%}55%{left:115%}100%{left:115%}}
+
+@media(prefers-reduced-motion:reduce){
+  .dock{animation:none}
+  .dock .d1::after{display:none}
+}
+
+/* 번호가 두근거린다. 바를 움직이면 화면 아래에 틈이 생기므로 글자만 뛴다. */
+.dock .d1 span{display:inline-block;animation:dock-beat-t 1.2s ease-in-out infinite}
+@keyframes dock-beat-t{
+  0%{transform:scale(1)}
+  8%{transform:scale(1.09)}
+  16%{transform:scale(1)}
+  24%{transform:scale(1.05)}
+  34%,100%{transform:scale(1)}
+}
+@media(prefers-reduced-motion:reduce){.dock .d1 span{animation:none}}
