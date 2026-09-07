@@ -88,6 +88,17 @@ const keywordData = TIERED
   ? JSON.parse(readFileSync(resolve(projectRoot, `data/brands/${siteKey}-keywords.json`), 'utf8'))
   : null;
 const keywords = keywordData ? keywordData.keywords : [];
+/*
+ * 다른 페이지의 제목·목록에 내보내지 않을 키워드.
+ *
+ * 도사의 "집수정청소" 가 여기 해당한다 (운영자 지시 2026-09-07). 이 낱말은
+ * /busan/busan-bukgu/sump/ 처럼 URL 한 층을 만들고 있어서, 목록에서 지우면
+ * 배포된 주소가 통째로 사라진다. 그래서 주소와 그 페이지는 그대로 두고
+ * 다른 페이지에 노출되는 자리에서만 뺀다.
+ */
+const hiddenKws = new Set(site.hiddenKeywords || []);
+const shownKws = keywords.filter((k) => !hiddenKws.has(k.label));
+const shownKwLabels = shownKws.map((k) => k.label);
 
 const host = valueOf('--host', site.host);
 const siteUrl = `https://${host}`.replace(/\/+$/, '');
@@ -694,7 +705,7 @@ function navFor(kind) {
    */
   if (TIERED) {
     const byGroup = new Map();
-    for (const k of keywords) {
+    for (const k of shownKws) {
       if (!byGroup.has(k.group)) byGroup.set(k.group, []);
       byGroup.get(k.group).push(k);
     }
@@ -848,7 +859,7 @@ if (BLOG) {
 
 /** 어느 페이지에서든 5종 서비스로 갈 수 있게 한다. 내부 링크의 뼈대다. */
 const serviceLinks = TIERED
-  ? keywords.map((k) => ({ href: `/services/${k.slug}/`, label: k.label }))
+  ? shownKws.map((k) => ({ href: `/services/${k.slug}/`, label: k.label }))
   : services.map((s2) => ({ href: `/${s2.slug}/`, label: s2.name }));
 
 /*
@@ -2058,11 +2069,11 @@ if (TIERED) {
         spots: sg.items.map((r) => ({
           href: regionHref(r),
           label: r.sigunguLabel,
-          items: keywords.slice(0, 6).map((k) => ({
+          items: shownKws.slice(0, 6).map((k) => ({
             href: detailHref(r, k), label: `${r.sigunguLabel} ${k.label}`,
           })),
         })),
-        kwLinks: keywords.map((k) => ({ href: `/services/${k.slug}/`, label: k.label })),
+        kwLinks: shownKws.map((k) => ({ href: `/services/${k.slug}/`, label: k.label })),
       }),
     }));
   }
@@ -2089,11 +2100,18 @@ if (TIERED) {
       near.push({ href: regionHref(n), label: n.sigunguLabel });
     }
 
+    /*
+     * 제목에 지역을 한 번만 쓴다. 남는 자리에는 키워드를 하나 더 싣는다.
+     * 시군구마다 다른 넷이 뽑히도록 시드로 돌린다 — 256장이 같은 제목이 되면
+     * 지역명만 다른 복제 페이지로 보인다.
+     */
+    const hubKws = pickRotated(shownKwLabels, 4, seed + 29);
+
     urls.push(page({
       path: regionHref(r),
       kind: 'sigungu',
       crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel }],
-      title: `${r.sigunguLabel} 하수구막힘 ${r.sigunguLabel} 변기막힘 싱크대막힘 — ${site.brand}`,
+      title: `${r.sigunguLabel} ${hubKws.join(' ')} — ${site.brand}`,
       description: `${full} 배관 막힘 출동. ${keywords.length}가지 증상별 안내. `
         + dongList(r),
       jsonLd: {
@@ -2114,7 +2132,7 @@ if (TIERED) {
          * 여기서 길게 쓰면 13장의 상세와 같은 말을 하게 된다.
          */
         kwHeading: `${r.sigunguLabel}에서 무엇 때문에 부르시나요`,
-        kws: keywords.map((k) => ({
+        kws: shownKws.map((k) => ({
           href: detailHref(r, k),
           label: `${r.sigunguLabel} ${k.label}`,
           what: kwByGroup[k.group].what,
@@ -2170,7 +2188,7 @@ if (TIERED) {
         near.push({ href: detailHref(n, k), label: `${n.sigunguLabel} ${k.label}` });
       }
       // 같은 지역의 다른 키워드로 건너가는 줄. 안쪽 링크의 뼈대다.
-      const siblings = keywords.filter((x) => x.slug !== k.slug)
+      const siblings = shownKws.filter((x) => x.slug !== k.slug)
         .map((x) => ({ href: detailHref(r, x), label: `${r.sigunguLabel} ${x.label}` }));
 
       const neighbors = others.map((x) => x.sigunguLabel);
@@ -2196,12 +2214,23 @@ if (TIERED) {
         },
       });
 
+      /*
+       * 뒤쪽은 이 페이지의 키워드를 되풀이하지 않고 다른 둘을 싣는다.
+       * 앞의 "북구세면대뚫기" 가 이미 주제를 말하고 있어, 같은 낱말을 또 쓰면
+       * 자리만 먹고 잡히는 검색어는 안 늘어난다.
+       */
+      const detailKws = pickRotated(
+        shownKwLabels.filter((x) => x !== k.label), 2, seed + 37,
+      );
+
       urls.push(page({
         path: detailHref(r, k),
         kind: 'detail',
         published: postedAt(seed).toISOString(),
         crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel, href: regionHref(r) }, { name: k.label }],
-        title: `${r.sigunguLabel}${k.label} — ${full} ${k.label} 출동 · ${site.brand}`,
+        title: `${r.sigunguLabel}${k.label} — `
+          + `${r.sidoLabel === r.sigunguLabel ? '' : `${r.sidoLabel} `}`
+          + `${detailKws.join(' ')} · ${site.brand}`,
         description: `${full} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
           + `연락 주십시오. ${dongList(r)}`,
         jsonLd: [{
