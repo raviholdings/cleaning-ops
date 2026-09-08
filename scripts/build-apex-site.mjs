@@ -42,6 +42,12 @@ const indexNowKeys = (() => {
   const p = resolve(projectRoot, 'data/apex/indexnow-keys.json');
   return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).keys : {};
 })();
+// 네이버 소유확인 토큰 (루트마다 다름). --token 은 대상 전체에 같은 값을 넣으므로
+// 여러 루트를 한 번에 구울 때는 이 파일을 쓴다. 없으면 메타 태그가 안 나간다.
+const naverTokens = (() => {
+  const p = resolve(projectRoot, 'data/apex/naver-tokens.json');
+  return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).tokens : {};
+})();
 const templateDir = resolve(projectRoot, 'apps/apex-static/apex-template');
 const pageTemplate = parseTemplate(readFileSync(join(templateDir, 'page.html'), 'utf8'), 'apex-template/page.html');
 const partials = Object.fromEntries(readdirSync(join(templateDir, 'partials'))
@@ -98,7 +104,8 @@ function buildRoot(root, overrides = {}) {
 
   const variant = Number(overrides.variant ?? conf.variant);
   const brand = overrides.brand || conf.brand;
-  const token = overrides.token || '';
+  // --token 이 있으면 그것을, 없으면 루트별 파일을 쓴다.
+  const token = overrides.token || naverTokens[root] || '';
   const outDir = resolve(projectRoot, overrides.out || join(outBase, root));
   const rng = seeded(variant);
 
@@ -211,9 +218,23 @@ function buildRoot(root, overrides = {}) {
     area: (lbl) => [`${lbl} | ${brand}`, `${brand} 서비스 지역 안내.`],
     faq: (lbl) => [`${lbl} | ${brand}`, `${brand} 에 자주 묻는 질문과 답변.`],
   };
-  const TITLES = { 'index.html': brand, 'form/index.html': `무료 견적 신청 | ${brand}` };
+  /*
+   * 제목·설명은 업종 라벨이 아니라 사람이 실제로 치는 검색어를 쓴다
+   * (운영자 지시 2026-09-08). "하수관·정화조 전문" 으로는 아무도 안 찾는다.
+   * 키워드는 apex-content.json 의 specialties[*].keywords 에 있고,
+   * data/keywords/ 의 실제 풀에서 골라 넣은 것이다.
+   * topbar 의 약속("30분 내 도착" 같은 것)은 설명에 넣지 않는다.
+   * keywords 가 없는 업종은 예전 방식(tagline + intro)으로 떨어진다.
+   */
+  const kw = Array.isArray(v.keywords) ? v.keywords : [];
+  const TITLES = {
+    'index.html': kw.length ? `${brand} | ${kw.slice(0, 3).join('·')}` : brand,
+    'form/index.html': `무료 견적 신청 | ${brand}`,
+  };
   const DESCS = {
-    'index.html': `${v.tagline}. ${areaMode === 'national' ? '전국 출동. ' : ''}${v.intro}`.slice(0, 155),
+    'index.html': (kw.length
+      ? `${kw.join(', ')} 전문. ${v.intro}`
+      : `${v.tagline}. ${areaMode === 'national' ? '전국 출동. ' : ''}${v.intro}`).slice(0, 155),
     'form/index.html': `${brand} 무료 견적 신청. ${cta.note}`.slice(0, 155),
   };
   if (hubMode) {

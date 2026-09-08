@@ -18,9 +18,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="{{fontHref}}" />
 <link rel="stylesheet" href="{{cssHref}}" />
-<!-- 마지막 값 뒤에 세미콜론을 반드시 둘 것. 변수 닫는 괄호 바로 뒤에 CSS 닫는
-     괄호를 붙이면 템플릿 엔진이 셋을 한 태그로 먹어 CSS 블록이 안 닫힌다.
-     (주석 안에도 변수 표기를 쓰지 말 것 — 엔진이 그대로 읽는다) -->
 <style>:root{--ink:{{palette.ink}};--paper:{{palette.paper}};--accent:{{palette.accent}};--haze:{{palette.haze}};--mute:{{palette.mute}};--line:{{palette.line}};}</style>
 <script>document.documentElement.className+=" js";</script>
 <script type="application/ld+json">{{{jsonLd}}}</script>
