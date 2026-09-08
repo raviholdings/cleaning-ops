@@ -93,25 +93,88 @@ function pickRotated(list, count, seed) {
   return out;
 }
 
-/* 사이트별 검색어를 만든다. 페이지가 실제로 노리는 말이어야 의미가 있다. */
+/*
+ * 검색어는 **실제로 배포된 페이지의 제목에서** 뽑는다.
+ *
+ * 처음에는 지역과 키워드를 무작위로 조합했는데, 그러면 없는 페이지를 물어보게 된다.
+ * 표본 12개를 맞춰 보니 6개가 "그런 페이지 없음" 이었다 — 도사·싹쓰리에는 동
+ * 페이지가 아예 없는데 동 단위로 물었고, 있는 경우도 그 페이지의 주 키워드가
+ * 아니라 제목 뒤쪽에 곁들여진 낱말을 물었다 (2026-09-08).
+ *
+ *   "서삼면 하수구막힘"  도사엔 그런 페이지가 없다
+ *   "청도군 싱크대막힘"  제목은 "청도군관로탐지 — 경북 변기뚫는법 싱크대막힘"
+ *                        이 페이지가 노리는 말은 관로탐지다
+ *
+ * 그래서 제목 맨 앞의 '지역 + 첫 키워드' 를 그대로 쓴다. 운영자가 실제로 1위를
+ * 확인한 검색어들("남학동 개수대막힘", "소공동 배관청소 배관막힘")이 그 형태다.
+ */
 const regions = JSON.parse(readFileSync(join(projectRoot, 'data/hub/regions.json'), 'utf8'));
-const allSgg = [];
-for (const sd of regions.sido) for (const s of sd.sigungu) allSgg.push(s);
+const regionNames = [];
+for (const sd of regions.sido) {
+  for (const s of sd.sigungu) {
+    regionNames.push(s.shortName || s.name);
+    for (const d of (s.repDong || [])) if (d && d.trim()) regionNames.push(d.trim());
+  }
+}
+/* 긴 이름부터 맞춰야 "중구" 가 "서중구동" 을 가로채지 않는다 */
+regionNames.sort((a, b) => b.length - a.length);
+
+/** 배포본에서 (제목, 경로)를 모은다. 없으면 굽지 않은 것이다. */
+function builtTitles(key) {
+  const root = join(projectRoot, 'tmp/brands', key);
+  const out = [];
+  const walk = (dir, base) => {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (!e.isDirectory() || e.name === 'assets') continue;
+      const f = join(dir, e.name, 'index.html');
+      try {
+        const html = readFileSync(f, 'utf8');
+        const t = ((/<title>([^<]*)</.exec(html)) || [])[1] || '';
+        if (t) out.push({ title: t, path: `${base}/${e.name}/`, dong: html.includes('id="siblings"') });
+      } catch { /* index.html 이 없는 중간 폴더 */ }
+      walk(join(dir, e.name), `${base}/${e.name}`);
+    }
+  };
+  walk(root, '');
+  return out;
+}
+
+/** 제목 맨 앞에서 '지역 + 첫 키워드' 를 떼어낸다. 붙어 있어도 갈라 준다. */
+function leadQuery(title, kws) {
+  const head = title.split(' - ')[0].split(' — ')[0].trim();
+  const region = regionNames.find((n) => head.startsWith(n));
+  if (!region) return null;
+  const rest = head.slice(region.length).replace(/^\s+/, '');
+  const kw = kws.find((k) => rest.startsWith(k));
+  if (!kw) return null;
+  return { q: `${region} ${kw}`, region, kw };
+}
 
 function queriesFor(key, site) {
-  const kws = site.regionKeywords || [];
+  const kws = [...(site.regionKeywords || [])].sort((a, b) => b.length - a.length);
   if (!kws.length) return [];
+  const pages = builtTitles(key);
+  if (!pages.length) {
+    console.log(`  ${key}: tmp/brands/${key} 가 없습니다 — 먼저 구우세요`);
+    return [];
+  }
+  const made = [];
+  for (const pg of pages) {
+    const q = leadQuery(pg.title, kws);
+    if (q) made.push({ ...q, level: pg.dong ? '동' : '시군구', path: pg.path });
+  }
+  /* 시드로 고정해 다음 회차도 같은 검색어를 쓴다 */
   const seed = hash(`serp|${key}`);
-  const sgg = pickRotated(allSgg, perSite, seed);
-  return sgg.map((r, i) => {
-    const kw = kws[(seed + i) % kws.length];
-    const dongs = (r.repDong || []).filter((d) => d && d.trim());
-    /* 절반은 동 단위, 절반은 시군구 단위로 섞는다 — 둘의 순위가 다르다. */
-    if (i % 2 === 0 && dongs.length) {
-      return { q: `${dongs[(seed + i) % dongs.length]} ${kw}`, level: '동' };
-    }
-    return { q: `${r.shortName || r.name} ${kw}`, level: '시군구' };
-  });
+  const dong = made.filter((x) => x.level === '동');
+  const sgg = made.filter((x) => x.level === '시군구');
+  const half = Math.ceil(perSite / 2);
+  const pick = [
+    ...pickRotated(dong, Math.min(half, dong.length), seed),
+    ...pickRotated(sgg, perSite - Math.min(half, dong.length), seed + 7),
+  ];
+  return pick.slice(0, perSite);
 }
 
 function serpUrl(query, page, tab) {
