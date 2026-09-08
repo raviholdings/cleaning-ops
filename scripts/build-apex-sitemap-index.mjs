@@ -1,41 +1,41 @@
 #!/usr/bin/env node
 /**
- * apex 루트에 서브도메인 사이트맵 인덱스를 굽는다.
+ * apex 루트에 서브도메인 URL 을 담은 사이트맵을 굽는다.
  *
  *   node scripts/build-apex-sitemap-index.mjs --root amunsa.com
- *   node scripts/build-apex-sitemap-index.mjs                    # 전체 루트
- *   node scripts/build-apex-sitemap-index.mjs --root amunsa.com --out tmp/apex-sitemaps
+ *   node scripts/build-apex-sitemap-index.mjs                      # 전체 루트
+ *   node scripts/build-apex-sitemap-index.mjs --root amunsa.com --concurrency 10
  *
- * 왜 이게 필요한가
- *   서브도메인은 구글에게 별개 사이트다. apex 사이트맵에 서브도메인 주소를 넣는 것도,
- *   서브도메인의 사이트맵을 인덱스에 넣는 것도 전부 cross-submission 이라 소유권 확인이
- *   있어야 인정된다. GSC 에 루트를 **도메인 속성(DNS TXT)** 으로 등록하면 서브도메인
- *   전체 소유권이 한 번에 확인되므로 그 조건이 충족된다.
- *   ⚠ DNS TXT 등록은 운영자가 직접 해야 한다. 이 스크립트가 대신 못 한다.
+ * ── 왜 이 모양인가 (2026-09-08 실측으로 결론) ──
  *
- * 굽는 것 (루트마다 3개)
- *   sitemap.xml         사이트맵 인덱스. 아래 둘 + 서브도메인 사이트맵 전부를 가리킨다
- *   sitemap-pages.xml   apex 자기 페이지 (기존 sitemap.xml 내용을 그대로 옮긴다)
- *   sitemap-hosts.xml   서브도메인 홈 주소 목록
+ * 서브도메인은 구글에게 별개 사이트다. apex 사이트맵이 서브도메인을 커버하려면
+ * cross-submission 이 인정돼야 하고, 그 조건은 GSC **도메인 속성(DNS TXT)** 으로
+ * 루트를 등록하면 충족된다. 서브도메인 사이트맵을 그 속성에 직접 제출했더니
+ * 성공 150장으로 받아들여졌다 — 소유권은 확실히 덮인다.
  *
- *   두 갈래를 다 넣는 이유: sitemap-hosts 는 구글이 서브도메인을 "발견" 하게 하고,
- *   서브도메인 사이트맵 직접 참조는 robots.txt 상태와 무관하게 하위 페이지를 넘긴다.
- *   한쪽이 막혀도 다른 쪽이 산다. (배관 신규 9,000개는 robots.txt 에 Sitemap 지시자가
- *   없고 루트 /sitemap.xml 이 404 라, 직접 참조가 없으면 150장이 통째로 안 보인다.)
+ * 그런데 **사이트맵 색인이 다른 호스트의 사이트맵을 가리키면 구글이 안 따라간다.**
+ *   amunsa.com/sitemap.xml -> 2,000개 서브도메인의 사이트맵 4,002개
+ *     → 제출 당일 읽음 · 상태 성공 · 발견된 페이지 0
+ *   dreamcome.kr/sitemap_index.xml -> 같은 호스트의 사이트맵 10개
+ *     → 제출 당일 읽음 · 상태 성공 · 발견된 페이지 5,046
+ * 같은 날 같은 조건에서 갈렸다. 색인의 자식은 같은 호스트여야 한다.
  *
- * 호스트별 사이트맵 (2026-09-08 표본 12/12 확인)
+ * 그래서 이렇게 만든다 — 파일은 apex 에, URL 만 서브도메인 것으로.
+ *   sitemap.xml     색인. 자식은 전부 apex 호스트 (dreamcome.kr 과 같은 모양)
+ *   sitemap-N.xml   URL 5만 개씩. 안에 https://<서브도메인>/... 이 들어간다
+ *
+ * URL 목록은 각 서브도메인의 사이트맵을 실제로 긁어와서 모은다. 배포 로직을
+ * 여기서 다시 구현하면 어긋나기 때문이다 (긁으면 배포된 그대로가 나온다).
+ *
+ * 호스트별 사이트맵 (2026-09-08 표본 12/12)
  *   cleaning-ravi  /sitemap.xml(132) + /piping/sitemap.xml(100) + /이사/sitemap.xml(50)
  *   piping-ravi    /piping/sitemap.xml(150) 만. 루트 /sitemap.xml 은 404 다.
  *
- * ⚠ 이 스크립트는 apex 웹루트의 sitemap.xml 을 덮어쓴다. build-apex-site.mjs 도
- *   sitemap.xml 을 굽는데(2줄짜리 urlset) 그건 여기서 sitemap-pages.xml 로 옮겨진다.
- *   apex 사이트를 다시 배포하면 2줄짜리로 되돌아가므로, 그 뒤에는 이 스크립트를
- *   다시 돌려야 한다.
- *
- * ⚠ 인덱스가 인덱스를 가리키는 건 구글이 지원하지 않는다. 서브도메인 사이트맵은
- *   전부 평범한 urlset 이라 지금 구조는 괜찮다.
+ * ⚠ 오리진은 t3.small 이다. 동시 요청을 올리지 말 것 (기본 10).
+ * ⚠ apex 를 다시 배포하면 build-apex-site.mjs 가 sitemap.xml 을 2줄짜리로
+ *   되돌린다. 그 뒤에는 이 스크립트와 deploy-apex-sitemap-index.mjs 를 다시 돌려야 한다.
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -46,9 +46,10 @@ const args = process.argv.slice(2);
 const valueOf = (flag, fb = '') => { const i = args.indexOf(flag); return i === -1 ? fb : (args[i + 1] ?? fb); };
 const onlyRoot = valueOf('--root');
 const outDir = resolve(projectRoot, valueOf('--out', 'tmp/apex-sitemaps'));
-const noFetch = args.includes('--no-fetch');
+const concurrency = Math.max(1, Number(valueOf('--concurrency', '10')));
+const URLS_PER_FILE = 50_000; // 사이트맵 규격 상한
 
-/** 그룹별 사이트맵 경로. 없는 경로를 넣으면 GSC 가 전부 오류로 잡는다. */
+/** 그룹별 사이트맵 경로. 없는 경로를 넣으면 404 를 긁게 된다. */
 const SITEMAPS_BY_GROUP = {
   'cleaning-ravi': ['/sitemap.xml', '/piping/sitemap.xml', '/이사/sitemap.xml'],
   'piping-ravi': ['/piping/sitemap.xml'],
@@ -57,30 +58,41 @@ const SITEMAPS_BY_GROUP = {
 const xmlEscape = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const urlset = (locs) => '<?xml version="1.0" encoding="UTF-8"?>\n'
   + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + locs.map((u) => `  <url><loc>${xmlEscape(u)}</loc></url>`).join('\n')
+  + locs.map((u) => `<url><loc>${xmlEscape(u)}</loc></url>`).join('\n')
   + '\n</urlset>\n';
 const sitemapIndex = (locs) => '<?xml version="1.0" encoding="UTF-8"?>\n'
   + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
   + locs.map((u) => `  <sitemap><loc>${xmlEscape(u)}</loc></sitemap>`).join('\n')
   + '\n</sitemapindex>\n';
 
-/** apex 자기 페이지 목록. 지금 서비스 중인 sitemap.xml 에서 그대로 가져온다. */
-async function apexPages(root) {
-  const fallback = [`https://${root}/`, `https://${root}/form/`];
-  if (noFetch) return fallback;
-  for (const path of ['/sitemap-pages.xml', '/sitemap.xml']) {
+/** 동시 실행 수를 묶어 두는 최소 풀. 오리진이 t3.small 이라 필요하다. */
+async function pool(items, limit, worker) {
+  const results = [];
+  let next = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await worker(items[i], i);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
+async function fetchLocs(url) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const res = await fetch(`https://${root}${path}`, { signal: AbortSignal.timeout(15_000) });
-      if (!res.ok) continue;
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) return { url, locs: [], error: `HTTP ${res.status}` };
       const text = await res.text();
-      // 이미 인덱스로 바뀐 sitemap.xml 이면 여기서 페이지를 못 얻는다 — 다음 후보로.
-      if (text.includes('<sitemapindex')) continue;
-      const locs = [...text.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
-      if (locs.length) return locs;
-    } catch { /* 다음 후보 */ }
+      return { url, locs: [...text.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim()) };
+    } catch (e) {
+      if (attempt === 3) return { url, locs: [], error: String(e.message).slice(0, 60) };
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
   }
-  console.log(`  ⚠ ${root}: 기존 사이트맵을 못 읽어 기본값(홈·/form/)을 씁니다.`);
-  return fallback;
+  return { url, locs: [], error: 'unreachable' };
 }
 
 const env = Object.fromEntries(readFileSync(resolve(projectRoot, '.env'), 'utf8').split('\n')
@@ -91,7 +103,6 @@ const client = new pg.Client({
   ssl: { rejectUnauthorized: false },
 });
 await client.connect();
-
 let domains;
 try {
   const { rows } = await client.query(
@@ -118,15 +129,14 @@ for (const d of domains) {
 if (!byRoot.size) throw new Error(onlyRoot ? `${onlyRoot} 에 활성 서브도메인이 없습니다.` : '활성 서브도메인이 없습니다.');
 
 rmSync(outDir, { recursive: true, force: true });
-console.log(`=== apex 사이트맵 인덱스 (${byRoot.size}개 루트) ===`);
+console.log(`=== apex 사이트맵 (${byRoot.size}개 루트 · 동시 ${concurrency}) ===`);
 console.log(`  출력: ${outDir}\n`);
 
-let totalSitemaps = 0;
-let totalUrls = 0;
+let grandUrls = 0;
+let grandFiles = 0;
 for (const [root, hosts] of [...byRoot.entries()].sort()) {
   const dir = join(outDir, root);
   mkdirSync(dir, { recursive: true });
-
   const write = (name, text) => {
     const buf = Buffer.from(text, 'utf8');
     writeFileSync(join(dir, name), buf);
@@ -134,34 +144,42 @@ for (const [root, hosts] of [...byRoot.entries()].sort()) {
     return buf.byteLength;
   };
 
-  const pages = await apexPages(root);
-  write('sitemap-pages.xml', urlset(pages));
-  write('sitemap-hosts.xml', urlset(hosts.map((h) => `https://${h.host}/`)));
-
-  const childSitemaps = [];
+  const targets = [];
   for (const h of hosts) {
-    for (const path of SITEMAPS_BY_GROUP[h.group_key]) {
-      // 한글 경로(/이사/)는 퍼센트 인코딩해야 한다. 배포된 주소 형태와 같아야 200 이 난다.
-      childSitemaps.push(`https://${h.host}${encodeURI(path)}`);
-    }
+    // 한글 경로(/이사/)는 퍼센트 인코딩해야 200 이 난다.
+    for (const p of SITEMAPS_BY_GROUP[h.group_key]) targets.push(`https://${h.host}${encodeURI(p)}`);
   }
-  const indexLocs = [
-    `https://${root}/sitemap-pages.xml`,
-    `https://${root}/sitemap-hosts.xml`,
-    ...childSitemaps,
-  ];
-  const bytes = write('sitemap.xml', sitemapIndex(indexLocs));
 
-  const cleaning = hosts.filter((h) => h.group_key === 'cleaning-ravi').length;
-  const piping = hosts.filter((h) => h.group_key === 'piping-ravi').length;
-  // 표본 실측치(2026-09-08). 정확한 총량이 아니라 규모 감각용이다.
-  const urls = pages.length + hosts.length + cleaning * (132 + 100 + 50) + piping * 150;
-  totalSitemaps += indexLocs.length;
-  totalUrls += urls;
-  console.log(`  ${root.padEnd(20)} 호스트 ${String(hosts.length).padStart(5)}개 (청소 ${cleaning} · 배관 ${piping})`
-    + `  사이트맵 ${String(indexLocs.length).padStart(5)}개  인덱스 ${(bytes / 1024).toFixed(0)}KB  URL 약 ${urls.toLocaleString()}`);
+  process.stdout.write(`  ${root.padEnd(20)} 사이트맵 ${targets.length}개 수집 중...`);
+  const started = Date.now();
+  const fetched = await pool(targets, concurrency, fetchLocs);
+  const failed = fetched.filter((r) => r.error);
+
+  // apex 자기 페이지 + 서브도메인 홈 + 긁어온 URL 전부. 중복은 제거한다.
+  const seen = new Set([`https://${root}/`]);
+  for (const h of hosts) seen.add(`https://${h.host}/`);
+  for (const r of fetched) for (const u of r.locs) seen.add(u);
+  const all = [...seen];
+
+  const files = [];
+  for (let i = 0; i < all.length; i += URLS_PER_FILE) {
+    const name = `sitemap-${files.length + 1}.xml`;
+    write(name, urlset(all.slice(i, i + URLS_PER_FILE)));
+    files.push(name);
+  }
+  write('sitemap.xml', sitemapIndex(files.map((f) => `https://${root}/${f}`)));
+
+  const sec = ((Date.now() - started) / 1000).toFixed(0);
+  console.log(`\r  ${root.padEnd(20)} 사이트맵 ${String(targets.length).padStart(5)}개 → URL ${all.length.toLocaleString().padStart(9)}개`
+    + `  파일 ${String(files.length).padStart(2)}개  ${sec}초`
+    + (failed.length ? `  ⚠ 실패 ${failed.length}개` : ''));
+  if (failed.length) {
+    for (const f of failed.slice(0, 5)) console.log(`      ${f.error}  ${f.url}`);
+    if (failed.length > 5) console.log(`      ... 외 ${failed.length - 5}개`);
+  }
+  grandUrls += all.length;
+  grandFiles += files.length + 1;
 }
 
-console.log(`\n  합계: 사이트맵 ${totalSitemaps.toLocaleString()}개 · URL 약 ${totalUrls.toLocaleString()}`);
-console.log('\n  다음: node scripts/deploy-apex-sitemap-index.mjs --dry-run');
-if (!existsSync(outDir)) throw new Error('출력이 없습니다.');
+console.log(`\n  합계: URL ${grandUrls.toLocaleString()}개 · apex 파일 ${grandFiles}개`);
+console.log('\n  다음: node scripts/deploy-apex-sitemap-index.mjs --root <루트> --dry-run');

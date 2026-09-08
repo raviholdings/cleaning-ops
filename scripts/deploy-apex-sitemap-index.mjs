@@ -6,8 +6,9 @@
  *   node scripts/deploy-apex-sitemap-index.mjs --root amunsa.com --dry-run
  *   node scripts/deploy-apex-sitemap-index.mjs --root amunsa.com
  *
- * 올리는 것은 루트당 파일 3개(+gz)뿐이다. 사이트를 다시 굽지 않는다.
- *   sitemap.xml  sitemap-pages.xml  sitemap-hosts.xml
+ * 올리는 것은 사이트맵 파일(+gz)뿐이다. 사이트를 다시 굽지 않는다.
+ *   sitemap.xml      색인 (자식은 전부 같은 apex 호스트)
+ *   sitemap-N.xml    URL 5만 개씩. 루트당 9개쯤 된다
  *
  * ⛔ 지우지 않는다. tar 로 덮어 얹기만 한다 (deploy 스킬 철칙 8).
  * ⛔ 배포 중 HaiIP 금지 — 직결 SSH 라 IP 가 바뀌면 보안그룹 규칙이 어긋나 끊긴다.
@@ -16,7 +17,7 @@
  *   걸려 있어서, 거기에 풀면 그 서브도메인 사이트를 덮어쓸 뻔했다 (2026-08-27).
  */
 import { execSync } from 'node:child_process';
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepareOriginSsh } from './lib/origin-ssh.mjs';
@@ -43,11 +44,21 @@ let roots = readdirSync(stageDir, { withFileTypes: true })
 if (onlyRoot) roots = roots.filter((r) => r === onlyRoot);
 if (!roots.length) throw new Error(onlyRoot ? `${stageDir} 에 ${onlyRoot} 가 없다.` : `${stageDir} 가 비었다.`);
 
-const EXPECTED = ['sitemap.xml', 'sitemap-pages.xml', 'sitemap-hosts.xml'];
+// 색인과 그 자식(sitemap-N.xml)이 짝을 이뤄야 한다. 자식이 빠진 색인을 올리면
+// 구글이 404 를 그대로 본다.
 for (const root of roots) {
   const files = readdirSync(resolve(stageDir, root));
-  const missing = EXPECTED.filter((f) => !files.includes(f) || !files.includes(`${f}.gz`));
-  if (missing.length) throw new Error(`${root}: 파일이 빠졌다 — ${missing.join(', ')}`);
+  if (!files.includes('sitemap.xml') || !files.includes('sitemap.xml.gz')) {
+    throw new Error(`${root}: sitemap.xml 이 없다.`);
+  }
+  const children = files.filter((f) => /^sitemap-\d+\.xml$/.test(f));
+  if (!children.length) throw new Error(`${root}: 자식 사이트맵(sitemap-N.xml)이 없다.`);
+  const missingGz = children.filter((f) => !files.includes(`${f}.gz`));
+  if (missingGz.length) throw new Error(`${root}: .gz 가 빠졌다 — ${missingGz.join(', ')}`);
+  const index = readFileSync(resolve(stageDir, root, 'sitemap.xml'), 'utf8');
+  const referenced = [...index.matchAll(/<loc>[^<]*\/([^/<]+)<\/loc>/g)].map((m) => m[1]);
+  const dangling = referenced.filter((f) => !files.includes(f));
+  if (dangling.length) throw new Error(`${root}: 색인이 없는 파일을 가리킨다 — ${dangling.join(', ')}`);
 }
 
 console.log(`=== apex 사이트맵 배포 (${roots.length}개 루트 · ${mode}${dryRun ? ' · dry-run' : ''}) ===`);
