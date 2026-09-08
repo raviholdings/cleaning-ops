@@ -82,16 +82,40 @@ async function fetchText(url) {
   return Buffer.from(await r.arrayBuffer()).toString('utf8'); // 청크 경계에서 한글이 깨진다
 }
 
-/** Yoast 꼴 색인이라 <loc> 이 자식 사이트맵이다 — 한 단계 따라 내려간다. */
+/**
+ * Yoast 꼴 색인이라 <loc> 이 자식 사이트맵이다 — 한 단계 따라 내려간다.
+ *
+ * 운영자 지시(2026-09-08 "허브우선으로 바꿔줘. 전국 얕게 깔고 가자"):
+ * 사이트맵 순서 그대로면 대구를 전부 채우고 다음 시도로 넘어간다. 하루 50건
+ * 한도에서 그러면 전국이 깔리기까지 150일이 걸린다. 얕은 것부터 보내면 엿새면
+ * 전국 시군구 허브 280곳이 깔리고, 네이버가 거기서 하위 링크를 타고 들어간다.
+ *
+ * 정렬은 두 단계다 — <priority> 내림차순, 같으면 경로 깊이 오름차순.
+ * priority 만으로는 안 갈린다: 지역허브(280, 깊이 2)와 지역×서비스(2,240, 깊이 3)가
+ * 둘 다 0.6 이다. 깊이를 2순위로 둬야 허브가 먼저 나간다.
+ * 같은 순위 안에서는 사이트맵 원래 순서를 지킨다(안정 정렬 — 재실행해도 같은 순서).
+ */
 async function readAllUrls() {
   const index = await fetchText(SITEMAP);
   const children = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
-  const out = [];
+  const seen = new Set();
+  const rows = [];
   for (const child of children) {
     const xml = await fetchText(child);
-    for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) out.push(m[1].trim());
+    for (const block of xml.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+      const locM = /<loc>([^<]+)<\/loc>/.exec(block[1]);
+      if (!locM) continue;
+      const url = locM[1].trim();
+      if (seen.has(url)) continue;
+      seen.add(url);
+      const prioM = /<priority>([^<]+)<\/priority>/.exec(block[1]);
+      const prio = prioM ? Number(prioM[1]) : 0.5;
+      const depth = decodeURIComponent(url).replace(SITE, '').split('/').filter(Boolean).length;
+      rows.push({ url, prio, depth, order: rows.length });
+    }
   }
-  return [...new Set(out)];
+  rows.sort((a, b) => (b.prio - a.prio) || (a.depth - b.depth) || (a.order - b.order));
+  return rows.map((r) => r.url);
 }
 
 function loadState() {
