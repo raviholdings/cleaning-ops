@@ -145,6 +145,12 @@ async function fetchHtml(url) {
  * 네이버 SERP 는 블록(웹사이트·블로그·카페…)이 섞여 있어 "정확한 등수" 를
  * 매기기 어렵다. 그래서 '웹문서 항목 중 몇 번째' 를 순위로 쓴다 —
  * 절대값보다 앞뒤 회차 비교가 목적이라 잣대만 일정하면 된다.
+ *
+ * 자리를 세는 기준은 렌더된 HTML 의 fds-web-doc-root 다.
+ * 처음에는 JSON 쪽 마커(templateId":"webItem)를 썼는데, 그건 페이지에 같이
+ * 실려 있을 뿐 링크가 그 안에 없다. 그래서 실제로 1위인 것도 "없음" 으로
+ * 세어 75개 표본이 전부 0 으로 나왔다 (2026-09-08). 두 마커 수는 같지만
+ * 링크가 들어 있는 쪽은 fds-web-doc-root 다.
  */
 function findRank(html, host, offset) {
   const blocked = html.includes('검색 서비스 이용이 제한되었습니다')
@@ -153,10 +159,7 @@ function findRank(html, host, offset) {
 
   const BS = String.fromCharCode(92);
   const esc = host.split('.').join(`${BS}.`);
-  const item = /templateId":"webItem/g;
-  const items = [...html.matchAll(item)].map((m) => m.index);
-  if (!items.length) return { blocked: false, items: 0, rank: null };
-
+  const items = [...html.matchAll(/fds-web-doc-root/g)].map((m) => m.index);
   const re = new RegExp(`https?://[a-z0-9.-]*${esc}`, 'i');
   for (let i = 0; i < items.length; i += 1) {
     const from = items[i];
@@ -165,7 +168,12 @@ function findRank(html, host, offset) {
       return { blocked: false, items: items.length, rank: offset + i + 1 };
     }
   }
-  return { blocked: false, items: items.length, rank: null };
+  /*
+   * 웹문서 블록 밖(블로그·카페·플레이스)에 뜨는 경우도 있다. 순위는 못 매기지만
+   * "떴다" 는 사실은 남긴다 — 0 과 구별해야 한다.
+   */
+  const outside = re.test(html);
+  return { blocked: false, items: items.length, rank: null, outside };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -210,6 +218,7 @@ for (const { key, site } of sites) {
         if (r.error) { found = 'error'; break; }
         items += r.items || 0;
         if (r.rank) { found = r.rank; break; }
+        if (r.outside) { found = '블록밖'; break; }
       }
       byTab[tab] = { rank: found, items };
     }
