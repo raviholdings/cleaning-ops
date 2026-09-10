@@ -1119,6 +1119,17 @@ function firstImageOf(html) {
  */
 const DESC_LIMIT = 80;
 const clampedDescriptions = [];
+/*
+ * 설명에 들어 있어야 하는 키워드 전부 — 메인·서브에 URL 층 키워드(도사)와
+ * 글 키워드(싹쓰리)까지. 이 중 하나라도 있으면 통과, 없으면 page() 가 꼬리를 붙인다.
+ */
+const DESC_KWS = [...new Set([
+  ...(site.regionKeywords || []),
+  ...SUB_KWS,
+  ...keywords.map((k) => k.label),
+  ...((blogData && blogData.keywords) || []).map((k) => k.label || k),
+])];
+const descKwAdded = [];
 
 /*
  * 사이트 설명에 반드시 들어가야 하는 키워드 (운영자 지정 2026-09-02).
@@ -1172,6 +1183,20 @@ function page({
      */
     clampedDescriptions.push(path);
     description = clampDescription(description);
+  }
+  /*
+   * 모든 페이지의 설명에 키워드가 들어가야 한다 (운영자 지시 2026-09-10).
+   * 지역·동 글은 이미 들어 있지만 지역 목록·사례·서비스·폼처럼 손으로 쓴 설명은
+   * 빠져 있었다 (실측: 드림 29 · 썬더 302 · 비버 29 · 싹쓰리 24 · 도사 수십 장).
+   * 페이지마다 문장을 고치는 대신 여기서 한 번 본다 — 키워드가 하나도 없으면
+   * 메인 2 + 서브 1 을 꼬리에 붙인다. 자르기 뒤에 붙여야 꼬리가 잘리지 않는다.
+   * 홈은 위에서 HOME_KEYWORDS 로 따로 막는다.
+   */
+  if (kind !== 'home' && description && !DESC_KWS.some((k) => description.includes(k))) {
+    const s2 = hash(`${siteKey}|desc|${path}`);
+    const tail = [...pickRotated(site.regionKeywords || [], 2, s2), subKw(s2 + 7)]
+      .filter(Boolean).join(' ');
+    if (tail) { description = `${description.trim()} ${tail}`; descKwAdded.push(path); }
   }
   const canonical = `${siteUrl}${path}`;
   const html = renderTemplate(templates.layout, {
@@ -1892,7 +1917,8 @@ if (realCases.length) {
       kind: 'caseOne',
       crumbs: [{ name: '홈', href: '/' }, { name: '작업 사례', href: `/${casesIndexSlug}/` }, { name: c.title }],
       title: `${c.title} — ${site.brand} 작업 사례`,
-      description: `${c.area ? `${c.area} ` : ''}${c.title}. ${c.body.slice(0, 80)}`,
+      /* 본문을 글자 수로 뚝 자르면 "…연결부가 나왔" 처럼 끊긴다. 문장 경계에서 자른다. */
+      description: `${c.area ? `${c.area} ` : ''}${c.title}. ${clampDescription(c.body)}`,
       jsonLd: orgLd,
       main: renderTemplate(templates.caseOne, {
         ...base,
@@ -3029,6 +3055,9 @@ console.log(`${site.brand} (${siteKey})  →  ${join(outRoot, siteKey)}`);
 console.log(`  호스트     ${siteUrl}${host === 'TBD.co.kr' ? '   ⚠ 도메인 미정' : ''}`);
 if (clampedDescriptions.length) {
   console.log(`  설명     ${clampedDescriptions.length}장을 ${DESC_LIMIT}자에 맞춰 문장 경계에서 잘랐습니다`);
+}
+if (descKwAdded.length) {
+  console.log(`  설명     ${descKwAdded.length}장에 키워드가 없어 꼬리를 붙였습니다`);
 }
 // 3단계와 평면은 만드는 것이 달라서 요약도 따로 적는다. 평면 문구를 그대로 쓰면
 // 3단계에서 "서비스 5" 처럼 만들지도 않은 것이 찍힌다.
