@@ -55,8 +55,8 @@ export function robotsTxt({ brand, siteUrl, sitemap, updated }) {
   out.push('User-agent: *');
   out.push('Allow: /');
   out.push('');
-  out.push(`Sitemap: ${sitemap}`);
-  out.push('');
+  /* 사이트맵을 공개하지 않을 때는 줄을 아예 안 쓴다 (2026-09-10) */
+  if (sitemap) { out.push(`Sitemap: ${sitemap}`); out.push(''); }
 
   for (const [label, bots] of ALLOW) {
     out.push(head(label));

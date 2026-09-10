@@ -86,7 +86,8 @@ for (const key of keys) {
    *   area     서비스 지역 목록
    *   privacy  개인정보 동의. 법적 문구라 사이트마다 다르게 쓸 이유가 없다
    */
-  const SHARED_PATHS = ['assets', 'area', 'privacy', 'form'];
+  /* _crawl 은 러너용 숨은 사이트맵 폴더다 — 페이지가 아니라 다섯 다 같은 이름이다 (2026-09-10) */
+  const SHARED_PATHS = ['assets', 'area', 'privacy', 'form', '_crawl'];
   const slugs = new Set(readdirSync(root, { withFileTypes: true })
     .filter((e) => e.isDirectory() && !SHARED_PATHS.includes(e.name))
     .map((e) => e.name));

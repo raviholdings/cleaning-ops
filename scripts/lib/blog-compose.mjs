@@ -550,7 +550,16 @@ export function renderArticleHtml(art, { tocTitle = '목차', regionEcho = null 
       }
     }
     /* 구역 끝마다 제목 문장을 한 번 더 둔다 — 레퍼런스가 일곱 번 되풀이한다. */
-    if (echo && si % 2 === 0) out.push(`<p class="aecho">${esc(echo.line)}</p>`);
+    if (echo && si % 2 === 0) {
+      /*
+       * 서브 키워드를 하나씩 돌려 붙인다 (운영자 지시 2026-09-10 "골고루").
+       * 서브는 본문 주제가 아니라 문안 사전에 없다. 되풀이 줄에 얹으면 본문을
+       * 안 건드리고도 장당 5회쯤 더 나온다.
+       */
+      const subs = echo.subs || [];
+      const tail = subs.length ? ` ${subs[(si >> 1) % subs.length]}` : '';
+      out.push(`<p class="aecho">${esc(echo.line + tail)}</p>`);
+    }
     out.push('</section>');
   });
   return out.join('\n');

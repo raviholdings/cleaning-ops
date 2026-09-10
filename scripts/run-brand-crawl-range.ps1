@@ -14,7 +14,8 @@
      501 은 2026-09-01 에 정지되어 506 으로 이관했다.
      이관은 scripts/migrate-brand-account.mjs 로 한다.
 
-  2. URL 은 각 사이트의 /sitemap_index.xml 에서 읽는다 (사이트맵 모드).
+  2. URL 은 각 사이트의 /_crawl/sitemap_index.xml 에서 읽는다 (사이트맵 모드).
+     공개 사이트맵은 없다 (2026-09-10) — 이 경로는 링크·robots 어디에도 안 적는다.
      이건 Yoast 꼴 **색인**이라 <loc> 이 페이지가 아니라 자식 사이트맵이다.
      제출 본체가 색인을 한 단계 따라 내려가도록 고쳐 뒀다 (2026-09-01).
      그 수정 없이 돌리면 .xml 주소 열 개를 수집요청으로 올린다.
@@ -83,7 +84,9 @@ $env:NAVER_CRAWL_EXCLUDE_ACCOUNTS = ''
 $env:NAVER_CRAWL_INCLUDE_GROUPS = 'brand-ravi'
 $env:NAVER_CRAWL_EXCLUDE_GROUPS = ''
 $env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = 'brand-ravi'
-$env:NAVER_CRAWL_SITEMAP_PATH = '/sitemap_index.xml'
+# 사이트맵은 공개하지 않는다 (2026-09-10). 러너만 아는 숨은 경로에서 읽는다.
+# 굽는 쪽(build-brand-site.mjs 의 CRAWL_DIR)과 같은 값이어야 한다.
+$env:NAVER_CRAWL_SITEMAP_PATH = '/_crawl/sitemap_index.xml'
 # 생성 폴백 없음. 배관처럼 번호로 주소를 만들 수 없는 구조다.
 $env:NAVER_CRAWL_PIPING_PAGE_COUNT = ''
 

@@ -58,11 +58,13 @@ for (const key of SITES) {
 
   /* 자식 사이트맵 이름은 구운 결과에서 읽는다 — 개수가 사이트마다 다르다 */
   const outDir = join(projectRoot, 'tmp/brands', key);
-  const kids = existsSync(outDir)
-    ? readdirSync(outDir).filter((f) => /-sitemap\d+\.xml$/.test(f))
+  const crawlDir = join(outDir, '_crawl');
+  const kids = existsSync(crawlDir)
+    ? readdirSync(crawlDir).filter((f) => /-sitemap\d+\.xml$/.test(f))
     : [];
+  /* 옛 공개 경로도 같이 비운다 — 캐시에 남아 있으면 404 로 안 바뀐다 */
   const files = ['/robots.txt', '/sitemap.xml', '/sitemap_index.xml',
-    ...kids.map((f) => `/${f}`)]
+    '/_crawl/sitemap_index.xml', ...kids.map((f) => `/_crawl/${f}`)]
     .map((p) => `https://${host}${p}`);
 
   const zoneRes = await fetch(`https://api.cloudflare.com/client/v4/zones?name=${host}`, { headers: auth });

@@ -96,6 +96,14 @@ const keywords = keywordData ? keywordData.keywords : [];
  * 배포된 주소가 통째로 사라진다. 그래서 주소와 그 페이지는 그대로 두고
  * 다른 페이지에 노출되는 자리에서만 뺀다.
  */
+/*
+ * 서브 키워드 (운영자 지시 2026-09-09).
+ * 제목에 메인 2개 + 서브 1개가 늘 들어가게 한다. 서브는 검색량이 적어 본문까지
+ * 쓸 필요가 없고, 본문 주제는 regionKeywords(메인)가 그대로 정한다.
+ */
+const SUB_KWS = site.subKeywords || [];
+const subKw = (seed) => (SUB_KWS.length ? SUB_KWS[seed % SUB_KWS.length] : '');
+
 const hiddenKws = new Set(site.hiddenKeywords || []);
 const shownKws = keywords.filter((k) => !hiddenKws.has(k.label));
 const shownKwLabels = shownKws.map((k) => k.label);
@@ -335,9 +343,16 @@ const KW_COLS = 7;
 /* 레퍼런스가 105칸이다. 동이 많은 구는 동당 키워드를 줄여 이 근처로 맞춘다. */
 const KW_TARGET = 105;
 
+/*
+ * 하단 블록이 도는 키워드 풀. 메인과 서브를 합친다 — 서브가 제목에만 있으면
+ * 한 장에 한 번 나오고 끝인데, 운영자는 "골고루, 본문이든 뭐든" 을 원했다
+ * (2026-09-09). 블록에서 같은 비율로 돌면 서브도 메인만큼 나온다.
+ */
+const BLOCK_KWS = [...(site.regionKeywords || []), ...(site.subKeywords || [])];
+
 /** 시군구 페이지용 — 그 구의 동 전부를 반드시 한 번씩 싣는다. */
 function regionKeywordBlock(r, seed) {
-  const kws = site.regionKeywords;
+  const kws = BLOCK_KWS;
   const names = r.repDong.filter((n) => n && n.trim());
   if (!names.length) return null;
   const per = Math.max(1, Math.min(kws.length - 1, Math.floor(KW_TARGET / names.length)));
@@ -403,10 +418,11 @@ function dongLongDescription(r, dong, seed, kwList) {
 
 /** 동 페이지용 — 그 동을 여러 각도로, 그리고 같은 구의 다른 동으로 잇는다. */
 function dongKeywordBlock(r, dong, seed) {
-  const kws = site.regionKeywords;
+  const kws = BLOCK_KWS;
   const mine = kws.map((k) => kwItem(r.code, dong, k));
+  /* 업체·비용은 페이지마다 다른 8개에만 붙인다 — 23개 전부면 블록이 너무 길다 */
   const cost = [];
-  for (const k of kws) {
+  for (const k of pickRotated(kws, 8, seed + 17)) {
     cost.push(kwItem(r.code, dong, k, '업체'));
     cost.push(kwItem(r.code, dong, k, '비용'));
   }
@@ -1509,6 +1525,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
       line: `${r.sidoLabel} ${r.sigunguLabel} ${kws[seed % kws.length]} 현장`,
       tag: `${r.sigunguLabel}${kws[seed % kws.length]}`,
       dong: r.sigunguLabel,
+      subs: pickRotated(SUB_KWS, 5, seed + 23),
     },
     sitePools: {
       원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
@@ -1530,7 +1547,10 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     kind: 'region',
     published: postedAt(seed).toISOString(),
     crumbs: [{ name: '홈', href: '/' }, { name: `${r.sidoLabel} ${r.sigunguLabel}` }],
-    title: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]} ${titleKws[2]} - ${site.brand}`,
+    /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
+    /* 업체명은 안 붙인다 — 앞자리를 검색어로 채운다 (운영자 지시 2026-09-09) */
+    title: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]}`
+      + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}`,
     description: longDescription
       ? regionLongDescription(r, seed, titleKws)
       : `${full} 하수구·변기 막힘 24시간 출동. `
@@ -1553,7 +1573,8 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
        * 브랜드 문구를 H1 에 넣으면 검색엔진이 보는 가장 강한 자리에 키워드가 없어진다.
        * 붙여쓰기(강남구하수구막힘)를 앞에 두는 것도 레퍼런스와 같다 — 실제로 그렇게 검색한다.
        */
-      regionH1: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]} ${titleKws[2]}`,
+      regionH1: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]}`
+        + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}`,
       regionTagline: one('heroTaglines'),
       regionLede: one('heroLedes'),
       dongCount: r.dongCount,
@@ -1691,7 +1712,10 @@ for (const d of dongPages) {
     seed,
     vars,
     varOverrides: { 구: guDong, 지역: `${full} ${dong}` },
-    regionEcho: { line: `${dong} ${kw} ${r.sigunguLabel} 현장`, tag: `${dong}${kw}`, dong },
+    regionEcho: {
+      line: `${dong} ${kw} ${r.sigunguLabel} 현장`, tag: `${dong}${kw}`, dong,
+      subs: pickRotated(SUB_KWS, 5, seed + 23),
+    },
     sitePools: {
       원인: pools.causes.map((x) => `${x.title}. ${x.body}`),
       유형: pools.keywordBlurbs.map((x) => x.body),
@@ -1713,14 +1737,17 @@ for (const d of dongPages) {
    */
   const rest = site.regionKeywords.filter((x) => x !== kw);
   const titleOf = (l) => `${dong} ${l.join(' ')}`;
-  let kwList = [kw, ...pickRotated(rest, 2, seed + 71)];
+  /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
+  const sub1 = subKw(seed + 11);
+  const withSub = (mains) => (sub1 ? [...mains, sub1] : mains);
+  let kwList = withSub([kw, ...pickRotated(rest, 1, seed + 71)]);
   /*
    * 같은 동 이름이 다른 시군구에도 있는데 키워드 셋까지 같이 뽑히면 제목과 h1 이
    * 글자까지 똑같아진다 (실측 78장, 2026-09-03). 겹치면 뽑는 자리를 한 칸씩
    * 옮겨 다르게 만든다. 제목에 시군구를 넣지 않는 형식은 그대로 둔다.
    */
   for (let bump = 1; bump <= rest.length && dongTitles.has(titleOf(kwList)); bump += 1) {
-    kwList = [kw, ...pickRotated(rest, 2, seed + 71 + bump * 13)];
+    kwList = withSub([kw, ...pickRotated(rest, 1, seed + 71 + bump * 13)]);
   }
   dongTitles.add(titleOf(kwList));
   const at = postedAt(seed);
@@ -2013,6 +2040,16 @@ if (TIERED) {
         dont: g.dont,
         faqHeading: '자주 묻는 것',
         faq: g.faq,
+        /*
+         * 이 키워드의 시군구 상세로 내려가는 길. 전에는 시도까지만 이었는데,
+         * 시도 허브 목록이 노출 키워드만 담아서 숨긴 키워드(집수정청소)의 상세가
+         * 고아가 됐다. 시군구가 하나뿐인 세종이 실제로 그랬다 (2026-09-09).
+         * 여기서 바로 걸면 어느 키워드든 상세까지 길이 이어진다.
+         */
+        spotHeading: `${k.label} 지역별 안내`,
+        spots: allRegions.map((r2) => ({
+          href: detailHref(r2, k), label: `${r2.sigunguLabel} ${k.label}`,
+        })),
         price: fillDeep(pools.price, vars),
         priceHeading: fillPlaceholders(pools.priceHeadings[seed % pools.priceHeadings.length], vars),
         priceNote: fillPlaceholders(pools.priceNotes[seed % pools.priceNotes.length], vars),
@@ -2105,13 +2142,15 @@ if (TIERED) {
      * 시군구마다 다른 넷이 뽑히도록 시드로 돌린다 — 256장이 같은 제목이 되면
      * 지역명만 다른 복제 페이지로 보인다.
      */
-    const hubKws = pickRotated(shownKwLabels, 4, seed + 29);
+    /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
+    const hubMain = pickRotated(shownKwLabels, 2, seed + 29);
+    const hubKws = subKw(seed + 31) ? [...hubMain, subKw(seed + 31)] : hubMain;
 
     urls.push(page({
       path: regionHref(r),
       kind: 'sigungu',
       crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel }],
-      title: `${r.sigunguLabel} ${hubKws.join(' ')} — ${site.brand}`,
+      title: `${r.sigunguLabel} ${hubKws.join(' ')}`,
       description: `${full} 배관 막힘 출동. ${keywords.length}가지 증상별 안내. `
         + dongList(r),
       jsonLd: {
@@ -2219,9 +2258,12 @@ if (TIERED) {
        * 앞의 "북구세면대뚫기" 가 이미 주제를 말하고 있어, 같은 낱말을 또 쓰면
        * 자리만 먹고 잡히는 검색어는 안 늘어난다.
        */
-      const detailKws = pickRotated(
-        shownKwLabels.filter((x) => x !== k.label), 2, seed + 37,
-      );
+      /*
+       * 앞이 "북구세면대뚫기" 라 그 자체가 메인 하나다. 뒤에 메인 1 + 서브 1 을
+       * 붙여 메인 2 + 서브 1 을 채운다 (운영자 지시 2026-09-09).
+       */
+      const detailMain = pickRotated(shownKwLabels.filter((x) => x !== k.label), 1, seed + 37);
+      const detailKws = subKw(seed + 41) ? [...detailMain, subKw(seed + 41)] : detailMain;
 
       urls.push(page({
         path: detailHref(r, k),
@@ -2230,7 +2272,7 @@ if (TIERED) {
         crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel, href: regionHref(r) }, { name: k.label }],
         title: `${r.sigunguLabel}${k.label} — `
           + `${r.sidoLabel === r.sigunguLabel ? '' : `${r.sidoLabel} `}`
-          + `${detailKws.join(' ')} · ${site.brand}`,
+          + `${detailKws.join(' ')}`,
         description: `${full} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
           + `연락 주십시오. ${dongList(r)}`,
         jsonLd: [{
@@ -2532,7 +2574,22 @@ if (BLOG) {
           published: at.toISOString(),
           image: leadImage[0] || null,
           crumbs: [{ name: '홈', href: '/' }, { name: `${blogLabel(r)} ${kw.label}` }],
-          title: `${blogLabel(r)} ${kw.label} ${work} ${kind.label} - ${site.brand}`,
+          /*
+           * work 가 키워드와 같으면 제목에 두 번 찍힌다
+           * ("강북구 횡주관청소 횡주관청소 비용정보", 실측 91장 2026-09-09).
+           * work 는 슬러그를 만드는 데도 쓰이므로 고르는 자체는 못 바꾼다 —
+           * URL 이 바뀐다. 제목에서만 뺀다.
+           */
+          /*
+           * work 가 키워드와 같으면 제목에 두 번 찍힌다
+           * ("강북구 횡주관청소 횡주관청소 비용정보", 실측 91장 2026-09-09).
+           * work 는 슬러그를 만드는 데도 쓰이므로 고르는 자체는 못 바꾼다 —
+           * URL 이 바뀐다. 제목에서만 뺀다.
+           * 뒤에 서브 키워드를 하나 붙여 메인 2 + 서브 1 을 맞춘다.
+           */
+          title: `${blogLabel(r)} ${kw.label}${work === kw.label ? '' : ` ${work}`}`
+            + `${subKw(seed + 53) ? ` ${subKw(seed + 53)}` : ''}`
+            + ` ${kind.label}`,
           description: `${full} ${kw.label} ${kind.label}. 원인부터 해결까지 정리했어요. `
             + dongList(r),
           jsonLd: [{
@@ -2627,6 +2684,9 @@ for (const u of urls) {
  * 목록은 글이 늘면 바뀌니 weekly. priority 는 사이트 안에서의 상대 중요도라
  * 홈 1.0, 본문 0.8, 목록·안내 0.5 로 둔다.
  */
+/* 사이트맵이 사는 숨은 폴더. 러너(run-brand-crawl-range.ps1)와 같은 값이어야 한다. */
+const CRAWL_DIR = '_crawl';
+
 const SITEMAP_HINT = {
   home: { freq: 'weekly', pri: '1.0' },
   page: { freq: 'weekly', pri: '0.5' },
@@ -2643,11 +2703,12 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
   for (let i = 0; i < list.length; i += SITEMAP_CHUNK) {
     const part = list.slice(i, i + SITEMAP_CHUNK);
     const file = `${g}-sitemap${Math.floor(i / SITEMAP_CHUNK) + 1}.xml`;
+    mkdirSync(join(outRoot, siteKey, CRAWL_DIR), { recursive: true });
     const body = part
       .map((u) => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n`
         + `    <changefreq>${freq}</changefreq>\n    <priority>${pri}</priority>\n  </url>`)
       .join('\n');
-    writeFileSync(join(outRoot, siteKey, file),
+    writeFileSync(join(outRoot, siteKey, CRAWL_DIR, file),
       '<?xml version="1.0" encoding="UTF-8"?>\n'
       + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
     // 그 묶음에서 가장 늦은 날짜가 그 사이트맵의 lastmod 다
@@ -2662,7 +2723,7 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
 const indexXml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
   + children
-    .map((c) => `  <sitemap>\n    <loc>${siteUrl}/${c.file}</loc>\n`
+    .map((c) => `  <sitemap>\n    <loc>${siteUrl}/${CRAWL_DIR}/${c.file}</loc>\n`
       + `    <lastmod>${c.lastmod}</lastmod>\n  </sitemap>`)
     .join('\n')
   + '\n</sitemapindex>\n';
@@ -2677,7 +2738,7 @@ const indexXml = '<?xml version="1.0" encoding="UTF-8"?>\n'
 const NAVER_MAX_BYTES = 10 * 1024 * 1024;
 const NAVER_MAX_URLS = 50000;
 for (const c of children) {
-  const bytes = statSync(join(outRoot, siteKey, c.file)).size;
+  const bytes = statSync(join(outRoot, siteKey, CRAWL_DIR, c.file)).size;
   if (bytes > NAVER_MAX_BYTES) {
     throw new Error(`${c.file} 이 ${(bytes / 1048576).toFixed(1)}MB 입니다 — 네이버 제출 한도 10MB 초과. SITEMAP_CHUNK 를 줄이세요.`);
   }
@@ -2691,12 +2752,16 @@ if (offSite.length) {
     + '네이버는 소유확인된 도메인과 다른 URL 이 섞이면 제출을 거절합니다.');
 }
 
-writeFileSync(join(outRoot, siteKey, 'sitemap_index.xml'), indexXml);
 /*
- * /sitemap.xml 에도 같은 색인을 둔다. 이 주소를 이미 가리키고 있는 곳이 있고
- * (네이버 콘솔에 넣은 것 포함), 색인으로 바뀌었다고 404 를 내면 그쪽이 통째로 끊긴다.
+ * 사이트맵을 공개하지 않는다 (운영자 지시 2026-09-10). 루트의 /sitemap.xml ·
+ * /sitemap_index.xml 은 내지 않고 robots.txt 에도 적지 않는다.
+ *
+ * 그래도 파일 자체는 남긴다 — 수집요청 러너가 사이트맵을 읽어 URL 을 얻는데,
+ * 브랜드는 배관과 달리 번호로 주소를 만들 수 없어 생성 폴백이 없다. 사이트맵이
+ * 없으면 그 계정은 0건이다. 그래서 어디에도 안 걸린 폴더(/_crawl/)에 두고
+ * 러너만 그 경로를 안다 (run-brand-crawl-range.ps1). 링크·robots 어디에도 없다.
  */
-writeFileSync(join(outRoot, siteKey, 'sitemap.xml'), indexXml);
+writeFileSync(join(outRoot, siteKey, CRAWL_DIR, 'sitemap_index.xml'), indexXml);
 
 /*
  * IndexNow 키 파일. 루트에 <키>.txt 가 있어야 네이버가 소유를 인정한다.
@@ -2715,7 +2780,7 @@ if (existsSync(indexNowPath)) {
 writeFileSync(join(outRoot, siteKey, 'robots.txt'), robotsTxt({
   brand: site.brand,
   siteUrl,
-  sitemap: `${siteUrl}/sitemap_index.xml`,
+  sitemap: '',                                  // 공개 안 함 (2026-09-10)
   updated: BUILT_AT.slice(0, 10),
 }));
 

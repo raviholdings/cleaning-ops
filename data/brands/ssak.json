@@ -9,7 +9,7 @@
  "siteUrl": "https://ssac3.kr",
  "phone": "070-7106-5228",
  "phoneRaw": "07071065228",
- "assetVersion": "ssak-v30",
+ "assetVersion": "ssak-v32",
  "fontHref": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap",
  "slugWords": [
   "sweep",
@@ -680,7 +680,7 @@
   "변기막힘",
   "오수관막힘",
   "횡주관청소",
-  "배수구청소"
+  "화장실막힘"
  ],
  "_navModelNote": "메뉴에 서비스 키워드를 전부 편다(하수구박사형). 묶지 않는 것이 이 사이트의 구조다.",
  "navModel": "keywords",
@@ -806,5 +806,26 @@
   "배관 내시경"
  ],
  "homeDescription": "변기뚫는법·하수구막힘·싱크대수전교체·세면대수전교체·하수구냄새제거·변기교체. 싹쓰리배관 전국 출장, 확인 후 견적.",
- "keywordBlock": true
+ "keywordBlock": true,
+ "_regionKeywordsNote": "글이 실제로 쓰는 목록(ssak-blog.json)과 같게 맞춘다. 전에는 배수구청소가 여기에만 있어 3,324장 어느 제목에도 안 나왔고, 화장실막힘은 제목에 쓰이는데 여기 없어 하단 키워드 블록에서 빠졌다 (2026-09-09).",
+ "subKeywords": [
+  "하수구냄새",
+  "하수구청소",
+  "화장실변기",
+  "변기교체",
+  "씽크대교체",
+  "씽크대수전",
+  "누수탐지",
+  "아파트누수",
+  "누수공사",
+  "천장누수",
+  "수전교체",
+  "싱크대수전",
+  "세면대수전",
+  "샤워수전",
+  "주방수전",
+  "배관공사",
+  "세면대교체"
+ ],
+ "_subKeywordsNote": "제목·하단 블록에만 쓴다. 본문 주제는 regionKeywords 가 정한다 (2026-09-09)."
 }
