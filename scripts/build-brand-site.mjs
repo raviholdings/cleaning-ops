@@ -205,22 +205,39 @@ const SIDO_KEYS = ['서울', '경기', '인천', '부산', '대구', '광주', '
  * 빈 키워드가 안 생긴다. 시작점은 시드로 달리해 구마다 순서가 다르다.
  */
 const dongPages = [];
+const dongExtras = [];
 if (site.dongPages) {
   const kws = site.regionKeywords;
   for (const r of allRegions) {
     const start = hash(`${siteKey}|dongstart|${r.code}`) % kws.length;
     /* repDong 은 시군구가 가진 대표 동네다. 빈 값이 하나 섞여 있어 걸러낸다. */
     const names = r.repDong.filter((n) => n && n.trim());
+    /*
+     * 동당 여러 편 (운영자 지시 2026-09-10, 동당 3편).
+     * 첫 편은 예전 그대로다 — 키(g:코드:동)와 키워드가 같아야 배포된 주소가 안 바뀐다.
+     * 나머지는 키에 키워드를 넣어 새 주소를 받고, 씨앗도 따로 써서 본문이 갈린다.
+     */
+    /*
+     * ⚠ 첫 편 키는 예전 순서 그대로 먼저, 추가 편 키는 전부 그 뒤에 넣는다.
+     * 난수 슬러그는 키 순서대로 충돌을 푸는데, 새 키를 사이에 끼우면 뒤 키의
+     * 슬러그가 밀려 이미 배포된 주소가 바뀐다 — 실제로 19개가 바뀔 뻔했다 (2026-09-10).
+     */
+    const per = Math.max(1, Number(site.dongPerDong || 1));
     names.forEach((name, i) => {
-      dongPages.push({
-        r,
-        dong: name,
-        kw: kws[(start + i) % kws.length],
-        key: `g:${r.code}:${name}`,
-      });
+      dongPages.push({ r, dong: name, kw: kws[(start + i) % kws.length], key: `g:${r.code}:${name}` });
     });
+    /* 추가 편은 모아 두었다가 모든 시군구의 첫 편 뒤에 붙인다 (아래 dongExtras) */
+    for (let j = 1; j < per; j += 1) {
+      names.forEach((name, i) => {
+        const kw = kws[(start + i + j) % kws.length];
+        dongExtras.push({ r, dong: name, kw, key: `g:${r.code}:${name}:${kw}`, extra: true });
+      });
+    }
   }
 }
+
+/* 첫 편 키가 전부 선 뒤에 추가 편 키를 붙인다 — 기존 키 순서가 그대로여야 옛 슬러그가 유지된다 */
+dongPages.push(...dongExtras);
 
 const slugKeys = [
   ...allRegions.map((r) => `r:${r.code}`),
@@ -253,7 +270,15 @@ const otherSlugs = (() => {
    * 결과를 보고, 남들이 아직 동 글을 안 만들었으면 그 충돌을 못 잡는다.
    * 슬러그는 결정적이라 데이터만 있으면 다시 셀 수 있다.
    */
+  /*
+   * 두 집합을 낸다.
+   *   base  남의 첫 편 키만으로 만든 것 — 2026-09-03/07 에 배포할 때 쓴 집합과 같다.
+   *         첫 편은 이 집합으로만 피한다. 그래야 그때 옮긴 슬러그까지 그대로 재현되어
+   *         배포된 주소가 안 바뀐다 (집합이 커지자 기존 18개가 옮겨진 것을 잡았다, 2026-09-10).
+   *   full  남의 추가 편 키까지 넣은 것 — 새 편(extra)만 이걸로 피한다.
+   */
   const out = new Set();
+  const base = new Set();
   const others = readdirSync(join(projectRoot, 'data/brands'))
     .filter((f) => /^[a-z]+.json$/.test(f))
     .map((f) => f.replace(/.json$/, ''))
@@ -275,13 +300,32 @@ const otherSlugs = (() => {
       'c:index',
     ];
     if (oj.dongPages) {
+      /*
+       * 동당 여러 편(dongPerDong)의 키도 같은 공식으로 만든다. 첫 편 키만 알면
+       * 남의 2·3편과 겹치는 것을 못 잡는다 — 실제로 8개가 겹쳤다 (2026-09-10).
+       * 공식은 위 dongPages 만드는 곳과 글자까지 같아야 한다.
+       */
+      const per = Math.max(1, Number(oj.dongPerDong || 1));
+      const okws = oj.regionKeywords || [];
+      /* 순서도 그쪽과 같아야 한다 — 첫 편 전부, 그다음 추가 편 */
+      const oextra = [];
       for (const r of allRegions) {
-        for (const name of r.repDong.filter((n) => n && n.trim())) okeys.push(`g:${r.code}:${name}`);
+        const names = r.repDong.filter((n) => n && n.trim());
+        const start = okws.length ? hash(`${other}|dongstart|${r.code}`) % okws.length : 0;
+        names.forEach((name, i) => okeys.push(`g:${r.code}:${name}`));
+        for (let j = 1; j < per && okws.length; j += 1) {
+          names.forEach((name, i) => oextra.push(`g:${r.code}:${name}:${okws[(start + i + j) % okws.length]}`));
+        }
       }
+      /* 추가 편을 넣기 전의 집합이 base — 배포 당시 계산과 글자까지 같다 */
+      for (const v of assignSlugs(other, okeys, { words: oj.slugWords }).values()) base.add(v);
+      okeys.push(...oextra);
+    } else {
+      for (const v of assignSlugs(other, okeys, { words: oj.slugWords }).values()) base.add(v);
     }
     for (const v of assignSlugs(other, okeys, { words: oj.slugWords }).values()) out.add(v);
   }
-  return out;
+  return { base, full: out };
 })();
 {
   /*
@@ -292,12 +336,14 @@ const otherSlugs = (() => {
   const mine = new Set(slugs.values());
   let moved = 0;
   for (const d of dongPages) {
+    /* 첫 편은 배포 당시 집합(base)으로만 — 그래야 이미 나간 주소가 그대로다 */
+    const avoid = d.extra ? otherSlugs.full : otherSlugs.base;
     let slug = slugs.get(d.key);
     let salt = 0;
-    while ((otherSlugs.has(slug) || salt === 0) && otherSlugs.has(slug)) {
+    while (avoid.has(slug)) {
       salt += 1;
       const cand = regionSlug(siteKey, `${d.key}#x${salt}`, { words: site.slugWords });
-      if (mine.has(cand) || otherSlugs.has(cand)) continue;
+      if (mine.has(cand) || avoid.has(cand)) continue;
       slug = cand;
       moved += 1;
     }
@@ -1695,7 +1741,10 @@ const dongTitles = new Set();
 for (const d of dongPages) {
   const { r, dong, kw } = d;
   const full = `${r.sidoLabel} ${r.sigunguLabel}`;
-  const seed = hash(`${siteKey}|dong|${r.code}|${dong}`);
+  /* 첫 편은 씨앗을 그대로 둔다(본문 유지). 추가 편은 키워드까지 넣어 다른 글이 되게 한다. */
+  const seed = d.extra
+    ? hash(`${siteKey}|dong|${r.code}|${dong}|${kw}`)
+    : hash(`${siteKey}|dong|${r.code}|${dong}`);
   /*
    * {구} 를 "중구 남산동" 으로 둔다. 동으로 갈아치우지 않고 뒤에 붙이는 것은
    * 시군구 검색도 함께 잡기 위해서다 (운영자 지시 2026-09-03).
@@ -1710,7 +1759,8 @@ for (const d of dongPages) {
   );
 
   /* 같은 시군구의 다른 동네로 건너가는 줄. 이게 없으면 4,761장이 서로 안 이어진다. */
-  const family = dongPages.filter((x) => x.r.code === r.code && x.dong !== dong);
+  /* 같은 동의 다른 키워드 편도 이어 준다 — 그래서 x.dong 이 아니라 key 로 뺀다 */
+  const family = dongPages.filter((x) => x.r.code === r.code && x.key !== d.key);
   const fs2 = family.length ? seed % family.length : 0;
   const siblings = [];
   for (let i = 0; i < Math.min(12, family.length); i += 1) {
@@ -2176,7 +2226,11 @@ if (TIERED) {
       path: regionHref(r),
       kind: 'sigungu',
       crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel }],
-      title: `${r.sigunguLabel} ${hubKws.join(' ')}`,
+      /*
+       * 이름이 겹치는 시군구(서구·중구·북구…)는 시도를 앞에 붙인다 — 대구 서구와
+       * 대전 서구가 같은 조합을 뽑아 제목이 글자까지 같았다 (2026-09-10).
+       */
+      title: `${dupSigungu.has(r.sigunguLabel) ? `${r.sidoLabel} ` : ''}${r.sigunguLabel} ${hubKws.join(' ')}`,
       description: `${full} 배관 막힘 출동. ${keywords.length}가지 증상별 안내. `
         + dongList(r),
       jsonLd: {
@@ -2191,7 +2245,7 @@ if (TIERED) {
          * h1 은 제목과 같은 문장이다. 전에는 템플릿에 "{{구}}하수구막힘 {{구}} 변기막힘"
          * 이 박혀 있어 제목만 고치고 h1 은 옛 형식(지역 두 번)으로 남았다 (2026-09-10).
          */
-        hubH1: `${r.sigunguLabel} ${hubKws.join(' ')}`,
+        hubH1: `${dupSigungu.has(r.sigunguLabel) ? `${r.sidoLabel} ` : ''}${r.sigunguLabel} ${hubKws.join(' ')}`,
         sidoLabel: r.sidoLabel,
         sidoHref: `/${r.sidoSlug}/`,
         sigunguLabel: r.sigunguLabel,
@@ -2230,6 +2284,36 @@ if (TIERED) {
       }),
     }));
   }
+
+  /*
+   * 동 상세 (운영자 지시 2026-09-10 — 도사에도 동 페이지).
+   *   /{시도}/{시군구}/{동}-{키워드}/   동당 dongPerDong 편, 키워드는 시군구 안에서 돌린다
+   * 동 이름은 romanizeUnique 로 시군구 안에서 유일하게 만든다. 키워드 슬러그가 뒤에
+   * 붙으므로 기존 /{시군구}/{키워드}/ 와는 겹칠 수 없다.
+   */
+  const DONG_PER = site.dongDetails ? Math.max(1, Number(site.dongPerDong || 1)) : 0;
+  const dongDetailIndex = new Map();     // `${code}|${kw.slug}` -> [{dong, href}]
+  const dongDetailList = [];             // 렌더용 전체 목록
+  if (DONG_PER) {
+    for (const r of allRegions) {
+      const names = r.repDong.filter((n) => n && n.trim());
+      if (!names.length) continue;
+      const slugOf = romanizeUnique(names.map((n) => ({ key: n, name: n, prefix: r.sigunguLabel })));
+      const start = hash(`${siteKey}|dongstart|${r.code}`) % shownKws.length;
+      names.forEach((dong, i) => {
+        for (let j = 0; j < DONG_PER; j += 1) {
+          const k = shownKws[(start + i + j) % shownKws.length];
+          const href = `/${r.sidoSlug}/${r.slug}/${slugOf.get(dong)}-${k.slug}/`;
+          const id = `${r.code}|${k.slug}`;
+          if (!dongDetailIndex.has(id)) dongDetailIndex.set(id, []);
+          dongDetailIndex.get(id).push({ dong, href, label: `${dong} ${k.label}` });
+          dongDetailList.push({ r, dong, k, href });
+        }
+      });
+    }
+  }
+  const dongDetailsOf = (r, k) => (dongDetailIndex.get(`${r.code}|${k.slug}`) || [])
+    .map((x) => ({ href: x.href, label: x.label }));
 
   /* ── /<시도>/<시군구>/<키워드>/ × 3,328 — 말단 상세 ── */
   for (const r of allRegions) {
@@ -2375,6 +2459,10 @@ if (TIERED) {
           near,
           siblingHeading: `${r.sigunguLabel}의 다른 배관 문제`,
           siblings,
+          /* 동 페이지로 내려가는 길. 이게 없으면 동 페이지가 전부 고아다. */
+          hasDongLinks: (dongDetailsOf(r, k)).length > 0,
+          dongLinksHeading: `${r.sigunguLabel} 동네별 ${k.label}`,
+          dongLinks: dongDetailsOf(r, k),
           estimateForm: estimateForm({
             no: '11',
             heading: oneOf(pools.estimateHeadings, 23),
@@ -2386,6 +2474,132 @@ if (TIERED) {
         }),
       }));
     }
+  }
+
+  /* ── /<시도>/<시군구>/<동>-<키워드>/ — 동 상세 ── */
+  const dongDetailTitles = new Set();
+  for (const { r, dong, k, href } of dongDetailList) {
+    const full = `${r.sidoLabel} ${r.sigunguLabel}`;
+    const g = kwByGroup[k.group];
+    const seed = hash(`${siteKey}|dongdetail|${r.code}|${dong}|${k.slug}`);
+    const guDong = `${r.sigunguLabel} ${dong}`;
+    const others = r.repDong.filter((n) => n && n.trim() && n !== dong);
+    const vars = {
+      지역: `${full} ${dong}`, 구: guDong, 시도: r.sidoLabel, 키워드: k.label,
+      동: dong, 동2: dong, 동3: dong,
+    };
+    const pick = (arr, n, off = 0) => fillDeep(pickCombination(arr, n, seed + off), vars);
+    const oneOf = (arr, off = 0) => fillPlaceholders(arr[(seed + off) % arr.length], vars);
+    const group2 = sidoGroups.find((x) => x.label === r.sidoLabel).items;
+    const near = group2.filter((x) => x.code !== r.code).slice(0, 8)
+      .map((n) => ({ href: detailHref(n, k), label: `${n.sigunguLabel} ${k.label}` }));
+    /* 같은 동의 다른 키워드 편 + 같은 시군구 같은 키워드의 다른 동 */
+    const siblings = [
+      ...dongDetailList.filter((x) => x.r.code === r.code && x.dong === dong && x.k.slug !== k.slug)
+        .map((x) => ({ href: x.href, label: `${dong} ${x.k.label}` })),
+      { href: detailHref(r, k), label: `${r.sigunguLabel} ${k.label}` },
+    ];
+    const dongLinks = dongDetailsOf(r, k).filter((x) => x.href !== href).slice(0, 12);
+    const asPara = (arr) => arr.map((x) => `${x.t}. ${x.d}`);
+    const article = longArticle({
+      kwLabel: k.label,
+      sido: r.sidoLabel,
+      sigungu: r.sigunguLabel,
+      shortLabel: dong,
+      dongs: [dong],
+      neighbors: group2.filter((x) => x.code !== r.code).map((x) => x.sigunguLabel),
+      seed,
+      vars,
+      varOverrides: { 구: guDong, 지역: `${full} ${dong}` },
+      sitePools: {
+        원인: asPara(g.causes),
+        증상: asPara(g.symptoms),
+        작업: asPara(g.method),
+        주의: asPara(g.dont),
+      },
+    });
+    /* 메인 2 + 서브 1, 업체명 없음. 겹치면 서브를 한 칸 옮긴다. */
+    const main2 = pickRotated(shownKwLabels.filter((x) => x !== k.label), 1, seed + 37)[0] || '';
+    let title = '';
+    for (let bump = 0; bump <= SUB_KWS.length; bump += 1) {
+      const sk = subKw(seed + 41 + bump * 13);
+      title = `${dong} ${k.label} ${main2}${sk ? ` ${sk}` : ''}`.replace(/\s+/g, ' ').trim();
+      if (!dongDetailTitles.has(title)) break;
+    }
+    dongDetailTitles.add(title);
+
+    urls.push(page({
+      path: href,
+      kind: 'dongDetail',
+      published: postedAt(seed).toISOString(),
+      crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` },
+        { name: r.sigunguLabel, href: regionHref(r) }, { name: `${dong} ${k.label}` }],
+      title,
+      description: `${full} ${dong} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
+        + `연락 주십시오. ${r.sigunguLabel} ${others.join(',')}`,
+      jsonLd: [{
+        ...orgLd,
+        '@type': 'Service',
+        serviceType: k.label,
+        provider: { '@type': 'LocalBusiness', name: site.brand, telephone: site.phone },
+        areaServed: { '@type': 'AdministrativeArea', name: `${full} ${dong}` },
+        url: `${siteUrl}${href}`,
+      },
+      ...(article.faq.length ? [{
+        '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: article.faq,
+      }] : [])],
+      main: renderTemplate(templates.detail, {
+        ...base,
+        kwBlock: site.keywordBlock ? dongKeywordBlock(r, dong, seed) : null,
+        article: article.html,
+        sidoLabel: r.sidoLabel,
+        sidoHref: `/${r.sidoSlug}/`,
+        sigunguLabel: r.sigunguLabel,
+        sigunguHref: regionHref(r),
+        kwLabel: k.label,
+        detailH1: title,
+        detailLede: oneOf(keywordData.lede[k.angle], 1),
+        localHeading: `${dong} ${k.label}, 어디로 가나`,
+        localBody: `${full} ${dong}은 ${r.sigunguLabel} 안입니다. `
+          + `${dong}은 물론 ${others.slice(0, 3).join(' · ')} 어디로 부르셔도 갑니다. `
+          + `${r.sidoLabel} 안에서는 옮겨 다니는 시간이 크게 다르지 않습니다.`,
+        symptomHeading: `${dong} ${g.symptomHeading}`,
+        symptoms: pick(g.symptoms, 5),
+        causeHeading: `${dong} ${k.label}, ${g.causeHeading}`,
+        causes: pick(g.causes, 5, 3),
+        methodHeading: `${dong} ${k.label}, ${g.methodHeading}`,
+        method: g.method.map((m, i) => ({
+          ...fillDeep([m], vars)[0], no: String(i + 1).padStart(2, '0'),
+        })),
+        dontHeading: g.dontHeading,
+        dont: pick(g.dont, 4, 7),
+        priceHeading: `${dong} ${oneOf(pools.priceHeadings, 11)}`,
+        price: fillDeep(pools.price, vars),
+        priceNote: oneOf(pools.priceNotes, 13),
+        hasPhotos: imagePool.length > 0,
+        photoHeading: imagePool.length ? oneOf(pools.photoHeadings, 17) : '',
+        photos: pickCombination(imagePool, SHOTS, seed).map((img) => ({
+          ...img, alt: `${site.brand} ${img.label}`,
+        })),
+        faqHeading: `${dong} ${k.label} 자주 묻는 것`,
+        faq: pick(g.faq, 6, 19),
+        nearHeading: `${r.sigunguLabel} 인근도 갑니다`,
+        near,
+        siblingHeading: `${dong}의 다른 배관 문제`,
+        siblings,
+        hasDongLinks: dongLinks.length > 0,
+        dongLinksHeading: `${r.sigunguLabel} 다른 동네 ${k.label}`,
+        dongLinks,
+        estimateForm: estimateForm({
+          no: '11',
+          heading: oneOf(pools.estimateHeadings, 23),
+          lede: oneOf(pools.estimateLedes, 29),
+          sido: r.sidoLabel,
+          sigungu: r.sigunguLabel,
+          dongs: [dong],
+        }),
+      }),
+    }));
   }
 }
 
@@ -2523,20 +2737,26 @@ if (BLOG) {
       const names = r.repDong.filter((n) => n && n.trim());
       const start = hash(`${siteKey}|dongstart|${r.code}`) % blogData.keywords.length;
       const list = [];
+      /* 동당 여러 편 (운영자 지시 2026-09-10). 첫 편의 씨앗·주소는 예전 그대로다. */
+      const per = Math.max(1, Number(site.dongPostsPerDong || 1));
       names.forEach((dong, i) => {
-        const kw = blogData.keywords[(start + i) % blogData.keywords.length];
-        const seed = hash(`${siteKey}|dongpost|${r.code}|${dong}`);
-        const kind = blogData.kinds[seed % blogData.kinds.length];
-        const work = blogData.works[seed % blogData.works.length];
-        let slug = `${dong}${kw.slug}-${work}-${kind.slug}`;
-        if (taken.has(slug)) slug = `${blogSlugLabel(r)}${dong}${kw.slug}-${work}-${kind.slug}`;
-        if (taken.has(slug)) slug = `${slug}-2`;
-        taken.add(slug);
-        list.push({
-          r, dong, kw, kind, work, seed, slug,
-          title: `${dong} ${kw.label}${work === kw.label ? '' : ` ${work}`} ${kind.label}`,
-          at: postedAt(seed),
-        });
+        for (let j = 0; j < per; j += 1) {
+          const kw = blogData.keywords[(start + i + j) % blogData.keywords.length];
+          const seed = j === 0
+            ? hash(`${siteKey}|dongpost|${r.code}|${dong}`)
+            : hash(`${siteKey}|dongpost|${r.code}|${dong}|${kw.slug}`);
+          const kind = blogData.kinds[seed % blogData.kinds.length];
+          const work = blogData.works[seed % blogData.works.length];
+          let slug = `${dong}${kw.slug}-${work}-${kind.slug}`;
+          if (taken.has(slug)) slug = `${blogSlugLabel(r)}${dong}${kw.slug}-${work}-${kind.slug}`;
+          if (taken.has(slug)) slug = `${slug}-2`;
+          taken.add(slug);
+          list.push({
+            r, dong, kw, kind, work, seed, slug,
+            title: `${dong} ${kw.label}${work === kw.label ? '' : ` ${work}`} ${kind.label}`,
+            at: postedAt(seed),
+          });
+        }
       });
       dongPostsByRegion.set(r.code, list);
     }
@@ -2709,8 +2929,19 @@ if (BLOG) {
             /* 동 글로 내려가는 길. 이게 없으면 동 글 4,760장이 고아다. */
             hasDongPosts: (dongPostsByRegion.get(r.code) || []).length > 0,
             dongPostsHeading: `${blogLabel(r)} 동네별 글`,
-            dongPosts: pickRotated(dongPostsByRegion.get(r.code) || [], 12, seed + 5)
-              .map((t) => ({ href: `/${t.slug}/`, label: t.title })),
+            /*
+             * 시군구 글 12편(키워드 6 × 성격 2)이 동 글을 나눠 맡는다 — p번째 글이
+             * i % 12 === p 인 것을 건다. 무작위로 12개씩 고르면 동당 3편이 된 뒤로
+             * 아무도 안 거는 글이 생긴다 (실측 6장, 2026-09-10).
+             */
+            dongPosts: (() => {
+              const list = dongPostsByRegion.get(r.code) || [];
+              const slots = blogData.keywords.length * blogData.kinds.length;
+              const mine = blogData.keywords.indexOf(kw) * blogData.kinds.length
+                + blogData.kinds.indexOf(kind);
+              return list.filter((_, i) => i % slots === mine)
+                .map((t) => ({ href: `/${t.slug}/`, label: t.title }));
+            })(),
             estimateForm: estimateForm({
               no: '09',
               heading: pools.estimateHeadings[seed % pools.estimateHeadings.length],
@@ -2916,6 +3147,7 @@ const SITEMAP_HINT = {
   detail: { freq: 'monthly', pri: '0.8' },
   post: { freq: 'monthly', pri: '0.8' },
   dongPost: { freq: 'monthly', pri: '0.8' },
+  dongDetail: { freq: 'monthly', pri: '0.8' },
   service: { freq: 'monthly', pri: '0.6' },
 };
 const hintOf = (g) => SITEMAP_HINT[g] || { freq: 'monthly', pri: '0.5' };
@@ -2936,6 +3168,7 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
       + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`);
     // 그 묶음에서 가장 늦은 날짜가 그 사이트맵의 lastmod 다
     children.push({
+      group: g,
       file,
       count: part.length,
       lastmod: part.reduce((a, u) => (u.lastmod > a ? u.lastmod : a), part[0].lastmod),
@@ -2943,9 +3176,18 @@ for (const [g, list] of [...byGroup.entries()].sort((a, b) => b[1].length - a[1]
   }
 }
 
+/*
+ * 수집요청은 동 단위만 (운영자 지시 2026-09-10). 러너가 읽는 색인에 crawlGroups 에
+ * 적힌 묶음만 싣는다 — 하루 50건이 전부 동으로 간다. 구·서비스 페이지는 그대로
+ * 남고 이미 제출된 것도 그대로다. 안 적으면 예전처럼 전부 싣는다.
+ */
+const crawlChildren = Array.isArray(site.crawlGroups) && site.crawlGroups.length
+  ? children.filter((c) => site.crawlGroups.includes(c.group))
+  : children;
+if (!crawlChildren.length) throw new Error(`crawlGroups ${JSON.stringify(site.crawlGroups)} 에 맞는 사이트맵 묶음이 없습니다.`);
 const indexXml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + children
+  + crawlChildren
     .map((c) => `  <sitemap>\n    <loc>${siteUrl}/${CRAWL_DIR}/${c.file}</loc>\n`
       + `    <lastmod>${c.lastmod}</lastmod>\n  </sitemap>`)
     .join('\n')

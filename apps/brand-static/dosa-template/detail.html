@@ -48,4 +48,12 @@
 </div></section>
 {{/kwBlock}}
 
+{{#hasDongLinks}}
+<section id="dongs"><div class="wrap">
+  <p class="mark">12 — 동네별</p>
+  <h2>{{dongLinksHeading}}</h2>
+  <div class="names">{{#dongLinks}}<a href="{{href}}">{{label}}</a>{{/dongLinks}}</div>
+</div></section>
+{{/hasDongLinks}}
+
 {{{estimateForm}}}

@@ -829,5 +829,10 @@
  ],
  "_subKeywordsNote": "제목·하단 블록에만 쓴다. 본문 주제는 regionKeywords 가 정한다 (2026-09-09).",
  "dongPosts": true,
- "_dongPostsNote": "동마다 한글 블로그형 글 한 편 (운영자 지시 2026-09-10). 주소 /{동}{키워드}-{작업}-{성격}/"
+ "_dongPostsNote": "동마다 한글 블로그형 글 한 편 (운영자 지시 2026-09-10). 주소 /{동}{키워드}-{작업}-{성격}/",
+ "dongPostsPerDong": 3,
+ "crawlGroups": [
+  "dongPost"
+ ],
+ "_crawlGroupsNote": "수집요청 사이트맵(/_crawl/)엔 이 묶음만 싣는다 — 동 단위만 제출 (2026-09-10)"
 }

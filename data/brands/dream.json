@@ -841,5 +841,10 @@
   "배관공사",
   "세면대교체"
  ],
- "_subKeywordsNote": "제목·하단 블록에만 쓴다. 본문 주제는 regionKeywords 가 정한다 (2026-09-09)."
+ "_subKeywordsNote": "제목·하단 블록에만 쓴다. 본문 주제는 regionKeywords 가 정한다 (2026-09-09).",
+ "dongPerDong": 3,
+ "crawlGroups": [
+  "dong"
+ ],
+ "_crawlGroupsNote": "수집요청 사이트맵(/_crawl/)엔 이 묶음만 싣는다 — 동 단위만 제출 (2026-09-10)"
 }
