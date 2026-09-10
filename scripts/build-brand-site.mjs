@@ -1549,7 +1549,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     crumbs: [{ name: '홈', href: '/' }, { name: `${r.sidoLabel} ${r.sigunguLabel}` }],
     /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
     /* 업체명은 안 붙인다 — 앞자리를 검색어로 채운다 (운영자 지시 2026-09-09) */
-    title: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]}`
+    title: `${r.sigunguLabel} ${titleKws[0]} ${titleKws[1]}`
       + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}`,
     description: longDescription
       ? regionLongDescription(r, seed, titleKws)
@@ -1573,7 +1573,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
        * 브랜드 문구를 H1 에 넣으면 검색엔진이 보는 가장 강한 자리에 키워드가 없어진다.
        * 붙여쓰기(강남구하수구막힘)를 앞에 두는 것도 레퍼런스와 같다 — 실제로 그렇게 검색한다.
        */
-      regionH1: `${r.sigunguLabel}${titleKws[0]} ${titleKws[1]}`
+      regionH1: `${r.sigunguLabel} ${titleKws[0]} ${titleKws[1]}`
         + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}`,
       regionTagline: one('heroTaglines'),
       regionLede: one('heroLedes'),
@@ -2161,6 +2161,11 @@ if (TIERED) {
       main: renderTemplate(templates.sigunguHub, {
         ...base,
         kwBlock: site.keywordBlock ? regionKeywordBlock(r, seed) : null,
+        /*
+         * h1 은 제목과 같은 문장이다. 전에는 템플릿에 "{{구}}하수구막힘 {{구}} 변기막힘"
+         * 이 박혀 있어 제목만 고치고 h1 은 옛 형식(지역 두 번)으로 남았다 (2026-09-10).
+         */
+        hubH1: `${r.sigunguLabel} ${hubKws.join(' ')}`,
         sidoLabel: r.sidoLabel,
         sidoHref: `/${r.sidoSlug}/`,
         sigunguLabel: r.sigunguLabel,
@@ -2270,7 +2275,7 @@ if (TIERED) {
         kind: 'detail',
         published: postedAt(seed).toISOString(),
         crumbs: [{ name: '홈', href: '/' }, { name: r.sidoLabel, href: `/${r.sidoSlug}/` }, { name: r.sigunguLabel, href: regionHref(r) }, { name: k.label }],
-        title: `${r.sigunguLabel}${k.label} — `
+        title: `${r.sigunguLabel} ${k.label} — `
           + `${r.sidoLabel === r.sigunguLabel ? '' : `${r.sidoLabel} `}`
           + `${detailKws.join(' ')}`,
         description: `${full} ${k.label}. ${g.symptoms[seed % g.symptoms.length].t} 같은 상태면 `
@@ -2472,6 +2477,45 @@ if (BLOG) {
     }
   }
 
+  /*
+   * 동 글 (운영자 지시 2026-09-10 — "한글 블로그형으로").
+   *
+   * 시군구 글과 같은 뼈대로 동마다 한 편씩 쓴다. 키워드는 같은 시군구 안에서
+   * 돌려 가며 배정한다(드림·썬더·비버의 동 페이지와 같은 규칙).
+   *
+   * 주소는 시군구 글과 같은 꼴 — /{동}{키워드}-{작업}-{성격}/. 같은 동 이름이
+   * 다른 시군구에도 있어(중앙동이 서른 곳) 조합이 겹치면 시군구를 앞에 붙인다.
+   * 굽는 순서(allRegions)가 고정이라 다시 구워도 같은 주소가 나온다.
+   *
+   * blogPosts 에는 넣지 않는다 — 허브(/blog/<키워드>/) 목록은 시군구 글만 보여
+   * 주고, 동 글은 그 시군구 글 아래 "동네별 글" 에서 이어진다.
+   */
+  const dongPostsByRegion = new Map();
+  if (site.dongPosts) {
+    const taken = new Set(blogPosts.map((t) => t.slug));
+    for (const r of allRegions) {
+      const names = r.repDong.filter((n) => n && n.trim());
+      const start = hash(`${siteKey}|dongstart|${r.code}`) % blogData.keywords.length;
+      const list = [];
+      names.forEach((dong, i) => {
+        const kw = blogData.keywords[(start + i) % blogData.keywords.length];
+        const seed = hash(`${siteKey}|dongpost|${r.code}|${dong}`);
+        const kind = blogData.kinds[seed % blogData.kinds.length];
+        const work = blogData.works[seed % blogData.works.length];
+        let slug = `${dong}${kw.slug}-${work}-${kind.slug}`;
+        if (taken.has(slug)) slug = `${blogSlugLabel(r)}${dong}${kw.slug}-${work}-${kind.slug}`;
+        if (taken.has(slug)) slug = `${slug}-2`;
+        taken.add(slug);
+        list.push({
+          r, dong, kw, kind, work, seed, slug,
+          title: `${dong} ${kw.label}${work === kw.label ? '' : ` ${work}`} ${kind.label}`,
+          at: postedAt(seed),
+        });
+      });
+      dongPostsByRegion.set(r.code, list);
+    }
+  }
+
   /* ── 글 × 3,072 ── */
   for (const r of allRegions) {
     const full = `${r.sidoLabel} ${r.sigunguLabel}`;
@@ -2579,12 +2623,6 @@ if (BLOG) {
            * ("강북구 횡주관청소 횡주관청소 비용정보", 실측 91장 2026-09-09).
            * work 는 슬러그를 만드는 데도 쓰이므로 고르는 자체는 못 바꾼다 —
            * URL 이 바뀐다. 제목에서만 뺀다.
-           */
-          /*
-           * work 가 키워드와 같으면 제목에 두 번 찍힌다
-           * ("강북구 횡주관청소 횡주관청소 비용정보", 실측 91장 2026-09-09).
-           * work 는 슬러그를 만드는 데도 쓰이므로 고르는 자체는 못 바꾼다 —
-           * URL 이 바뀐다. 제목에서만 뺀다.
            * 뒤에 서브 키워드를 하나 붙여 메인 2 + 서브 1 을 맞춘다.
            */
           title: `${blogLabel(r)} ${kw.label}${work === kw.label ? '' : ` ${work}`}`
@@ -2642,6 +2680,11 @@ if (BLOG) {
             sameKw,
             dongHeading: `${blogLabel(r)} 어디든 갑니다`,
             dongs: r.repDong.slice(0, 40).map((name) => ({ name })),
+            /* 동 글로 내려가는 길. 이게 없으면 동 글 4,760장이 고아다. */
+            hasDongPosts: (dongPostsByRegion.get(r.code) || []).length > 0,
+            dongPostsHeading: `${blogLabel(r)} 동네별 글`,
+            dongPosts: pickRotated(dongPostsByRegion.get(r.code) || [], 12, seed + 5)
+              .map((t) => ({ href: `/${t.slug}/`, label: t.title })),
             estimateForm: estimateForm({
               no: '09',
               heading: pools.estimateHeadings[seed % pools.estimateHeadings.length],
@@ -2653,6 +2696,159 @@ if (BLOG) {
           }),
         }));
       }
+    }
+  }
+
+  /* ── 동 글 × 4,760 ── */
+  const dongPostTitles = new Set();
+  for (const [code, list] of dongPostsByRegion) {
+    const r = allRegions.find((x) => x.code === code);
+    const full = `${r.sidoLabel} ${r.sigunguLabel}`;
+    const neighbors = allRegions
+      .filter((x) => x.sidoLabel === r.sidoLabel && x.code !== r.code)
+      .map((x) => x.sigunguLabel);
+    for (const t of list) {
+      const { dong, kw, kind, work, seed, slug, at } = t;
+      const g = bg[kw.group];
+      const others = r.repDong.filter((n) => n && n.trim() && n !== dong);
+      const guDong = `${r.sigunguLabel} ${dong}`;
+      const vars = {
+        지역: `${full} ${dong}`, 구: guDong, 시도: r.sidoLabel, 키워드: kw.label,
+        동: dong, 동2: dong, 동3: dong,
+      };
+      const article = longArticle({
+        kwLabel: kw.label,
+        sido: r.sidoLabel,
+        sigungu: r.sigunguLabel,
+        shortLabel: dong,
+        dongs: [dong],
+        neighbors,
+        seed,
+        vars,
+        /* {구} 를 "시군구 동" 으로 — 동으로 갈아치우지 않고 뒤에 붙인다 (다른 동 페이지와 같은 규칙) */
+        varOverrides: { 구: guDong, 지역: `${full} ${dong}` },
+        sitePools: {
+          원인: g.sections[0].p,
+          신호: g.sections[1].p,
+          작업: g.sections[2].p,
+          예방: g.sections[3].p,
+          문답: g.sections[4].p,
+        },
+      });
+      const costPart = kind.focus === 'cost' ? [{
+        intro: fillPlaceholders(blogData.costIntro[seed % blogData.costIntro.length], vars),
+        after: fillPlaceholders(blogData.costAfter[seed % blogData.costAfter.length], vars),
+        price: fillDeep(pools.price, vars),
+      }] : [];
+
+      /* 같은 시군구의 다른 동 글, 그리고 그 시군구의 글로 올라가는 길 */
+      const sib = list.filter((x) => x.slug !== slug);
+      const ss = sib.length ? seed % sib.length : 0;
+      const sameArea = [];
+      for (let i = 0; i < Math.min(6, sib.length); i += 1) {
+        const x = sib[(ss + i) % sib.length];
+        sameArea.push({ href: `/${x.slug}/`, label: x.title });
+      }
+      const up = (postsByRegion.get(r.code) || []);
+      const sameKw = [
+        ...up.filter((x) => x.kw.slug === kw.slug),
+        ...up.filter((x) => x.kw.slug !== kw.slug),
+      ].slice(0, 6).map((x) => ({ href: `/${x.slug}/`, label: x.title }));
+
+      const tags = article.hashtags.map((x) => x.t);
+      const leadImage = (() => {
+        const x = stampedIndex.get(`${r.code}|${kw.slug}`);
+        if (!x) return [];
+        return [{
+          src: `/assets/${site.assetVersion}/img/${x.file}`,
+          alt: `${dong} ${kw.label} ${site.brand}`,
+          width: x.width, height: x.height,
+        }];
+      })();
+
+      urls.push(page({
+        path: `/${slug}/`,
+        kind: 'dongPost',
+        published: at.toISOString(),
+        image: leadImage[0] || null,
+        crumbs: [
+          { name: '홈', href: '/' },
+          { name: blogLabel(r), href: regionHref(r) },
+          { name: `${dong} ${kw.label}` },
+        ],
+        /*
+         * 메인 2 + 서브 1, 업체명 없음 — 시군구 글과 같은 규칙.
+         * 같은 동 이름이 다른 시군구에서 같은 조합으로 뽑히면 제목이 글자까지
+         * 같아진다 (실측 10장). 겹치면 서브를 한 칸씩 옮긴다.
+         */
+        title: (() => {
+          const head = `${dong} ${kw.label}${work === kw.label ? '' : ` ${work}`}`;
+          let title = '';
+          for (let bump = 0; bump <= SUB_KWS.length; bump += 1) {
+            const sk = subKw(seed + 53 + bump * 13);
+            title = `${head}${sk ? ` ${sk}` : ''} ${kind.label}`;
+            if (!dongPostTitles.has(title)) break;
+          }
+          dongPostTitles.add(title);
+          return title;
+        })(),
+        description: `${full} ${dong} ${kw.label} ${kind.label}. 원인부터 해결까지 정리했어요. `
+          + `${r.sigunguLabel} ${others.join(',')}`,
+        jsonLd: [{
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: t.title,
+          about: kw.label,
+          datePublished: at.toISOString(),
+          dateModified: at.toISOString(),
+          author: { '@type': 'Organization', name: site.brand },
+          publisher: { '@type': 'Organization', name: site.brand },
+          areaServed: { '@type': 'AdministrativeArea', name: `${full} ${dong}` },
+          mainEntityOfPage: `${siteUrl}/${slug}/`,
+        },
+        ...(article.faq.length ? [{
+          '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: article.faq,
+        }] : [])],
+        main: renderTemplate(templates.post, {
+          ...base,
+          kwBlock: site.keywordBlock ? dongKeywordBlock(r, dong, seed) : null,
+          postH1: t.title,
+          postedAt: ymd(at),
+          postedAtISO: at.toISOString(),
+          leadImage,
+          sidoLabel: r.sidoLabel,
+          sigunguLabel: r.sigunguLabel,
+          kwLabel: kw.label,
+          dongCount: r.dongCount,
+          lead: `${full} ${dong}에서 ${kw.label}으로 검색해 들어오셨다면 잘 오셨어요. `
+            + `${dong}은 물론 ${r.sigunguLabel} 어디든 가고요, 이 글에 원인부터 해결까지 정리해 뒀으니 `
+            + `읽어 보시고 애매하면 전화 주세요.`,
+          article: article.html,
+          costPart,
+          closing: fillPlaceholders(blogData.closing[seed % blogData.closing.length], vars),
+          tags: tags.map((x) => ({ t: x })),
+          blogHref: '/blog/',
+          kwHubHref: `/blog/${kw.slug}/`,
+          kwLabel2: kw.label,
+          sameAreaHeading: `${r.sigunguLabel}의 다른 동네 이야기`,
+          sameArea,
+          sameKwHeading: `${blogLabel(r)} 글`,
+          sameKw,
+          dongHeading: `${dong} 근처도 갑니다`,
+          dongs: others.slice(0, 40).map((name) => ({ name })),
+          hasDongPosts: false,
+          dongPostsHeading: '',
+          dongPosts: [],
+          estimateForm: estimateForm({
+            no: '09',
+            heading: pools.estimateHeadings[seed % pools.estimateHeadings.length],
+            lede: pools.estimateLedes[seed % pools.estimateLedes.length],
+            sido: r.sidoLabel,
+            sigungu: r.sigunguLabel,
+            dongs: [dong],
+          }),
+        }),
+      }));
     }
   }
 }
@@ -2693,6 +2889,7 @@ const SITEMAP_HINT = {
   region: { freq: 'monthly', pri: '0.8' },
   detail: { freq: 'monthly', pri: '0.8' },
   post: { freq: 'monthly', pri: '0.8' },
+  dongPost: { freq: 'monthly', pri: '0.8' },
   service: { freq: 'monthly', pri: '0.6' },
 };
 const hintOf = (g) => SITEMAP_HINT[g] || { freq: 'monthly', pri: '0.5' };

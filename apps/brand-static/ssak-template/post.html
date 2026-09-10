@@ -28,6 +28,13 @@
 
     <p class="pe">{{closing}}</p>
 
+    {{#hasDongPosts}}
+    <section class="pb">
+      <h2>{{dongPostsHeading}}</h2>
+      <ul class="blinks">{{#dongPosts}}<li><a href="{{href}}">{{label}}</a></li>{{/dongPosts}}</ul>
+    </section>
+    {{/hasDongPosts}}
+
     <section class="pb">
       <h2>{{sameAreaHeading}}</h2>
       <ul class="blinks">{{#sameArea}}<li><a href="{{href}}">{{label}}</a></li>{{/sameArea}}</ul>

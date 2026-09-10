@@ -827,5 +827,7 @@
   "배관공사",
   "세면대교체"
  ],
- "_subKeywordsNote": "제목·하단 블록에만 쓴다. 본문 주제는 regionKeywords 가 정한다 (2026-09-09)."
+ "_subKeywordsNote": "제목·하단 블록에만 쓴다. 본문 주제는 regionKeywords 가 정한다 (2026-09-09).",
+ "dongPosts": true,
+ "_dongPostsNote": "동마다 한글 블로그형 글 한 편 (운영자 지시 2026-09-10). 주소 /{동}{키워드}-{작업}-{성격}/"
 }
