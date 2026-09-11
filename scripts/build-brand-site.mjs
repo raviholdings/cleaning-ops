@@ -721,7 +721,9 @@ function serviceGroups() {
   const groups = [
     ['막힘', by('toilet', 'drain', 'sink', 'basin')],
     ['청소·세척', by('jet', 'stack', 'sewer', 'rain')],
-    ['점검·교체', by('scope', 'odor', 'trap', 'swap', 'leak')],
+    /* leakfix(누수공사)·faucet(수전교체)는 2026-09-11 에 넣었다 — 서브 키워드를 제목에
+       싣는데 그 일을 설명하는 페이지가 없었다. 누수 작업은 실제로 한다 (운영자 확인). */
+    ['점검·교체', by('scope', 'odor', 'trap', 'swap', 'leak', 'leakfix', 'faucet')],
   ].filter(([, items]) => items.length);
   // 아직 5종뿐인 사이트는 묶을 것이 없다. 그때는 한 덩어리로 둔다.
   if (services.length <= 6) return [group('서비스', services.map((s2) => link(`/${s2.slug}/`, s2.name)))];
