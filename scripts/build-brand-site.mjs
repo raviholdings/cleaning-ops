@@ -102,11 +102,19 @@ const keywords = keywordData ? keywordData.keywords : [];
  * 쓸 필요가 없고, 본문 주제는 regionKeywords(메인)가 그대로 정한다.
  */
 const SUB_KWS = site.subKeywords || [];
+/* 제목 끝에 붙이는 말 ("해결", 운영자 지시 2026-09-11). 없는 사이트는 빈 문자열. */
+const TITLE_TAIL = site.titleSuffix ? ` ${site.titleSuffix}` : '';
 const subKw = (seed) => (SUB_KWS.length ? SUB_KWS[seed % SUB_KWS.length] : '');
 
 const hiddenKws = new Set(site.hiddenKeywords || []);
 const shownKws = keywords.filter((k) => !hiddenKws.has(k.label));
 const shownKwLabels = shownKws.map((k) => k.label);
+/*
+ * 제목의 두 번째 자리 후보. 맨홀청소·오수받이막힘은 검색이 적어 여기서 뺀다
+ * (운영자 지시 2026-09-11). URL 층에는 남으므로 그 페이지 자체는 그대로다.
+ */
+const titleExclude = new Set(site.titleExclude || []);
+const titleKwLabels = shownKwLabels.filter((x) => !titleExclude.has(x));
 
 const host = valueOf('--host', site.host);
 const siteUrl = `https://${host}`.replace(/\/+$/, '');
@@ -208,8 +216,15 @@ const dongPages = [];
 const dongExtras = [];
 if (site.dongPages) {
   const kws = site.regionKeywords;
+  /*
+   * 주소용 키는 동결 목록(dongKeyKeywords = 2026-09-10 배포 당시 8개)으로 만든다.
+   * 키에 키워드가 들어가서, 화면용 목록(regionKeywords)을 바꿀 때마다 키가 바뀌면
+   * 2·3편 주소가 통째로 바뀐다. 그래서 둘을 갈랐다 (2026-09-11 키워드 재편).
+   */
+  const keyKws = site.dongKeyKeywords || kws;
   for (const r of allRegions) {
     const start = hash(`${siteKey}|dongstart|${r.code}`) % kws.length;
+    const startKey = hash(`${siteKey}|dongstart|${r.code}`) % keyKws.length;
     /* repDong 은 시군구가 가진 대표 동네다. 빈 값이 하나 섞여 있어 걸러낸다. */
     const names = r.repDong.filter((n) => n && n.trim());
     /*
@@ -230,7 +245,8 @@ if (site.dongPages) {
     for (let j = 1; j < per; j += 1) {
       names.forEach((name, i) => {
         const kw = kws[(start + i + j) % kws.length];
-        dongExtras.push({ r, dong: name, kw, key: `g:${r.code}:${name}:${kw}`, extra: true });
+        const keyKw = keyKws[(startKey + i + j) % keyKws.length];
+        dongExtras.push({ r, dong: name, kw, key: `g:${r.code}:${name}:${keyKw}`, extra: true });
       });
     }
   }
@@ -306,7 +322,7 @@ const otherSlugs = (() => {
        * 공식은 위 dongPages 만드는 곳과 글자까지 같아야 한다.
        */
       const per = Math.max(1, Number(oj.dongPerDong || 1));
-      const okws = oj.regionKeywords || [];
+      const okws = oj.dongKeyKeywords || oj.regionKeywords || [];
       /* 순서도 그쪽과 같아야 한다 — 첫 편 전부, 그다음 추가 편 */
       const oextra = [];
       for (const r of allRegions) {
@@ -1623,7 +1639,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
     /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
     /* 업체명은 안 붙인다 — 앞자리를 검색어로 채운다 (운영자 지시 2026-09-09) */
     title: `${r.sigunguLabel} ${titleKws[0]} ${titleKws[1]}`
-      + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}`,
+      + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}${TITLE_TAIL}`,
     description: longDescription
       ? regionLongDescription(r, seed, titleKws)
       : `${full} 하수구·변기 막힘 24시간 출동. `
@@ -1647,7 +1663,7 @@ for (const r of (TIERED || BLOG ? [] : allRegions)) {
        * 붙여쓰기(강남구하수구막힘)를 앞에 두는 것도 레퍼런스와 같다 — 실제로 그렇게 검색한다.
        */
       regionH1: `${r.sigunguLabel} ${titleKws[0]} ${titleKws[1]}`
-        + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}`,
+        + `${subKw(seed + 3) ? ` ${subKw(seed + 3)}` : ''}${TITLE_TAIL}`,
       regionTagline: one('heroTaglines'),
       regionLede: one('heroLedes'),
       dongCount: r.dongCount,
@@ -1763,7 +1779,14 @@ for (const d of dongPages) {
   /* 같은 시군구의 다른 동네로 건너가는 줄. 이게 없으면 4,761장이 서로 안 이어진다. */
   /* 같은 동의 다른 키워드 편도 이어 준다 — 그래서 x.dong 이 아니라 key 로 뺀다 */
   const family = dongPages.filter((x) => x.r.code === r.code && x.key !== d.key);
-  const fs2 = family.length ? seed % family.length : 0;
+  /*
+   * 무작위 시작점에서 12개를 고르면 동당 3편이 된 뒤로 아무도 안 거는 페이지가 생긴다
+   * (썬더 2장, 2026-09-11). 같은 시군구 목록에서 '내 다음 12편'을 순서대로 건다 —
+   * 그러면 모든 페이지가 앞 12편에게서 반드시 링크를 받는다.
+   */
+  const all = dongPages.filter((x) => x.r.code === r.code);
+  /* family 는 all 에서 나를 뺀 것이라, all 에서 내 다음 = family 의 내 자리 */
+  const fs2 = all.findIndex((x) => x.key === d.key) % Math.max(1, family.length);
   const siblings = [];
   for (let i = 0; i < Math.min(12, family.length); i += 1) {
     const x = family[(fs2 + i) % family.length];
@@ -1813,18 +1836,20 @@ for (const d of dongPages) {
    * 동 이름과 키워드는 띄운다 — 붙이면 한 낱말로 읽혀 오히려 안 잡힌다.
    */
   const rest = site.regionKeywords.filter((x) => x !== kw);
-  const titleOf = (l) => `${dong} ${l.join(' ')}`;
+  const titleOf = (l) => `${dong} ${l.join(' ')}${TITLE_TAIL}`;
   /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
   const sub1 = subKw(seed + 11);
   const withSub = (mains) => (sub1 ? [...mains, sub1] : mains);
-  let kwList = withSub([kw, ...pickRotated(rest, 1, seed + 71)]);
+  /* 한 개 뽑기는 나머지로 — pickRotated 는 목록 길이가 3의 배수면 두 자리만 찍는다 (2026-09-11 실측 쏠림) */
+  const one1 = (list, s2) => (list.length ? [list[s2 % list.length]] : []);
+  let kwList = withSub([kw, ...one1(rest, seed + 71)]);
   /*
    * 같은 동 이름이 다른 시군구에도 있는데 키워드 셋까지 같이 뽑히면 제목과 h1 이
    * 글자까지 똑같아진다 (실측 78장, 2026-09-03). 겹치면 뽑는 자리를 한 칸씩
    * 옮겨 다르게 만든다. 제목에 시군구를 넣지 않는 형식은 그대로 둔다.
    */
   for (let bump = 1; bump <= rest.length && dongTitles.has(titleOf(kwList)); bump += 1) {
-    kwList = withSub([kw, ...pickRotated(rest, 1, seed + 71 + bump * 13)]);
+    kwList = withSub([kw, ...one1(rest, seed + 71 + bump * 13)]);
   }
   dongTitles.add(titleOf(kwList));
   const at = postedAt(seed);
@@ -1842,7 +1867,7 @@ for (const d of dongPages) {
      * 문장으로 두고 업체명을 넣지 않는다 — 검색 결과에서 앞 글자가 키워드로
      * 채워지는 편이 낫다는 판단으로 보인다. 운영자 지시로 그쪽에 맞춘다.
      */
-    title: `${dong} ${kwList.join(' ')}`,
+    title: titleOf(kwList),                 // "… 해결" 꼬리까지 titleOf 가 붙인다
     /* 설명에 동 이름을 반드시 넣는다 (운영자 지시 2026-09-03). */
     description: longDescription
       ? dongLongDescription(r, dong, seed, kwList)
@@ -1865,7 +1890,7 @@ for (const d of dongPages) {
       dongLabel: dong,
       kwLabel: kw,
       kwBlock: site.keywordBlock ? dongKeywordBlock(r, dong, seed) : null,
-      dongH1: `${dong} ${kwList.join(' ')}`,
+      dongH1: titleOf(kwList),
       dongLede: one2('heroLedes', 3),
       postedAt: ymd(at),
       board: site.board,
@@ -2221,7 +2246,7 @@ if (TIERED) {
      * 지역명만 다른 복제 페이지로 보인다.
      */
     /* 메인 2 + 서브 1 (운영자 지시 2026-09-09) */
-    const hubMain = pickRotated(shownKwLabels, 2, seed + 29);
+    const hubMain = pickRotated(titleKwLabels, 2, seed + 29);
     const hubKws = subKw(seed + 31) ? [...hubMain, subKw(seed + 31)] : hubMain;
 
     urls.push(page({
@@ -2379,7 +2404,8 @@ if (TIERED) {
        * 앞이 "북구세면대뚫기" 라 그 자체가 메인 하나다. 뒤에 메인 1 + 서브 1 을
        * 붙여 메인 2 + 서브 1 을 채운다 (운영자 지시 2026-09-09).
        */
-      const detailMain = pickRotated(shownKwLabels.filter((x) => x !== k.label), 1, seed + 37);
+      const dmList = titleKwLabels.filter((x) => x !== k.label);
+      const detailMain = dmList.length ? [dmList[(seed + 37) % dmList.length]] : [];
       const detailKws = subKw(seed + 41) ? [...detailMain, subKw(seed + 41)] : detailMain;
 
       urls.push(page({
@@ -2521,7 +2547,8 @@ if (TIERED) {
       },
     });
     /* 메인 2 + 서브 1, 업체명 없음. 겹치면 서브를 한 칸 옮긴다. */
-    const main2 = pickRotated(shownKwLabels.filter((x) => x !== k.label), 1, seed + 37)[0] || '';
+    const m2List = titleKwLabels.filter((x) => x !== k.label);
+    const main2 = m2List.length ? m2List[(seed + 37) % m2List.length] : '';
     let title = '';
     for (let bump = 0; bump <= SUB_KWS.length; bump += 1) {
       const sk = subKw(seed + 41 + bump * 13);
