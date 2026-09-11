@@ -63,6 +63,16 @@ const json = (body, status = 200, origin = null) => new Response(JSON.stringify(
 const RATE_LIMIT = 20;       // 창 안에서 허용할 접수 수 (통신사 NAT 로 한 IP 를 여럿이 쓰는 경우까지 감안)
 const RATE_WINDOW_SEC = 600; // 창 길이(초) = 10분
 
+/** IP 형식일 때만 통과시킨다. DB 의 client_ip 가 inet 이라 이상한 값이면 insert 가 깨진다. */
+function cleanIp(value) {
+  const v = String(value || '').trim();
+  if (!v || v === '-') return null;
+  const first = v.split(',')[0].trim();
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(first)) return first;
+  if (first.includes(':') && /^[0-9a-fA-F:]+$/.test(first)) return first;
+  return null;
+}
+
 async function overRateLimit(request, ctx) {
   const ip = request.headers.get('cf-connecting-ip');
   if (!ip) return false;
@@ -175,6 +185,9 @@ export default {
       request_notes: checked.message,
       referer: clean(payload.referrer, 500),
       user_agent: ua.slice(0, 500),
+      // 방문자 IP. client_ip 가 inet 이라 형식이 아니면 null 로 넣는다 (2026-09-11).
+      // ⚠ 위조 가능한 값이다 — 오리진이 공개돼 있어 Cloudflare 를 건너뛸 수 있다.
+      client_ip: cleanIp(request.headers.get('cf-connecting-ip')),
     };
 
     try {

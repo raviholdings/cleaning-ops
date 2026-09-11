@@ -85,16 +85,18 @@ try {
      */
     const res = await client.query(
       `insert into public.lead_submissions
-         (group_key, host, site_url, service_type, request_notes, created_at)
-       select $1, $2, $3, $4, $5, $6::timestamptz
+         (group_key, host, site_url, service_type, request_notes, created_at, client_ip)
+       select $1, $2, $3, $4, $5, $6::timestamptz, $7::inet
         where not exists (
           select 1 from public.lead_submissions
            where host = $2 and site_url = $3 and service_type = $4 and created_at = $6::timestamptz)`,
       // 이사 페이지 이벤트는 경로로 구분해 moving-ravi 로 태그한다.
       // UA 를 notes 에 남긴다 — "누가(기기·브라우저)" 를 나중에 볼 수 있게 (2026-08-22).
+      // client_ip 는 2026-09-11 부터. 옛 줄은 로그에 IP 칸이 없어 null 이다.
       [row.path.startsWith('/이사/') ? 'moving-ravi' : groupKey,
         row.host, row.path, `beacon:${row.event}`,
-        row.ua ? `제휴사 iframe 폼 이벤트 · ${row.ua.slice(0, 200)}` : '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)', row.at],
+        row.ua ? `제휴사 iframe 폼 이벤트 · ${row.ua.slice(0, 200)}` : '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)',
+        row.at, row.ip],
     );
     inserted += res.rowCount;
   }
@@ -166,13 +168,30 @@ function fetchLog() {
   return out;
 }
 
-/** `2026-08-18T12:00:00+09:00\thost\tadvance\t/37.html` */
+/** IP 형식일 때만 통과시킨다. client_ip 가 inet 이라 이상한 값이면 insert 가 깨진다. */
+function cleanIp(value) {
+  const v = String(value || '').trim();
+  if (!v || v === '-') return null;
+  // XFF 는 콤마 목록일 수 있다. 맨 앞이 원 클라이언트다.
+  const first = v.split(',')[0].trim();
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(first)) return first;
+  if (/^[0-9a-fA-F:]+$/.test(first) && first.includes(':')) return first;
+  return null;
+}
+
+/**
+ * `2026-08-18T12:00:00+09:00\thost\tadvance\t/37.html\t<UA>\t<IP>`
+ *
+ * 칸이 시기별로 다르다 — 늘려온 순서대로다.
+ *   4칸: 최초            5칸: UA 추가 (2026-08-20)      6칸: IP 추가 (2026-09-11)
+ * 옛 줄도 그대로 읽혀야 하므로 없는 칸은 빈 값으로 둔다.
+ */
 function parse(text) {
   const out = [];
   for (const line of text.split('\n')) {
     const parts = line.trim().split('\t');
     if (parts.length < 4) continue;
-    const [at, host, event, path, ua] = parts;
+    const [at, host, event, path, ua, ip] = parts;
     if (!/^\d{4}-\d{2}-\d{2}T/.test(at)) continue;
     if (event !== 'view' && event !== 'advance') continue;
     /*
@@ -186,7 +205,7 @@ function parse(text) {
       botSkipped += 1;
       continue;
     }
-    out.push({ at, host, event, path: decodeSafe(path || '/'), ua: ua || '' });
+    out.push({ at, host, event, path: decodeSafe(path || '/'), ua: ua || '', ip: cleanIp(ip) });
   }
   return out;
 }
