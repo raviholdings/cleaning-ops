@@ -26,21 +26,30 @@ import type { SessionUser } from './components/AuthGate';
  * group_key 는 DB(naver_project_groups)의 값과 글자까지 같아야 한다 — 다르면
  * 버튼은 보이는데 숫자가 0으로 나온다.
  */
+/*
+ * 구버전(v1) — 옛 루트 9개(amunsa·anclose·daddul·ddulea·naoheg·one-qfast·
+ * oneshot-sewer·pipe-oneshot·uloung)에 얹힌 서브도메인 18,000개다. 청소·이사·
+ * 철거·배관이 한 호스트를 나눠 쓰는 구조라 따로 볼 일이 없어 하나로 접었다
+ * (운영자 요청 2026-09-11).
+ *
+ * DB 는 건드리지 않는다 — group_key 를 콤마로 묶어 보내면 서버가 any() 로 건다.
+ * 개별 업종을 다시 봐야 하면 여기에 줄을 되살리면 된다.
+ */
+const LEGACY_V1 = 'cleaning-ravi,moving-ravi,demolition-ravi,piping-ravi,piping-ravi-shared';
+
 const GROUPS = [
-  { id: 'all', label: '전체 업종' },
-  { id: 'cleaning-ravi', label: '청소' },
-  { id: 'moving-ravi', label: '이사' },
-  { id: 'demolition-ravi', label: '철거' },
-  { id: 'piping-ravi', label: '배관' },
-  { id: 'piping-ravi-shared', label: '배관(공유)' },
+  { id: 'all', label: '전체' },
   { id: 'brand-ravi', label: '브랜드' },
+  { id: LEGACY_V1, label: '구버전 (v1)' },
 ];
 
 /** 선택된 업종을 사람 말로. GROUPS 를 그대로 쓰므로 업종을 더해도 손댈 데가 없다. */
 const groupLabel = (id: string) => {
   const g = GROUPS.find((x) => x.id === id);
   if (!g) return id;
-  return g.id === 'all' ? g.label : `${g.label} (${g.id})`;
+  // 콤마로 묶인 것(구버전)은 group_key 를 늘어놓지 않는다 — 화면이 지저분해진다.
+  if (g.id === 'all' || g.id.includes(',')) return g.label;
+  return `${g.label} (${g.id})`;
 };
 
 export default function App({ user }: { user: SessionUser }) {

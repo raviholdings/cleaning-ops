@@ -2,13 +2,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { currentUser } from './auth';
 
 /*
- * 배관 리드 조회·처리 API. lead-dashboard.uloung.com 화면이 이것만 쓴다.
+ * 접수 조회·처리 API. lead-dashboard.uloung.com 화면이 이것만 쓴다.
  *
  * 테이블(lead_submissions)은 업종 공용이고 group_key 로 가른다 — 나누지 않기로
- * 확정(2026-08-25). 배관 Worker(workers/piping-lead)가 'piping-ravi' 로 넣는다.
- * 청소·이사 리드는 같은 테이블에 있지만 이 화면에는 띄우지 않는다.
+ * 확정(2026-08-25).
+ *   piping-ravi  배관 Worker(workers/piping-lead)
+ *   brand-ravi   브랜드 Worker(workers/brand-lead) — .kr 6개 (2026-09-14 추가)
+ *
+ * 청소·이사는 띄우지 않는다. 그쪽 group_key 로 들어오는 건 대부분 'beacon:view'
+ * (폼이 화면에 떴다는 신호)라 전화할 대상이 아니다 — 6,458건이 섞여 들어온다.
  */
-const GROUP_KEY = 'piping-ravi';
+const GROUP_KEYS = ['piping-ravi', 'brand-ravi'];
 
 type DbQuery = (text: string, values?: unknown[]) => Promise<{ rows: any[] }>;
 
@@ -32,8 +36,8 @@ export async function handleLeads(query: DbQuery, req: IncomingMessage, res: Ser
     const status = url.searchParams.get('status') || 'all';
     const q = (url.searchParams.get('q') || '').trim();
 
-    const where: string[] = ['group_key = $1'];
-    const params: unknown[] = [GROUP_KEY];
+    const where: string[] = ['group_key = any($1::text[])'];
+    const params: unknown[] = [GROUP_KEYS];
     if (status === 'unhandled') where.push('handled_at is null');
     if (status === 'handled') where.push('handled_at is not null');
     if (q) {
@@ -46,7 +50,8 @@ export async function handleLeads(query: DbQuery, req: IncomingMessage, res: Ser
     params.push(pageSize, (page - 1) * pageSize);
     const rowsP = query(
       `select id, created_at, area_name, customer_name, customer_phone, request_notes,
-              host, site_url, handled_at, handled_by, memo
+              host, site_url, handled_at, handled_by, memo, group_key,
+              host(client_ip) as client_ip
          from public.lead_submissions
          ${clause}
         order by handled_at is not null, created_at desc
@@ -95,10 +100,11 @@ export async function handleLeads(query: DbQuery, req: IncomingMessage, res: Ser
     }
     if (!sets.length) { send(res, 400, { error: '바꿀 값이 없습니다.' }); return; }
 
-    params.push(id, GROUP_KEY);
+    // 조회와 같은 범위여야 한다 — 화면에 보이는데 "전화함" 이 안 먹는 일이 없게.
+    params.push(id, GROUP_KEYS);
     const updated = await query(
       `update public.lead_submissions set ${sets.join(', ')}
-        where id = $${params.length - 1} and group_key = $${params.length}
+        where id = $${params.length - 1} and group_key = any($${params.length}::text[])
         returning id, handled_at, handled_by, memo`,
       params,
     );

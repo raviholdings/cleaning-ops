@@ -60,8 +60,25 @@ export function buildBrandTrafficAwk(hosts, topN = 15) {
     '  d = dp[3] "-" mnum[dp[2]] "-" dp[1];',
     '  dseen[d] = 1;',
     '',
-    // 봇 판정. 자칭 UA 라 완벽하지 않지만 대량 크롤러는 다 걸린다.
+    /*
+     * 봇 판정은 둘을 함께 본다.
+     *
+     * 1) UA 문자열 — 자칭이라 못 믿는다. 실제로 66.249.x(Googlebot 대역)가
+     *    "사람" 으로 집계돼 IP 상위권에 올라왔다 (2026-09-11 운영자 지적).
+     *    구글은 렌더링 단계에서 Googlebot 토큰 없는 Chrome/Nexus 5X UA 로도 온다.
+     * 2) IP 대역 — 크롤러 사업자 대역은 UA 와 무관하게 봇으로 친다. 이쪽이 확실하다.
+     *
+     * 대역을 넓게 잡지 않는다. 34.x·35.x(GCP)는 누구나 빌릴 수 있어서 뺐다 —
+     * 거기서 오는 건 구글 크롤러가 아닐 수 있다.
+     */
     '  isbot = (ua ~ /bot|Bot|spider|Spider|crawler|Crawler|Yeti|Applebot|Googlebot|bingbot|PetalBot|YandexBot|Bytespider|GPTBot|ClaudeBot|facebookexternalhit/);',
+    '  if (!isbot) {',
+    '    if (ip ~ /^66\\.249\\./) isbot = 1;          # Googlebot',
+    '    else if (ip ~ /^192\\.178\\./) isbot = 1;    # Google',
+    '    else if (ip ~ /^2001:4860:/) isbot = 1;      # Google IPv6',
+    '    else if (ip ~ /^(114\\.111\\.32\\.|110\\.93\\.150\\.|125\\.209\\.2|211\\.249\\.)/) isbot = 1;  # 네이버 Yeti',
+    '    else if (ip ~ /^(40\\.77\\.|207\\.46\\.|13\\.66\\.)/) isbot = 1;  # Bingbot',
+    '  }',
     '',
     /*
      * 페이지 요청만 따로 센다. 한 번 방문하면 이미지·CSS·파비콘까지 여러 건이
@@ -123,13 +140,18 @@ export function buildBrandTrafficAwk(hosts, topN = 15) {
     // 사람 요청의 리퍼러 분포. direct 가 튀면 벤더가 말한 그 방식이다.
     '    print "";',
     '    printf "  -- referer (bot 제외) --\\n";',
-    '    printf "  %-12s %9s %9s %9s %9s %9s\\n", "date", "direct", "naver", "google", "daum", "other";',
+    /*
+     * self(사이트 안에서 페이지를 옮긴 것)를 other 에 합치면 안 된다.
+     * "외부에서 온 정체불명 유입" 처럼 보이는데 실제로는 체류의 증거라 뜻이 정반대다
+     * (2026-09-15 확인: dosadosa 의 other 419 중 대부분이 dosadosa.kr 자기 참조였다).
+     */
+    '    printf "  %-12s %9s %9s %9s %9s %9s %9s\\n", "date", "direct", "naver", "google", "daum", "self", "other";',
     '    for (i = 1; i <= nd; i++) {',
     '      d = dl[i];',
     '      if (hum[h, d] + 0 == 0) continue;',
-    '      printf "  %-12s %9d %9d %9d %9d %9d\\n", d,',
+    '      printf "  %-12s %9d %9d %9d %9d %9d %9d\\n", d,',
     '        ref2[h,d,"direct"]+0, ref2[h,d,"naver"]+0, ref2[h,d,"google"]+0,',
-    '        ref2[h,d,"daum"]+0, ref2[h,d,"other"]+ref2[h,d,"self"]+0;',
+    '        ref2[h,d,"daum"]+0, ref2[h,d,"self"]+0, ref2[h,d,"other"]+0;',
     '    }',
     '',
     // 사람 UA 기준 상위 IP. 삽입 정렬을 상위 TOP 개로만 돌린다.

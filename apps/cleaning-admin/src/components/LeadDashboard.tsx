@@ -3,9 +3,9 @@ import { Phone, RefreshCw, Search, Check } from 'lucide-react';
 import Pager from './Pager.tsx';
 
 /*
- * 배관 접수 화면 (lead-dashboard.uloung.com).
+ * 접수 화면 (lead-dashboard.uloung.com). 배관 + 브랜드(.kr) 를 함께 본다.
  * 접수된 건을 보고 고객에게 전화하는 용도라, 전화번호는 tel: 링크로 바로 걸 수
- * 있게 두고 "전화함" 표시와 메모를 남긴다.
+ * 있게 두고 통화 여부(전화 대기 / 통화 완료)와 메모를 남긴다.
  */
 
 interface Lead {
@@ -20,7 +20,33 @@ interface Lead {
   handled_at: string | null;
   handled_by: string | null;
   memo: string | null;
+  /** 배관(piping-ravi)과 브랜드(brand-ravi)가 같이 들어온다 (2026-09-14). */
+  group_key: string | null;
+  /** Cloudflare CF-Connecting-IP. 위조 가능하므로 참고용이다 (2026-09-11 추가). */
+  client_ip: string | null;
 }
+
+/** 어느 쪽에서 온 접수인지. 배관 서브도메인은 수가 많아 호스트를 그대로 보여준다. */
+const sourceLabel = (r: Lead) => (r.group_key === 'brand-ravi' ? '브랜드' : '배관');
+
+/*
+ * 통화 여부 버튼.
+ *
+ * 전에는 미처리 행에 '전화함' 이 붙어 있어서, 눌러야 할 버튼이 아니라 "이미
+ * 전화했다" 는 표시로 읽혔다 (운영자 지적 2026-09-14). 상태를 그대로 쓴다 —
+ * 아직 안 한 것은 빨강 '전화 대기', 끝난 것은 초록 '통화 완료' 다.
+ */
+const callChip = (done: boolean): React.CSSProperties => ({
+  padding: '6px 14px',
+  borderRadius: '999px',
+  border: `1px solid ${done ? 'rgba(52,211,153,0.45)' : 'rgba(248,113,113,0.55)'}`,
+  background: done ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.18)',
+  color: done ? '#34d399' : '#fca5a5',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+});
 
 interface LeadDashboardProps {
   user: { name: string | null; username: string; role: 'owner' | 'staff' | 'member' };
@@ -98,7 +124,7 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
       <div style={{ padding: '64px 24px', textAlign: 'center', color: '#9ca3af' }}>
         <h1 style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '10px' }}>접근 권한이 없습니다</h1>
         <p style={{ fontSize: '0.9rem', margin: 0 }}>
-          배관 접수 화면은 고객 개인정보를 다루므로 <strong style={{ color: '#d1d5db' }}>소유자·스태프</strong>만
+          접수 화면은 고객 개인정보를 다루므로 <strong style={{ color: '#d1d5db' }}>소유자·스태프</strong>만
           볼 수 있습니다. 권한이 필요하면 소유자에게 요청하세요.
         </p>
         <p style={{ fontSize: '0.8rem', marginTop: '14px' }}>
@@ -123,9 +149,9 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>배관 접수</h1>
+        <h1 style={{ fontSize: '1.4rem', margin: 0 }}>접수 (배관 · 브랜드)</h1>
         <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
-          미처리 <strong style={{ color: '#f87171' }}>{unhandled}</strong> · 전체 {total}
+          전화 대기 <strong style={{ color: '#f87171' }}>{unhandled}</strong> · 전체 {total}
         </span>
         <button onClick={load} disabled={loading} style={chip(false)}>
           <RefreshCw size={14} style={{ verticalAlign: '-2px' }} /> 새로고침
@@ -135,7 +161,7 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         {(['unhandled', 'all', 'handled'] as const).map((s) => (
           <button key={s} onClick={() => { setStatus(s); setPage(1); }} style={chip(status === s)}>
-            {s === 'unhandled' ? '미처리' : s === 'all' ? '전체' : '처리됨'}
+            {s === 'unhandled' ? '전화 대기' : s === 'all' ? '전체' : '통화 완료'}
           </button>
         ))}
         <form
@@ -168,7 +194,7 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
           <thead>
             <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
-              {['접수', '지역', '이름', '전화', '문의내용', '메모', '처리'].map((h) => (
+              {['접수', '사이트', '지역', '이름', '전화', '문의내용', 'IP', '메모', '통화'].map((h) => (
                 <th key={h} style={{ ...cell, textAlign: 'left', fontWeight: 600, color: '#d1d5db' }}>{h}</th>
               ))}
             </tr>
@@ -177,6 +203,20 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
             {rows.map((r) => (
               <tr key={r.id} style={{ opacity: r.handled_at ? 0.55 : 1 }}>
                 <td style={{ ...cell, whiteSpace: 'nowrap' }}>{fmt(r.created_at)}</td>
+                <td style={{ ...cell, whiteSpace: 'nowrap' }}>
+                  <span style={{
+                    display: 'inline-block', padding: '1px 7px', borderRadius: '999px', fontSize: '0.7rem',
+                    background: r.group_key === 'brand-ravi' ? 'rgba(52,211,153,0.15)' : 'rgba(99,102,241,0.15)',
+                    color: r.group_key === 'brand-ravi' ? '#34d399' : '#818cf8',
+                  }}>{sourceLabel(r)}</span>
+                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '2px' }}>
+                    {r.host ? (
+                      <a href={`https://${r.host}${r.site_url && r.site_url !== '/' ? r.site_url : ''}`}
+                         target="_blank" rel="noreferrer"
+                         style={{ color: '#9ca3af', textDecoration: 'none' }}>{r.host}</a>
+                    ) : '-'}
+                  </div>
+                </td>
                 <td style={cell}>{r.area_name || '-'}</td>
                 <td style={cell}>{r.customer_name || '-'}</td>
                 <td style={{ ...cell, whiteSpace: 'nowrap' }}>
@@ -190,6 +230,9 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
                   ) : '-'}
                 </td>
                 <td style={{ ...cell, maxWidth: '320px', whiteSpace: 'pre-wrap' }}>{r.request_notes || '-'}</td>
+                <td style={{ ...cell, whiteSpace: 'nowrap', fontSize: '0.75rem', color: '#9ca3af' }}>
+                  {r.client_ip || '-'}
+                </td>
                 <td style={cell}>
                   <input
                     defaultValue={r.memo || ''}
@@ -203,15 +246,15 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
                   />
                 </td>
                 <td style={{ ...cell, whiteSpace: 'nowrap' }}>
-                  <button onClick={() => patch(r.id, { handled: !r.handled_at })} style={chip(!!r.handled_at)}>
-                    {r.handled_at ? <><Check size={13} /> {r.handled_by || '처리됨'}</> : '전화함'}
+                  <button onClick={() => patch(r.id, { handled: !r.handled_at })} style={callChip(!!r.handled_at)}>
+                    {r.handled_at ? <><Check size={13} /> {r.handled_by || '통화 완료'}</> : '전화 대기'}
                   </button>
                 </td>
               </tr>
             ))}
             {!rows.length && !loading && (
               <tr>
-                <td colSpan={7} style={{ ...cell, textAlign: 'center', color: '#9ca3af', padding: '32px' }}>
+                <td colSpan={9} style={{ ...cell, textAlign: 'center', color: '#9ca3af', padding: '32px' }}>
                   접수된 건이 없습니다.
                 </td>
               </tr>

@@ -203,7 +203,18 @@ function dbApiPlugin() {
           if (filter === 'indexed') where.push('l.indexed');
           if (filter === 'not_indexed') where.push('not l.indexed');
           
-          if (groupKey && groupKey !== 'all') {
+          if (groupKey && groupKey.includes(',')) {
+            /*
+             * "구버전(v1)" 탭. 옛 루트 9~10개에 얹힌 그룹을 한꺼번에 본다
+             * (청소·이사·철거·배관·배관공유). 프런트가 group_key 를 콤마로 묶어 보낸다.
+             * DB 에는 아무것도 더 넣지 않는다 — 화면에서만 묶는 것이다 (2026-09-11).
+             *
+             * 아래 개별 분기의 URL 모양 추정(이사/철거)은 쓰지 않는다. 어차피 그
+             * 페이지들이 cleaning-ravi 호스트에 얹혀 있어 합집합에 다 들어온다.
+             */
+            params.push(groupKey.split(',').map((s) => s.trim()).filter(Boolean));
+            where.push(`(l.group_key = any($${params.length}::text[]) or d.group_key = any($${params.length}::text[]))`);
+          } else if (groupKey && groupKey !== 'all') {
             if (groupKey === 'cleaning-ravi' || groupKey === 'cleaning') {
               where.push(`(l.group_key = 'cleaning-ravi' or d.group_key = 'cleaning-ravi')`);
             } else if (groupKey === 'moving' || groupKey === 'moving-ravi') {
@@ -235,14 +246,16 @@ function dbApiPlugin() {
            * index_check_enabled 가 true 고, is_visible · deployment_status=active 이며
            * 계정이 blocked 가 아닌 도메인. 러너가 실제로 도는 범위와 같다.
            */
-          const summaryParams = [...params, groupKey && groupKey !== 'all' ? groupKey : null];
+          // 배열로 넘긴다 — "구버전" 탭이 group_key 를 콤마로 묶어 보내기 때문이다.
+          const summaryParams = [...params,
+            groupKey && groupKey !== 'all' ? groupKey.split(',').map((s) => s.trim()).filter(Boolean) : null];
           const gk = `$${summaryParams.length}`;
 
           const [summaryRes, bucketRes, rootRes, rowsRes, countRes] = await Promise.all([
             pool.query(`
               with l as (${LATEST_INDEX})
               select (select count(*)::int from public.naver_index_check_target_domains td
-                              where (${gk}::text is null or td.group_key = ${gk}::text)) as total_domains,
+                              where (${gk}::text[] is null or td.group_key = any(${gk}::text[]))) as total_domains,
                      count(*)::int                                    as checked,
                      count(*) filter (where l.indexed)::int           as indexed,
                      coalesce(sum(l.indexed_post_count), 0)::int      as indexed_posts,
@@ -339,7 +352,11 @@ function dbApiPlugin() {
           if (account) { params.push(account); where.push(`naver_account_id = $${params.length}`); }
           if (deployed === 'yes') where.push('deployed_at is not null');
           if (deployed === 'no') where.push('deployed_at is null');
-          if (groupKey && groupKey !== 'all') { params.push(groupKey); where.push(`group_key = $${params.length}`); }
+          // 콤마로 여러 개가 올 수 있다 ("구버전" 탭). 배열로 받아 any() 로 건다.
+          if (groupKey && groupKey !== 'all') {
+            params.push(groupKey.split(',').map((s) => s.trim()).filter(Boolean));
+            where.push(`group_key = any($${params.length}::text[])`);
+          }
           const clause = where.length ? `where ${where.join(' and ')}` : '';
 
           const [rowsRes, countRes] = await Promise.all([
@@ -388,6 +405,16 @@ function dbApiPlugin() {
           const groupKey = (url.searchParams.get('groupKey') || url.searchParams.get('group') || '').trim();
           const filterGroup = groupKey && groupKey !== 'all' ? groupKey : null;
 
+          /*
+           * 남에게 넘긴 계정은 목록에서 뺀다 (운영자 요청 2026-09-11).
+           * notes 에 '양도=<날짜>' 가 붙어 있다 — 291개(순번 110~200 · 301~450 · 451~500).
+           * 지우지 않고 숨기기만 한다. 지우면 "누구한테 넘겼나" 를 DB 에서 못 찾는다.
+           *
+           * ⚠ 이 조건은 아래 accountSummaryP 에도 똑같이 들어가야 한다. 한쪽만 고치면
+           *   목록에서는 사라지는데 총계에는 남아 숫자가 안 맞는다.
+           */
+          const HANDED_OVER = `coalesce(notes, '') not like '%양도%'`;
+
           // 1) Accounts list
           const accountsP = pool.query(`
             select account_id, account_order, provider, organization_name,
@@ -395,6 +422,7 @@ function dbApiPlugin() {
                    searchadvisor_session_saved_at, searchadvisor_session_validated_at,
                    searchadvisor_session_saved_public_ip, created_at
               from public.naver_searchadvisor_accounts
+             where ${HANDED_OVER}
              order by account_order asc;
           `);
 
@@ -431,6 +459,8 @@ function dbApiPlugin() {
                      count(d.id) filter (where d.naver_registration_status = 'verified')::int as verified
                 from public.naver_searchadvisor_accounts a
                 left join public.naver_project_domains d on d.naver_account_id = a.account_id
+               -- 양도한 계정 제외. 위 accountsP 와 같은 조건이어야 한다.
+               where coalesce(a.notes, '') not like '%양도%'
                group by a.account_id, a.status
             )
             select count(*)::int                                                      as total,
