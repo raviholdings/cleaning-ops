@@ -193,7 +193,8 @@ function parse(text) {
     if (parts.length < 4) continue;
     const [at, host, event, path, ua, ip] = parts;
     if (!/^\d{4}-\d{2}-\d{2}T/.test(at)) continue;
-    if (event !== 'view' && event !== 'advance') continue;
+    /* call = 전화 링크(tel:) 클릭. 통화가 아니라 '눌렀다' 다 (2026-09-15). */
+    if (event !== 'view' && event !== 'advance' && event !== 'call') continue;
     /*
      * 렌더링 봇을 거른다. 네이버 Yeti 가 페이지를 그리면서 비콘을 발사해
      * view 가 사람 방문처럼 쌓였다 (2026-08-20, 하루 82건 전부 봇 패턴).

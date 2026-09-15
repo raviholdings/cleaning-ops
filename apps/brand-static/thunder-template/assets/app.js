@@ -200,3 +200,19 @@ var REGION_MAP = /*@REGION_MAP@*/ {};
     onScroll();
   }
 })();
+
+/*
+ * 전화 링크 클릭 비콘 (운영자 지시 2026-09-15).
+ * 어느 페이지에서 전화 버튼이 눌리는지 보려는 것이다. 통화가 아니라 '눌렀다' 만
+ * 잡히므로 통화 수의 상한으로 읽는다. 하단 바·떠 있는 버튼·본문 링크 전부 잡는다.
+ * 견적 폼 비콘과 같은 경로(/_e)로 보내고 nginx 가 lead.log 에 남긴다.
+ */
+document.addEventListener('click', function (e) {
+  var a = e.target && e.target.closest ? e.target.closest('a[href^="tel:"]') : null;
+  if (!a) return;
+  var url = '/_e?t=call&p=' + encodeURIComponent(location.pathname);
+  try {
+    if (navigator.sendBeacon) navigator.sendBeacon(url);
+    else new Image().src = url + '&_=' + Date.now();
+  } catch (err) { /* 비콘 실패는 통화를 막지 않는다 */ }
+}, true);
