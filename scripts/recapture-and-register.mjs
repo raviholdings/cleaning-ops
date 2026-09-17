@@ -145,10 +145,17 @@ for (const r of rows) {
 }
 await c.end();
 
-/* 아이디를 안 줬으면 세션 없는 계정만 잡는다 — 멀쩡한 세션은 건드리지 않는다. */
 const inRange = (r) => !orderRange
   || (Number(r.account_order) >= orderRange[0] && Number(r.account_order) <= orderRange[1]);
-const targets = rows.filter((r) => r.status === 'active' && (force || !r.has_session) && inRange(r));
+
+/*
+ * 대상 고르기
+ *   --skip-capture : 이미 세션이 있는 계정 (등록·소유확인만 돌린다)
+ *   재캡처 모드    : 범위 안의 활성 계정 전부
+ *   기본           : 세션 없는 계정만 — 멀쩡한 세션은 건드리지 않는다
+ */
+const targets = rows.filter((r) => r.status === 'active' && inRange(r)
+  && (skipCapture ? r.has_session : (force || !r.has_session)));
 
 console.log(`${ids.length ? '계정 지정' : `담당 ${vm}`} — 재캡처 + 사이트 등록 (${groupKey})`);
 console.log(`  대상 ${targets.length}개 / 전체 ${rows.length}개${force ? '  (재캡처 모드)' : ''}`
