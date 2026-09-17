@@ -1,6 +1,6 @@
 {
   "groupKey": "piping-xyz",
-  "note": "2026-09-14 확정. 도메인 5개가 각각 전국 지역 5,032 × 메인 54 × 변형 3 = 815,184장을 덮는다. 서빙은 catch-all(어떤 서브도메인에서든 열림), 카탈로그는 페이지마다 집 서브도메인 1개. 주소 한글.",
+  "note": "2026-09-17. 기존 구간: 도메인당 서브도메인 1,000개 × 변형 j=1~3 (815,184장, 건드리지 않음). 신규 구간: 도메인당 1,580개 × 변형 j=4~6. 서빙은 catch-all, 카탈로그는 페이지마다 집 서브도메인 1개. 주소 한글.",
   "domains": [
     "pipeinfo.xyz",
     "cleannhouse.xyz",
@@ -14,7 +14,7 @@
   "faqFile": "data/piping-faq-pool.json",
   "templateDir": "apps/piping-static/piping-template-xyz",
   "urlRoot": "배관",
-  "variants": 3,
+  "variants": 6,
   "subdomainStep": 137,
   "subdomainsPerDomain": 1000,
   "contentVersion": "landing-v1",
@@ -32,5 +32,7 @@
   "assetVersion": "piping-v3",
   "dbCredsFile": "C:/Users/LD/Desktop/ravi/_secure/naver-hub-db.txt",
   "platformHost": "go.daddul.com",
-  "platformBase": "https://go.daddul.com"
+  "platformBase": "https://go.daddul.com",
+  "variantsLegacy": 3,
+  "subdomainsPerDomainNew": 1580
 }

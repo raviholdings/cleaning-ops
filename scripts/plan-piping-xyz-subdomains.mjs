@@ -69,6 +69,12 @@ const perAccount = Number(value('--per-account', 100));
 const seed = String(value('--seed', 'piping-xyz-4letters-v1'));
 const configPath = String(value('--config', 'C:/Users/LD/Desktop/ravi/cleaning-ops/config/piping-xyz.json'));
 const write = flag('--write');
+const runnerOpt = value('--runner', null);   // vm1 / vm2 / vm3 중 하나만 채울 때
+/*
+ * 한 계정이 여러 루트 도메인을 들고 있으면 연결고리가 커진다.
+ * 계정 하나에 루트 하나만 붙도록 묶어서 배정한다 (--mixed-roots 로 해제).
+ */
+const oneRootPerAccount = !flag('--mixed-roots');
 
 if (!Number.isSafeInteger(count) || count < 1) throw new Error('--count <개수> 가 필요합니다.');
 if (!Number.isSafeInteger(perAccount) || perAccount < 1) throw new Error('--per-account 가 잘못됐습니다.');
@@ -102,7 +108,9 @@ function makeWalk(seedStr) {
 /* ---------- 이미 쓰고 있는 라벨 (DB) ---------- */
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!url) throw new Error('DATABASE_URL 필요 (naverops.sh 로 실행)');
-if (!/127\.0\.0\.1|localhost/.test(url)) throw new Error('안전장치: 로컬 DB 가 아닙니다. 중단.');
+// 2026-09-17: 정본이 로컬에서 Supabase 로 옮겨갔다. VM 3대가 붙어야 해서 공유 DB 가 필요했다.
+// 실수로 옛 프로젝트 DB 를 건드리지 않도록 그룹 키로 확인한다.
+if (!/naver_hub|supabase/.test(url)) throw new Error('안전장치: 모르는 DB 입니다. 중단.');
 
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await c.connect();
@@ -114,16 +122,25 @@ try {
    * 받을 계정: 활성이면서 이 그룹의 서브도메인을 아직 perAccount 만큼 안 들고 있는 계정.
    * 적게 들고 있는 계정부터 채운다.
    */
+  /*
+   * 받을 계정 고르기 (2026-09-17)
+   *   - runner_pc 가 있는 계정만. 브랜드 계정(#1~5)이 섞여 들어가는 걸 막는다.
+   *   - --runner 로 특정 VM 것만 뽑을 수도 있다.
+   *   - 적게 들고 있는 계정부터 채운다.
+   */
   accounts = (await c.query(
-    `select a.account_id, a.account_order,
+    `select a.account_id, a.account_order, a.runner_pc,
             count(d.*) filter (where d.group_key = $1) held
        from naver_searchadvisor_accounts a
        left join naver_project_domains d on d.naver_account_id = a.account_id
       where a.status = 'active'
-      group by 1, 2
+        and a.runner_pc is not null
+        and a.runner_pc <> 'home'
+        and ($3::text is null or a.runner_pc = $3)
+      group by 1, 2, 3
      having count(d.*) filter (where d.group_key = $1) < $2
       order by held asc, a.account_order asc`,
-    [GROUP, perAccount],
+    [GROUP, perAccount, runnerOpt],
   )).rows;
 } finally { await c.end(); }
 
@@ -134,6 +151,23 @@ if (capacity < count) {
 }
 
 /* ---------- 조립 ---------- */
+/*
+ * 루트별 목표 수. 신규 구간이 루트당 subdomainsPerDomainNew 로 고정이므로
+ * 그 수를 넘지 않게 나눈다. count 가 그보다 적으면 고르게 쪼갠다.
+ */
+const perRootCap = Number(config.subdomainsPerDomainNew) || Math.ceil(count / roots.length);
+const rootTarget = new Map();
+{
+  let left = count;
+  for (const [i, r] of roots.entries()) {
+    const share = Math.min(perRootCap, Math.ceil(left / (roots.length - i)));
+    rootTarget.set(r, share);
+    left -= share;
+  }
+  if (left > 0) throw new Error(`루트 수용량 초과: ${left}개가 남습니다 (루트당 최대 ${perRootCap}).`);
+}
+const perRoot = new Map();
+
 const walk = makeWalk(seed);
 const items = [];
 const used = new Set();
@@ -152,13 +186,29 @@ for (let made = 0; made < count; ) {
   if (BLOCKED.has(label)) { rejected.blocked += 1; continue; }
   if (used.has(label)) { rejected.dup += 1; continue; }
 
-  // 라벨 하나를 5개 루트 중 하나에 붙인다 — 루트를 돌아가며 균등 배분
-  const root = roots[made % roots.length];
+  /*
+   * 루트별 목표 수를 먼저 정하고 그 안에서 계정을 채운다.
+   * homeIndex 의 신규 구간이 루트당 subdomainsPerDomainNew 개로 고정이라
+   * 루트마다 정확히 그 수가 나와야 한다. 계정 단위로만 나누면 100 단위로 끊겨
+   * 루트별이 어긋난다 (1600/1600/1600/1600/1500 처럼).
+   */
+  while (si < slots.length && slots[si].left <= 0) si += 1;
+  if (si >= slots.length) throw new Error('계정 자리가 모자랍니다.');
+  if (oneRootPerAccount && slots[si].root === undefined) {
+    // 아직 목표를 못 채운 루트 중 가장 덜 찬 것을 이 계정에 준다
+    const pick = roots
+      .map((r) => ({ r, made: perRoot.get(r) || 0, target: rootTarget.get(r) }))
+      .filter((x) => x.made < x.target)
+      .sort((a, b) => (a.target - a.made) - (b.target - b.made))
+      .pop();
+    if (!pick) throw new Error('루트 목표를 모두 채웠는데 만들 게 남았습니다.');
+    slots[si].root = pick.r;
+  }
+  const root = oneRootPerAccount ? slots[si].root : roots[made % roots.length];
+  if ((perRoot.get(root) || 0) >= rootTarget.get(root)) { slots[si].left = 0; continue; }
   const host = `${label}.${root}`;
   if (takenHosts.has(host)) { rejected.taken += 1; continue; }
 
-  while (si < slots.length && slots[si].left <= 0) si += 1;
-  if (si >= slots.length) throw new Error('계정 자리가 모자랍니다.');
   const acct = slots[si];
 
   items.push({
@@ -171,6 +221,7 @@ for (let made = 0; made < count; ) {
     subdomain_generation_strategy: STRATEGY,
   });
   used.add(label);
+  perRoot.set(root, (perRoot.get(root) || 0) + 1);
   acct.left -= 1;
   made += 1;
 }

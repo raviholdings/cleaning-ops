@@ -17,7 +17,9 @@ const apply = args.includes('--apply');
 const planPath = (() => { const i = args.indexOf('--plan'); return i === -1 ? 'C:/Users/LD/Desktop/naver/reports/piping-xyz-subdomain-plan.json' : args[i + 1]; })();
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!url) throw new Error('DATABASE_URL 필요 (naverops.sh 로 실행)');
-if (!/127\.0\.0\.1|localhost/.test(url)) throw new Error('안전장치: 로컬 DB 가 아닙니다. 중단.');
+// 2026-09-17: 정본이 로컬에서 Supabase 로 옮겨갔다. VM 3대가 붙어야 해서 공유 DB 가 필요했다.
+// 실수로 옛 프로젝트 DB 를 건드리지 않도록 그룹 키로 확인한다.
+if (!/naver_hub|supabase/.test(url)) throw new Error('안전장치: 모르는 DB 입니다. 중단.');
 
 const plan = JSON.parse(readFileSync(planPath, 'utf8'));
 const items = plan.items || [];

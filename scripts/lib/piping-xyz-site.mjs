@@ -91,8 +91,24 @@ export function makePage(site, domain, region, mainA, j) {
   const mainB = sameGroup[(hash32(`B|${rk}`) + (j - 1)) % sameGroup.length];
   const sub = mainA.subs[(hash32(`S|${rk}`) + (j - 1) * 7) % mainA.subs.length];
   const tail = tails[(hash32(`T|${rk}`) + (j - 1) * 2) % tails.length];
-  const n = Number(config.subdomainsPerDomain) || 1000;
-  const homeIndex = (hash32(`H|${rk}`) + (j - 1) * (Number(config.subdomainStep) || 137)) % n;
+  /*
+   * 집 서브도메인 고르기. 구간이 둘이다 (2026-09-17).
+   *
+   *   j <= variantsLegacy  → 인덱스 0 .. nLegacy-1      기존 서브도메인
+   *   j >  variantsLegacy  → 인덱스 nLegacy ..          나중에 추가한 서브도메인
+   *
+   * 기존 배정을 한 장도 안 건드리려고 이렇게 나눴다.
+   * nLegacy 를 그냥 키우면 나머지 연산의 분모가 바뀌어 이미 색인된 페이지가
+   * 전부 다른 서브도메인으로 옮겨간다.
+   * 새 구간은 해시 씨앗도 다르게(H2) 줘서 기존과 상관없이 흩어지게 한다.
+   */
+  const step = Number(config.subdomainStep) || 137;
+  const nLegacy = Number(config.subdomainsPerDomain) || 1000;
+  const kLegacy = Number(config.variantsLegacy) || 3;
+  const nNew = Number(config.subdomainsPerDomainNew) || 0;
+  const homeIndex = (j <= kLegacy || nNew <= 0)
+    ? (hash32(`H|${rk}`) + (j - 1) * step) % nLegacy
+    : nLegacy + ((hash32(`H2|${rk}`) + (j - kLegacy - 1) * step) % nNew);
   const slug = `${region.label}-${mainA.name}-${mainB.name}-${sub}-${tailSlug(tail)}`;
   const path = `/${config.urlRoot}/${region.url_sido}/${region.url_seg}/${slug}.html`;
   return {
