@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "pg": "^8.11.3",
-    "playwright": "^1.40.0"
+    "playwright": "^1.40.0",
+    "xlsx": "^0.18.5"
   }
 }
