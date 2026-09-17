@@ -6,6 +6,10 @@
  *   node scripts/capture-batch.mjs --vm vm1        # 직접 지정
  *   node scripts/capture-batch.mjs --list          # 목록만 보기
  *   node scripts/capture-batch.mjs --from 3        # 3번째부터 (중단된 뒤 이어서)
+ *   node scripts/capture-batch.mjs --force --allow-new-ip   # 전부 다시 잡기
+ *
+ * --allow-new-ip : 배정 IP 가 HaiIP 풀에서 사라졌을 때 지금 IP 로 진행한다.
+ *   세션이 오래됐으면 배정 IP 도 대개 없어져 있어서, 재캡처 때는 사실상 필요하다.
  *
  * 담당은 DB 의 naver_searchadvisor_accounts.runner_pc 로 정해져 있다.
  * 파일을 VM 마다 옮길 필요가 없다 — 공유 DB 에서 자기 몫만 읽는다.
@@ -39,6 +43,7 @@ const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb 
 const vm = String(val('--vm', process.env.NAVER_CRAWL_RUNNER_PC || '')).trim();
 const listOnly = args.includes('--list');
 const force = args.includes('--force');
+const allowNewIp = args.includes('--allow-new-ip');
 const from = Number(val('--from', 1));
 
 if (!vm) throw new Error('담당 이름이 없습니다. .env 의 NAVER_CRAWL_RUNNER_PC 를 넣거나 --vm vm1 로 주세요.');
@@ -80,6 +85,11 @@ for (const [i, r] of todo.entries()) {
     resolve(projectRoot, 'scripts/capture-naver-session.mjs'),
     '--account', r.account_id,
     '--no-auto-click', '--keep-open', '--login-via-searchadvisor',
+    // --force 를 자식에게 넘기지 않으면 capture-naver-session 이 "이미 세션이
+    // 있습니다" 로 조용히 건너뛰고 0 을 돌려준다. 성공처럼 보이는데 아무것도
+    // 안 잡히는 상태가 된다 (2026-09-17 에 이걸로 헛돌았다).
+    ...(force ? ['--force'] : []),
+    ...(allowNewIp ? ['--allow-new-ip'] : []),
   ], { stdio: 'inherit', cwd: projectRoot });
   if (res.status === 0) { ok += 1; } else {
     fail += 1;
