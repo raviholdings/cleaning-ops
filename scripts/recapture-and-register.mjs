@@ -47,6 +47,26 @@ if (existsSync(envPath)) {
 }
 
 const args = process.argv.slice(2);
+
+/*
+ * 모르는 옵션은 조용히 무시하지 말고 멈춘다.
+ * 2026-09-17: --orders 를 --order 로 잘못 쳐서 범위 제한이 안 걸린 채
+ * 멀쩡한 계정부터 재캡처가 시작됐다. 오타 하나가 계정을 날릴 수 있다.
+ */
+const KNOWN = new Set(['--vm', '--list', '--force', '--allow-new-ip', '--from', '--orders',
+  '--verify', '--skip-capture', '--skip-register', '--limit', '--group-key', '--meta-wait',
+  // 캡처에 항상 넘기는 값이라 붙여도 무해하다. 받아만 준다.
+  '--no-auto-click', '--keep-open', '--login-via-searchadvisor']);
+const ALIAS = { '--order': '--orders', '--accounts': '--orders' };
+for (let i = 0; i < args.length; i += 1) {
+  if (!args[i].startsWith('--')) continue;
+  if (ALIAS[args[i]]) { args[i] = ALIAS[args[i]]; continue; }
+  if (!KNOWN.has(args[i])) {
+    throw new Error(`모르는 옵션입니다: ${args[i]}\n`
+      + `  쓸 수 있는 것: ${[...KNOWN].join(' ')}`);
+  }
+}
+
 const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb : args[i + 1]; };
 const flag = (n) => args.includes(n);
 

@@ -41,6 +41,26 @@ if (existsSync(envPath)) {
 }
 
 const args = process.argv.slice(2);
+
+/*
+ * 모르는 옵션은 조용히 무시하지 말고 멈춘다.
+ *
+ * 2026-09-17: --orders 를 --order 로 잘못 쳤는데 그냥 무시돼서, 범위 제한이
+ * 안 걸린 채 멀쩡한 계정부터 재캡처가 시작됐다. 오타 하나가 계정을 날릴 수
+ * 있는 스크립트라 알려진 이름만 받는다.
+ */
+const KNOWN = new Set(['--vm', '--list', '--force', '--allow-new-ip', '--from', '--orders']);
+// --accounts 51-80 은 다른 스크립트에서 순번 범위를 뜻한다. 같은 뜻으로 받는다.
+const ALIAS = { '--order': '--orders', '--accounts': '--orders' };
+for (let i = 0; i < args.length; i += 1) {
+  if (!args[i].startsWith('--')) continue;
+  if (ALIAS[args[i]]) { args[i] = ALIAS[args[i]]; continue; }
+  if (!KNOWN.has(args[i])) {
+    throw new Error(`모르는 옵션입니다: ${args[i]}\n`
+      + `  쓸 수 있는 것: ${[...KNOWN].join(' ')}`);
+  }
+}
+
 const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb : args[i + 1]; };
 const vm = String(val('--vm', process.env.NAVER_CRAWL_RUNNER_PC || '')).trim();
 const listOnly = args.includes('--list');
