@@ -45,6 +45,9 @@ const haiIpSkip = shouldSkipHaiIp(proxyConfig, Boolean(options.noHaiip));
 const skipHaiIp = haiIpSkip.skip;
 if (skipHaiIp) console.log(`[haiip] IP 전환을 건너뜁니다 (${haiIpSkip.reason}).`);
 const limit = options.limit ? Number(options.limit) : null;
+// 연속 실패 몇 번에 그 계정을 멈출지. --no-abort 면 끝까지 간다.
+const failAbortAfter = Math.max(1, Number(options.failAbort || 3));
+const noAbort = Boolean(options.noAbort);
 const groupKey = options.groupKey || 'cleaning-ravi';
 const tmpRoot = resolve(projectRoot, 'tmp/naver-login');
 const haiIpScript = resolve(projectRoot, 'scripts/haiip-windows-ui-control.ps1');
@@ -230,6 +233,8 @@ async function registerForAccount(account) {
     }
     console.log(`  등록 화면 확인 ✅ (등록된 사이트 ${board.siteCount ?? '?'}개)`);
 
+    let consecutiveFailures = 0;
+    let aborted = null;
     for (const [index, domain] of targets.entries()) {
       try {
         const token = await registerOne(page, domain.site_url);
@@ -250,9 +255,29 @@ async function registerForAccount(account) {
           ],
         );
         registered += 1;
+        consecutiveFailures = 0;
       } catch (error) {
-        failures.push({ host: domain.host, error: error.message.split('\n')[0] });
-        console.log(`  ✗ ${domain.host}: ${error.message.split('\n')[0]}`);
+        const first = error.message.split('\n')[0];
+        failures.push({ host: domain.host, error: first });
+        console.log(`  ✗ ${domain.host}: ${first}`);
+        consecutiveFailures += 1;
+        /*
+         * 연속 실패가 쌓이면 그 계정은 거기서 멈춘다 (2026-09-17 추가).
+         * 소유확인에는 이 장치가 있었는데 등록에는 없었다. 그래서 9월 14일에
+         * 계정이 80건째에서 막힌 뒤에도 남은 20건을 계속 두드렸다.
+         * 막힌 계정을 계속 건드리면 더 잠긴다.
+         */
+        if (!noAbort && consecutiveFailures >= failAbortAfter) {
+          aborted = {
+            reason: `연속 실패 ${consecutiveFailures}회`,
+            at: index + 1,
+            total: targets.length,
+            lastError: first.slice(0, 160),
+          };
+          console.log(`\n  ⛔ ${aborted.reason} — 이 계정은 여기서 멈춥니다 (${index + 1}/${targets.length}).`);
+          console.log('     계정에 제동이 걸린 신호일 수 있습니다. 재로그인하지 마세요.');
+          break;
+        }
       }
       if ((index + 1) % 10 === 0 || index + 1 === targets.length) {
         console.log(`  진행 ${index + 1}/${targets.length}  성공 ${registered}  실패 ${failures.length}`);
@@ -265,7 +290,14 @@ async function registerForAccount(account) {
     rmSync(statePath, { force: true });
   }
 
-  return { accountId: account.account_id, ok: failures.length === 0, registered, failed: failures.length, failures: failures.slice(0, 5) };
+  return {
+    accountId: account.account_id,
+    ok: failures.length === 0 && !aborted,
+    registered,
+    failed: failures.length,
+    failures: failures.slice(0, 5),
+    ...(aborted ? { aborted } : {}),
+  };
 }
 
 /**
