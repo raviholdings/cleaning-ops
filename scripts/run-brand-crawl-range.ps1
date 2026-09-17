@@ -6,12 +6,13 @@
 .DESCRIPTION
   배관 run-piping-crawl-range.ps1 과 같은 골격이다. 다른 점은 셋.
 
-  1. 그룹이 brand-ravi 하나뿐이고 계정은 501~505 다. 한 계정이 도메인 하나씩 든다.
+  1. 그룹이 brand-ravi 하나뿐이고 계정은 1~5 다. 한 계정이 도메인 하나씩 든다.
+     (2026-09-17 번호 재배치: 옛 501~505 -> 1~5. Supabase 계정표를 89개로 정리하면서 다시 매겼다.)
 
        506 dreamcome.kr    502 thunderdrain.kr   503 beaverpipe.kr
        504 ssac3.kr        505 dosadosa.kr
 
-     501 은 2026-09-01 에 정지되어 506 으로 이관했다.
+     옛 501 은 2026-09-01 에 정지되어 이관했고, 지금 살아있는 5개가 1~5 다.
      이관은 scripts/migrate-brand-account.mjs 로 한다.
 
   2. URL 은 각 사이트의 /_crawl/sitemap_index.xml 에서 읽는다 (사이트맵 모드).
@@ -32,14 +33,18 @@
   ⚠ 그룹의 crawl_request_enabled 가 true 여야 대상이 잡힌다.
 
 .EXAMPLE
-  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 501 -To 510 -DryRun
-  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 501 -To 510
+  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 1 -To 5 -DryRun
+  powershell -NoProfile -ep Bypass -File scripts/run-brand-crawl-range.ps1 -From 1 -To 5
 #>
 param(
 	[Parameter(Mandatory = $true)][int]$From,
 	[Parameter(Mandatory = $true)][int]$To,
 	[switch]$DryRun,
 	[switch]$NoHaiIp,
+	# 세종 A/B 50장만 먼저 태울 때. 전용 사이트맵(/_crawl/sejong-ab.xml)에서 읽는다.
+	# 하루 천장이 사이트당 50건이라, 이걸 켜면 그날 할당이 통째로 A/B 50장으로 간다.
+	# 싹쓰리(504)·썬더(502) 두 계정에만 쓴다 — 다른 사이트에는 그 파일이 없어 0건이 된다.
+	[switch]$SejongAb,
 	# 재수집 기준선 — 청소·이사·배관과 동일. 예: -DoneSince 2026-09-01T00:00:00+09:00
 	[string]$DoneSince = ''
 )
@@ -55,11 +60,11 @@ if ($From -gt $To) {
 	throw "-From 이 -To 보다 큽니다. 입력값: -From $From -To $To"
 }
 # 범위를 벗어나면 조용히 0건이 된다. 원인을 찾느라 시간을 버리지 않게 막는다.
-# 501~505 가 원래 배정이고, 정지된 계정은 506 부터로 이관한다
-# (501 정지 -> 506, 2026-09-01). 그래서 510 까지 열어 둔다.
+# 브랜드 계정은 1~5 다 (2026-09-17 재배치, 옛 501~505).
+# 여유를 두어 10 까지 연다.
 # 도메인이 없는 순번은 그룹 필터에서 0건이 되어 무해하다.
-if ($From -lt 501 -or $To -gt 510) {
-	throw "브랜드(brand-ravi)는 계정 501~510 입니다. 입력값: -From $From -To $To"
+if ($From -lt 1 -or $To -gt 10) {
+	throw "브랜드(brand-ravi)는 계정 1~10 입니다. 입력값: -From $From -To $To"
 }
 
 Write-Host "계정 순번 $From ~ $To 의 계정 ID 를 조회합니다..."
@@ -86,7 +91,13 @@ $env:NAVER_CRAWL_EXCLUDE_GROUPS = ''
 $env:NAVER_CRAWL_SITEMAP_ONLY_PROJECTS = 'brand-ravi'
 # 사이트맵은 공개하지 않는다 (2026-09-10). 러너만 아는 숨은 경로에서 읽는다.
 # 굽는 쪽(build-brand-site.mjs 의 CRAWL_DIR)과 같은 값이어야 한다.
-$env:NAVER_CRAWL_SITEMAP_PATH = '/_crawl/sitemap_index.xml'
+if ($SejongAb) {
+	# 색인이 아니라 urlset 이라 자식을 따라가지 않는다 — 50개가 그대로 대상이 된다.
+	$env:NAVER_CRAWL_SITEMAP_PATH = '/_crawl/sejong-ab.xml'
+	Write-Host "세종 A/B 모드: /_crawl/sejong-ab.xml 에서만 읽습니다 (사이트당 50장)." -ForegroundColor Cyan
+} else {
+	$env:NAVER_CRAWL_SITEMAP_PATH = '/_crawl/sitemap_index.xml'
+}
 # 생성 폴백 없음. 배관처럼 번호로 주소를 만들 수 없는 구조다.
 $env:NAVER_CRAWL_PIPING_PAGE_COUNT = ''
 
