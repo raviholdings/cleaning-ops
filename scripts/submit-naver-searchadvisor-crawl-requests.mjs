@@ -955,11 +955,6 @@ async function loadCatalogDbQueueSource({ client, accountId, targets }) {
       order by
         effective_exposure_priority,
         combination_round,
-        -- 키워드 우선순위 (2026-09-17). naver_page_keywords.crawl_priority, 작을수록 먼저.
-        -- 페이지 개수는 그대로 두고 보내는 순서만 민다.
-        -- 개수를 바꾸면 카탈로그 순서가 밀려 이미 색인된 URL 이 깨진다.
-        coalesce((select k.crawl_priority from public.naver_page_keywords k
-                   where k.id = ranked.main_keyword_id), 999),
         location_search_name,
         main_keyword_id,
         domain_id,
