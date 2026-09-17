@@ -14,6 +14,9 @@
  *   사이트라 전부 실패한다. 새 계정으로 다시 등록해서 토큰을 새로 받아야 한다.
  *
  * ⚠ globalSiteOrder 는 절대 건드리지 않는다.
+ *   ※ 2026-09-15: 검산을 globalSiteOrder 를 실제로 가진 행으로 한정했다.
+ *   piping-xyz 는 이 필드를 안 쓰고(5,005행 중 0건) 페이지 내용을 호스트명으로 정하므로,
+ *   전체를 세면 고유 0 / 전체 5005 가 되어 항상 오탐으로 막혔다.
  *   그 값이 페이지의 지역·키워드를 정한다. 바뀌면 이미 만들어둔 내용이
  *   통째로 달라진다.
  *
@@ -109,8 +112,10 @@ try {
        (select count(*)::int from public.naver_project_domains
          where naver_account_id = $2 and naver_verification_token is not null) to_with_token,
        (select count(distinct (source_payload->>'globalSiteOrder')::int)::int
-          from public.naver_project_domains) distinct_order,
-       (select count(*)::int from public.naver_project_domains) total`,
+          from public.naver_project_domains
+         where source_payload ? 'globalSiteOrder') distinct_order,
+       (select count(*)::int from public.naver_project_domains
+         where source_payload ? 'globalSiteOrder') total`,
     [fromId, toId],
   );
   const v = verify.rows[0];

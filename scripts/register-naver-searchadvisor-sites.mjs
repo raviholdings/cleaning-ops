@@ -21,6 +21,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { chromium } from 'playwright';
+import { findProfileDir, openWithProfile } from './lib/naver-profile.mjs';
 import {
   logProxyBanner,
   playwrightProxy,
@@ -184,17 +185,35 @@ async function registerForAccount(account) {
   //   --show      화면에 띄운다 (문제 생겼을 때 눈으로 보려고)
   //   --headless  진짜 헤드리스. 위 이유로 권하지 않는다.
   const offscreen = !options.show && !options.headless;
-  const browser = await chromium.launch({
-    headless: Boolean(options.headless),
-    channel: 'chrome',
-    ...(offscreen ? { args: ['--window-position=-2400,-2400', '--window-size=1280,900'] } : {}),
-    ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
-  });
+  /*
+   * --profile auto : 그 계정으로 처음 로그인한 크롬 프로필을 그대로 쓴다.
+   * 쿠키만 주입하면 네이버가 매번 새 기기로 보고 보호조치를 건다 (2026-09-14).
+   * 프로필이 없으면 조용히 예전 방식으로 돌아간다.
+   */
+  const profileDir = findProfileDir(projectRoot, account.account_id, options.profile ? String(options.profile) : '', { create: true });
+  if (options.profile && !profileDir) console.log('  (저장된 프로필이 없어 기존 방식으로 진행합니다)');
+  let browser = null;
+  let session = null;
+  let context;
+  let page;
+  if (profileDir) {
+    console.log(`  프로필 사용: ${profileDir}`);
+    session = await openWithProfile({ chromium, profileDir, statePath, headless: Boolean(options.headless), offscreen, proxy: playwrightProxy(proxyConfig) });
+    context = session.context;
+    page = session.page;
+  } else {
+    browser = await chromium.launch({
+      headless: Boolean(options.headless),
+      channel: 'chrome',
+      ...(offscreen ? { args: ['--window-position=-2400,-2400', '--window-size=1280,900'] } : {}),
+      ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
+    });
+    context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
+    page = await context.newPage();
+  }
   let registered = 0;
   const failures = [];
   try {
-    const context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
-    const page = await context.newPage();
 
     // 사이트 등록 화면이 실제로 뜨는지 먼저 본다.
     //
@@ -241,7 +260,8 @@ async function registerForAccount(account) {
       await sleep(perSiteDelayMs);
     }
   } finally {
-    await browser.close().catch(() => {});
+    if (session) await session.close();
+    else await browser.close().catch(() => {});
     rmSync(statePath, { force: true });
   }
 

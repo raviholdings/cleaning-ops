@@ -24,9 +24,9 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import pg from 'pg';
 
-import { parseTemplate, renderTemplate } from './lib/micro-template.mjs';
-import { buildPipingPageData, buildPipingIndexData, loadLocations, loadPipingData } from './lib/piping-page-data.mjs';
-import { prepareOriginSsh } from './lib/origin-ssh.mjs';
+import { parseTemplate, renderTemplate } from '../lib/micro-template.mjs';
+import { buildPipingPageData, buildPipingIndexData, loadLocations, loadPipingData } from '../lib/piping-page-data.mjs';
+import { prepareOriginSsh } from '../lib/origin-ssh.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

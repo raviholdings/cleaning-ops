@@ -26,7 +26,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getHeapStatistics } from 'node:v8';
 import pg from 'pg';
 
-import { prepareOriginSsh } from './lib/origin-ssh.mjs';
+import { prepareOriginSsh } from '../lib/origin-ssh.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadEnv(resolve(projectRoot, '.env'));

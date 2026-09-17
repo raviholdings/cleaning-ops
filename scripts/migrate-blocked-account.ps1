@@ -113,7 +113,7 @@ if (-not $SkipDeploy -and -not $DryRun) {
 		Write-Host '길은 둘이다.'
 		Write-Host '  (1) 배포가 되는 기계(보통 본 PC)에서 이 명령을 그대로 실행한다.'
 		Write-Host '  (2) 여기서 -SkipDeploy 로 돌리고, 3단계만 배포 기계에서 따로 실행한다.'
-		Write-Host "      node scripts/build-and-deploy-sites.mjs --renderer static --templates templates-merged ``"
+		Write-Host "      node scripts/_legacy/build-and-deploy-sites.mjs --renderer static --templates templates-merged ``"
 		Write-Host "        --extend merged --gzip --no-feeds --from-order $Order --to-order $Order"
 		Write-Host '      그 뒤 소유확인:'
 		Write-Host "      node scripts/verify-naver-searchadvisor-sites.mjs --account $To"
@@ -161,14 +161,14 @@ if ($SkipDeploy) {
 	Write-Host '건너뛴다. 여기서 멈춘다 — 재배포 없이 소유확인을 하면 전부 실패한다.' -ForegroundColor Yellow
 	Write-Host ''
 	Write-Host '배포가 되는 기계에서 이어서 할 것:'
-	Write-Host "  node scripts/build-and-deploy-sites.mjs --renderer static --templates templates-merged ``"
+	Write-Host "  node scripts/_legacy/build-and-deploy-sites.mjs --renderer static --templates templates-merged ``"
 	Write-Host "    --extend merged --gzip --no-feeds --chunk-sites 250 --chunk-retries 3 ``"
 	Write-Host "    --from-order $Order --to-order $Order"
 	Write-Host "  node scripts/verify-naver-searchadvisor-sites.mjs --account $To"
 	Write-Host "  powershell -NoProfile -ep Bypass -File scripts/run-crawl-range.ps1 -From $Order -To $Order"
 	exit 0
 }
-& $node 'scripts/build-and-deploy-sites.mjs' `
+& $node 'scripts/_legacy/build-and-deploy-sites.mjs' `
 	'--renderer' 'static' '--templates' 'templates-merged' '--extend' 'merged' `
 	'--gzip' '--no-feeds' '--chunk-sites' '250' '--chunk-retries' '3' `
 	'--from-order' "$Order" '--to-order' "$Order"

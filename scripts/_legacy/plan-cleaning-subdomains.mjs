@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { createRandomTwoWordCandidates, pickAvailableRandomSubdomains } from './lib/bbungbbung-random-subdomains.mjs';
+import { createRandomTwoWordCandidates, pickAvailableRandomSubdomains } from '../lib/bbungbbung-random-subdomains.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadEnv(resolve(projectRoot, '.env'));

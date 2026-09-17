@@ -16,7 +16,7 @@
 
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { dirname, resolve } from 'node:path';
@@ -30,6 +30,7 @@ import {
   resolveProxyConfig,
   shouldSkipHaiIp,
 } from './lib/naver-proxy.mjs';
+import { findProfileDir, openWithProfile } from './lib/naver-profile.mjs';
 import { solveCaptchaWithAntiCaptcha } from './lib/anti-captcha-solver.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,6 +42,24 @@ const perSiteDelayMs = Number(options.delayMs || 3000);
 const limit = options.limit ? Number(options.limit) : null;
 const groupKey = options.groupKey || 'cleaning-ravi';
 const metaCheckConcurrency = Number(options.metaCheckConcurrency || 6);
+/*
+ * 페이지 타임아웃이 연달아 나오면 그 계정은 더 건드리지 않고 즉시 멈춘다.
+ *
+ * 네이버가 계정에 제동을 걸기 시작하면 화면이 안 그려져 타임아웃만 쌓인다.
+ * 그대로 100건을 밀면 실패 로그만 100줄 남고 계정 상태만 더 나빠진다.
+ * 멈춘 계정은 notes 에 "계정확인 필요" 를 남기고, 끝나면 로그 파일로 정리한다.
+ *   --timeout-abort 3   연속 타임아웃 몇 번에서 멈출지 (기본 2)
+ *   --no-abort          이 기능을 끈다 (예전 동작)
+ */
+const timeoutAbortAfter = Math.max(1, Number(options.timeoutAbort || 2));
+const noAbort = Boolean(options.noAbort);
+const runStartedAt = new Date().toISOString();
+const runLogPath = String(options.logFile || resolve(projectRoot, `reports/verify-run-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.json`));
+
+/** 타임아웃·연결 끊김 계열 오류인지. 이런 게 연속으로 나오면 계정이 막히는 신호다. */
+function isTimeoutError(message) {
+  return /Timeout|timed out|timeout exceeded|net::ERR_|ERR_CONNECTION|ERR_TIMED_OUT|Navigation failed|Target closed|frame was detached/i.test(String(message || ''));
+}
 const execFileAsync = promisify(execFile);
 const tmpRoot = resolve(projectRoot, 'tmp/naver-login');
 const haiIpScript = resolve(projectRoot, 'scripts/haiip-windows-ui-control.ps1');
@@ -82,6 +101,30 @@ try {
     }
   }
   console.log(`\n${JSON.stringify({ phase: 'summary', summary }, null, 2)}`);
+
+  // 실행 로그 파일: 어떤 계정이 멈췄고 무엇이 남았는지 나중에 다시 볼 수 있게 남긴다.
+  const needCheck = summary.filter((s) => s.needsAccountCheck);
+  const runLog = {
+    startedAt: runStartedAt,
+    finishedAt: new Date().toISOString(),
+    groupKey,
+    accounts: summary.length,
+    verifiedTotal: summary.reduce((n, s) => n + (s.verified || 0), 0),
+    failedTotal: summary.reduce((n, s) => n + (s.failed || 0), 0),
+    needsAccountCheck: needCheck.map((s) => ({ accountId: s.accountId, ...s.aborted })),
+    summary,
+  };
+  try {
+    mkdirSync(dirname(runLogPath), { recursive: true });
+    writeFileSync(runLogPath, JSON.stringify(runLog, null, 2), 'utf8');
+    console.log(`\n로그: ${runLogPath}`);
+  } catch (e) {
+    console.log(`\n로그 저장 실패: ${e.message}`);
+  }
+  console.log(`합계: 소유확인 ${runLog.verifiedTotal}건, 실패 ${runLog.failedTotal}건, 계정확인 필요 ${needCheck.length}개`);
+  for (const s of needCheck) {
+    console.log(`  ⛔ ${s.accountId} — ${s.aborted.reason} (${s.aborted.at}/${s.aborted.total}에서 중단)`);
+  }
   if (summary.some((s) => !s.ok)) process.exitCode = 1;
 } finally {
   rl?.close();
@@ -155,18 +198,38 @@ async function verifyForAccount(account) {
     '--account', account.account_id, '--output', statePath,
   ], { stdio: 'pipe' });
 
-  const browser = cdpUrl
-    ? await chromium.connectOverCDP(cdpUrl)
-    : await chromium.launch({
-        headless: !semiAuto,
-        channel: 'chrome',
-        ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
-      });
+  /*
+   * --profile auto : 그 계정으로 처음 로그인한 크롬 프로필을 그대로 쓴다.
+   * 쿠키만 주입하면 네이버가 매번 새 기기로 본다 (2026-09-14 계정 다수 유실).
+   * CDP 로 붙는 모드이거나 프로필이 없으면 예전 방식 그대로 간다.
+   */
+  const profileDir = cdpUrl ? null : findProfileDir(projectRoot, account.account_id, options.profile ? String(options.profile) : '', { create: true });
+  if (options.profile && !cdpUrl && !profileDir) console.log('  (저장된 프로필이 없어 기존 방식으로 진행합니다)');
+  let browser = null;
+  let session = null;
+  let context;
+  let page;
+  if (profileDir) {
+    console.log(`  프로필 사용: ${profileDir}`);
+    session = await openWithProfile({ chromium, profileDir, statePath, headless: false, offscreen: !semiAuto, proxy: playwrightProxy(proxyConfig) });
+    context = session.context;
+    page = session.page;
+  } else {
+    browser = cdpUrl
+      ? await chromium.connectOverCDP(cdpUrl)
+      : await chromium.launch({
+          headless: !semiAuto,
+          channel: 'chrome',
+          ...(playwrightProxy(proxyConfig) ? { proxy: playwrightProxy(proxyConfig) } : {}),
+        });
+    context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
+    page = await context.newPage();
+  }
   let verified = 0;
   const failures = [];
+  let consecutiveTimeouts = 0;
+  let aborted = null;
   try {
-    const context = await browser.newContext({ storageState: statePath, locale: 'ko-KR' });
-    const page = await context.newPage();
 
     for (const [index, domain] of live.entries()) {
       try {
@@ -178,9 +241,27 @@ async function verifyForAccount(account) {
           [domain.id],
         );
         verified += 1;
+        consecutiveTimeouts = 0;
       } catch (error) {
-        failures.push({ host: domain.host, error: error.message.split('\n')[0].slice(0, 120) });
-        console.log(`  ✗ ${domain.host}: ${error.message.split('\n')[0].slice(0, 100)}`);
+        const first = error.message.split('\n')[0];
+        failures.push({ host: domain.host, error: first.slice(0, 120) });
+        console.log(`  ✗ ${domain.host}: ${first.slice(0, 100)}`);
+        if (isTimeoutError(first)) {
+          consecutiveTimeouts += 1;
+          if (!noAbort && consecutiveTimeouts >= timeoutAbortAfter) {
+            aborted = {
+              reason: `페이지 타임아웃 ${consecutiveTimeouts}회 연속`,
+              at: index + 1,
+              total: live.length,
+              lastError: first.slice(0, 160),
+            };
+            console.log(`\n  ⛔ ${aborted.reason} — 이 계정은 여기서 멈춥니다 (${index + 1}/${live.length}).`);
+            console.log('     계정에 제동이 걸린 신호입니다. 재로그인하지 마세요.');
+            break;
+          }
+        } else {
+          consecutiveTimeouts = 0;
+        }
       }
       if ((index + 1) % 10 === 0 || index + 1 === live.length) {
         console.log(`  진행 ${index + 1}/${live.length}  성공 ${verified}  실패 ${failures.length}`);
@@ -188,18 +269,31 @@ async function verifyForAccount(account) {
       await sleep(perSiteDelayMs);
     }
   } finally {
-    await browser.close().catch(() => {});
+    if (session) await session.close();
+    else await browser.close().catch(() => {});
     rmSync(statePath, { force: true });
+  }
+
+  // 타임아웃으로 멈춘 계정은 사람이 봐야 한다. DB 에 표시를 남긴다 (상태는 바꾸지 않는다).
+  if (aborted) {
+    await client.query(
+      `update public.naver_searchadvisor_accounts
+          set notes = coalesce(notes, '') || ' | 계정확인 필요 ' || to_char(now(), 'YYYY-MM-DD') || ' (소유확인 중 ' || $2 || ')',
+              updated_at = now()
+        where account_id = $1 and coalesce(notes, '') not like '%계정확인 필요%'`,
+      [account.account_id, aborted.reason],
+    ).catch((e) => console.log(`  (메모 기록 실패: ${e.message})`));
   }
 
   return {
     accountId: account.account_id,
-    ok: failures.length === 0,
+    ok: failures.length === 0 && !aborted,
     verified,
     failed: failures.length,
     skipped: skipped.length,
     skippedHosts: skipped.slice(0, 5).map((item) => item.host),
     failures: failures.slice(0, 5),
+    ...(aborted ? { aborted, needsAccountCheck: true } : {}),
   };
 }
 

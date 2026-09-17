@@ -7,6 +7,10 @@
  *   node scripts/capture-naver-session.mjs --accounts 1-10
  *   node scripts/capture-naver-session.mjs --account lguxp4nlw --dry-run
  *   node scripts/capture-naver-session.mjs --account lguxp4nlw --allow-new-ip
+ *   node scripts/capture-naver-session.mjs --account lguxp4nlw --no-auto-click --keep-open --login-via-searchadvisor
+ *     --login-via-searchadvisor : 서치어드바이저를 먼저 거쳐 로그인 화면으로 간다 (사람과 같은 순서).
+ *     로그인 뒤 창을 닫지 않고 Enter 까지 기다린다. 같은 IP·같은 창에서 이메일 인증
+ *     같은 초기 설정을 끝낸 뒤 Enter 를 누르면 그 시점 쿠키로 세션을 저장한다.
  *     배정 IP 가 HaiIP 풀에서 사라졌을 때. 지금 IP 를 그대로 쓰고, 다른 계정이
  *     물고 있을 때만 빈 IP 가 나올 때까지 바꾼다 (--new-ip-attempts, 기본 6).
  *
@@ -54,6 +58,26 @@ const LOGIN_TIMEOUT_MS = Number(options.loginTimeoutMs || 300_000);
 // 값만 채우고 로그인 버튼은 사람이 누른다. IP보안·로그인유지를 직접 고를 수 있고,
 // 반복 자동 로그인으로 추가 인증이 걸리는 것도 줄어든다.
 const noAutoClick = Boolean(options.noAutoClick);
+/*
+ * --keep-open : 로그인이 끝나도 창을 닫지 않고 Enter 를 누를 때까지 기다린다.
+ *
+ * 새 계정은 로그인 직후 이메일 인증·본인확인을 같은 IP·같은 창에서 이어서 해두면
+ * 보호조치를 덜 맞는다. 창을 닫고 다시 로그인하면 그 자체가 새 접속이라 위험하다.
+ * Enter 를 누른 뒤의 쿠키로 세션을 저장하므로, 그 사이 작업 내용이 세션에 반영된다.
+ * 기본은 꺼져 있어 기존 동작과 같다.
+ */
+const keepOpen = Boolean(options.keepOpen);
+/*
+ * --login-via-searchadvisor : 사람이 하는 순서 그대로 서치어드바이저부터 들어간다.
+ *
+ *   기본값  nid.naver.com 로그인 화면으로 바로 이동 (중간 단계를 건너뛴다)
+ *   이 옵션 searchadvisor.naver.com/auth/login → nid.naver.com → auth/callback
+ *
+ * 최종 로그인 화면은 같지만 유입 경로가 다르다. 계정 보호조치가 잦아 유입 경로까지
+ * 사람과 맞추려고 넣었다 (2026-09-14). 로그인 폼이 뜰 때까지 기다렸다가 값을 채운다.
+ */
+const loginViaSearchAdvisor = Boolean(options.loginViaSearchadvisor || options.loginViaSearchAdvisor);
+const SA_LOGIN_URL = 'https://searchadvisor.naver.com/auth/login?caller=/console/board';
 /*
  * 배정 IP 를 HaiIP 가 못 만들 때 새 IP 로 캡처를 진행할지.
  *
@@ -203,7 +227,8 @@ async function captureOne(account) {
   // --- 4~6. 로그인 ---
   const profileDir = resolve(tmpRoot, `${account.account_id}-profile`);
   const statePath = resolve(tmpRoot, `${account.account_id}.storage.json`);
-  rmSync(profileDir, { recursive: true, force: true });
+  // 이미 프로필이 있으면 그대로 재사용한다 (같은 기기로 보이게). --fresh-profile 이면 새로 시작.
+  if (options.freshProfile) rmSync(profileDir, { recursive: true, force: true });
   mkdirSync(profileDir, { recursive: true });
 
   let storageState;
@@ -229,7 +254,19 @@ async function captureOne(account) {
   });
   try {
     const page = context.pages()[0] || await context.newPage();
-    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    if (loginViaSearchAdvisor) {
+      // 서치어드바이저 → (OAuth) → 네이버 로그인 화면. 리다이렉트가 끝날 때까지 기다린다.
+      console.log('  서치어드바이저를 거쳐 로그인 화면으로 들어갑니다.');
+      await page.goto(SA_LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      try {
+        await page.waitForURL(/nid\.naver\.com/, { timeout: 30_000 });
+      } catch {
+        console.log(`  (로그인 화면으로 안 넘어갔습니다: ${page.url()}) — 기본 경로로 다시 갑니다.`);
+        await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      }
+    } else {
+      await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    }
 
     // 자동 입력. 한 글자씩 치면 네이버 쪽 스크립트가 중간에 끊어 값이 잘린다
     // (실제로 lguxp4nlw 가 lgux 로 잘렸다). 값을 직접 넣고 확인될 때까지 다시 시도한다.
@@ -340,6 +377,27 @@ async function captureOne(account) {
     // 콘솔이 떴어도 인증 쿠키가 다 내려오기 전일 수 있다. 통신이 잦아들 때까지 둔다.
     await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
     storageState = await context.storageState();
+
+    if (keepOpen) {
+      console.log('\n  ⏸ 창을 열어둡니다 (--keep-open).');
+      console.log('     같은 IP·같은 창에서 이메일 인증, 서치어드바이저 확인 등을 끝내세요.');
+      console.log('     끝나면 이 콘솔에서 Enter. (창을 먼저 닫아도 로그인 직후 세션은 이미 떠 뒀습니다.)');
+      /*
+       * 창이 먼저 닫히면 storageState 가 "Target page, context or browser has been closed" 로
+       * 터진다. 실제로 qhcpyt45 가 이렇게 세션을 통째로 날렸다 (2026-09-14).
+       * 위에서 뜬 로그인 직후 스냅샷을 들고 있다가, 작업 후 새로 뜨는 데 실패하면 그걸 쓴다.
+       */
+      const snapshot = storageState;
+      await waitForEnter();
+      try {
+        await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+        storageState = await context.storageState();
+        console.log(`  작업 후 쿠키 ${storageState.cookies?.length ?? 0}개로 저장합니다.`);
+      } catch (error) {
+        storageState = snapshot;
+        console.log(`  (창이 이미 닫혀 작업 후 쿠키를 못 떴습니다 — 로그인 직후 세션 ${snapshot?.cookies?.length ?? 0}개로 저장합니다)`);
+      }
+    }
   } finally {
     await context.close().catch(() => {});
   }
@@ -384,8 +442,22 @@ async function captureOne(account) {
   ], { stdio: 'inherit' });
 
   rmSync(statePath, { force: true });
-  rmSync(profileDir, { recursive: true, force: true });
-  console.log('  ✓ Vault/DB 저장 완료, 임시 파일 삭제');
+  /*
+   * 크롬 프로필은 기본으로 남긴다 (2026-09-15).
+   * 예전엔 여기서 지웠는데, 그러면 다음에 이 계정을 쓸 때 register/verify 가
+   * 프로필을 새로 만들어 쿠키만 주입한다 = 네이버 눈에 "처음 보는 기기".
+   * 계정이 죽어나간 패턴이 정확히 이것이었다. 로그인한 그 프로필을 그대로 두면
+   * 다음 실행이 nid.naver.com 을 아예 거치지 않는다 (dlvt794 · ihpuz90 로 확인).
+   * 폴더명 <계정>-profile 은 lib/naver-profile.mjs 의 findProfileDir 가 찾는 이름이다.
+   * 지우고 싶으면 --drop-profile.
+   */
+  if (options.dropProfile) {
+    rmSync(profileDir, { recursive: true, force: true });
+    console.log('  ✓ Vault/DB 저장 완료, 임시 파일·프로필 삭제');
+  } else {
+    console.log(`  ✓ Vault/DB 저장 완료. 크롬 프로필 보존: ${profileDir}`);
+    console.log('    다음 실행부터 --profile auto 가 이 프로필을 그대로 씁니다.');
+  }
 
   return {
     accountId: account.account_id,

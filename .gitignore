@@ -69,3 +69,8 @@ data/dev_tasks.json
 # 파이썬 캐시
 __pycache__/
 *.pyc
+
+# 수집요청 스크립트가 만드는 크롬 프로필 — 로그인 쿠키가 들어있다 (2026-09-17)
+.naver-searchadvisor-profile-ju/
+# 작업 중 만든 백업본
+*.bak-20*

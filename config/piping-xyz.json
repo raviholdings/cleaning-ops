@@ -1,0 +1,36 @@
+{
+  "groupKey": "piping-xyz",
+  "note": "2026-09-14 확정. 도메인 5개가 각각 전국 지역 5,032 × 메인 54 × 변형 3 = 815,184장을 덮는다. 서빙은 catch-all(어떤 서브도메인에서든 열림), 카탈로그는 페이지마다 집 서브도메인 1개. 주소 한글.",
+  "domains": [
+    "pipeinfo.xyz",
+    "cleannhouse.xyz",
+    "townmoving.xyz",
+    "devtechinfo.xyz",
+    "cheolgeohelper.xyz"
+  ],
+  "planFile": "C:/Users/LD/Desktop/naver/reports/piping-xyz-subdomain-plan.json",
+  "regionsFile": "C:/Users/LD/Desktop/naver/content-data/regions/piping-xyz-regions.json",
+  "keywordsFile": "C:/Users/LD/Desktop/naver/content-data/keywords/piping-xyz-keywords.json",
+  "faqFile": "data/piping-faq-pool.json",
+  "templateDir": "apps/piping-static/piping-template-xyz",
+  "urlRoot": "배관",
+  "variants": 3,
+  "subdomainStep": 137,
+  "subdomainsPerDomain": 1000,
+  "contentVersion": "landing-v1",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 3800,
+    "pageCacheSize": 4000
+  },
+  "phone": "070-7106-5241",
+  "phoneTel": "07071065241",
+  "leadApi": "/api/lead",
+  "leadProject": "piping-xyz",
+  "serviceType": "배관",
+  "assetBase": "/piping-assets",
+  "assetVersion": "piping-v3",
+  "dbCredsFile": "C:/Users/LD/Desktop/ravi/_secure/naver-hub-db.txt",
+  "platformHost": "go.daddul.com",
+  "platformBase": "https://go.daddul.com"
+}

@@ -69,7 +69,7 @@ Write-Chain "===== PC 체인 시작 (templates=$Templates) ====="
 # ---- 1) 배포 ----------------------------------------------------------
 if (-not $SkipDeploy) {
 	$code = Invoke-Step -Label 'deploy' -File 'node' -Arguments @(
-		'scripts/build-and-deploy-sites.mjs',
+		'scripts/_legacy/build-and-deploy-sites.mjs',
 		'--renderer', 'static',
 		'--templates', $Templates,
 		'--extend', 'merged'

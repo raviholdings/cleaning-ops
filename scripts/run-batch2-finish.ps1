@@ -202,7 +202,7 @@ try {
 	Write-FinishLog "===== 3) 계정 $NeedTokenFrom~$NeedTokenTo 빌드·배포 ====="
 	$dLog = Join-Path $LogDir "finish-$Stamp-deploy.log"
 	$d = Invoke-Step -FilePath $Node `
-		-Arguments @('scripts/build-and-deploy-sites.mjs', '--from-order', "$NeedTokenFrom", '--to-order', "$NeedTokenTo") `
+		-Arguments @('scripts/_legacy/build-and-deploy-sites.mjs', '--from-order', "$NeedTokenFrom", '--to-order', "$NeedTokenTo") `
 		-OutLog $dLog -TimeoutMinutes $DeployTimeoutMinutes -Label "deploy #$NeedTokenFrom~$NeedTokenTo"
 	Write-FinishLog "  배포 -> $d"
 	$summary += "deploy($NeedTokenFrom~$NeedTokenTo)=$d"

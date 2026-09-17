@@ -206,7 +206,7 @@ try {
 	if (-not $SkipDeploy) {
 		Write-ChainLog '===== 2단계: 빌드 + 배포 (메타태그 반영) ====='
 		$deployLog = Join-Path $LogDir "batch2-$Stamp-deploy.log"
-		$deployResult = Invoke-Step -FilePath $Node -Arguments @('scripts/build-and-deploy-sites.mjs') `
+		$deployResult = Invoke-Step -FilePath $Node -Arguments @('scripts/_legacy/build-and-deploy-sites.mjs') `
 			-OutLog $deployLog -TimeoutMinutes $DeployTimeoutMinutes -Label 'deploy (전체)'
 		Write-ChainLog "  배포 -> $deployResult"
 		if ($deployResult -ne 'ok') {
