@@ -36,7 +36,13 @@ if (existsSync(envPath)) {
 
 const args = process.argv.slice(2);
 const task = args[0];
-const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb : args[i + 1]; };
+const val = (n, fb = null) => {
+  const i = args.indexOf(n);
+  if (i === -1) return fb;
+  const v = args[i + 1];
+  // "--vm --list" 처럼 값을 안 줬으면 다음 옵션을 값으로 삼지 말고 기본값을 쓴다.
+  return (v === undefined || v.startsWith('--')) ? fb : v;
+};
 // 두 번째 인자가 옵션이 아니면 계정 아이디로 본다 (계정 하나만 돌릴 때)
 const oneAccount = args[1] && !args[1].startsWith('--') ? args[1] : String(val('--account', '') || '');
 const listOnly = args.includes('--list');

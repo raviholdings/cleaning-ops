@@ -61,7 +61,14 @@ for (let i = 0; i < args.length; i += 1) {
   }
 }
 
-const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb : args[i + 1]; };
+const val = (n, fb = null) => {
+  const i = args.indexOf(n);
+  if (i === -1) return fb;
+  const v = args[i + 1];
+  // "--vm --force" 처럼 값을 안 줬으면 다음 옵션을 값으로 삼지 말고 기본값을 쓴다.
+  // (2026-09-18: --vm 이 "--skip-capture" 를 담당 이름으로 먹었다)
+  return (v === undefined || v.startsWith('--')) ? fb : v;
+};
 const vm = String(val('--vm', process.env.NAVER_CRAWL_RUNNER_PC || '')).trim();
 const listOnly = args.includes('--list');
 const force = args.includes('--force');

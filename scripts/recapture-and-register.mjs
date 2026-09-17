@@ -67,7 +67,14 @@ for (let i = 0; i < args.length; i += 1) {
   }
 }
 
-const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb : args[i + 1]; };
+const val = (n, fb = null) => {
+  const i = args.indexOf(n);
+  if (i === -1) return fb;
+  const v = args[i + 1];
+  // "--vm --skip-capture" 처럼 값을 안 줬으면 다음 옵션을 값으로 삼지 말고 기본값을 쓴다.
+  // (2026-09-18: --vm 이 담당 이름으로 "--skip-capture" 를 먹고 계정을 못 찾았다)
+  return (v === undefined || v.startsWith('--')) ? fb : v;
+};
 const flag = (n) => args.includes(n);
 
 /* 옵션이 아니고, 옵션의 값 자리도 아닌 인자를 계정 아이디로 본다. */
