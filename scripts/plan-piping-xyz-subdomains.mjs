@@ -24,7 +24,7 @@
  * 기본은 미리보기만 한다. 파일로 쓰려면 --write.
  */
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import pg from 'pg';
 
 const GROUP = 'piping-xyz';
@@ -243,8 +243,42 @@ console.log(`계정: ${Object.keys(byAcct).length}개 (계정당 최대 ${perAcc
 console.log('샘플 10개:'); items.slice(0, 10).forEach((x) => console.log(`  ${x.host}  -> ${x.naver_account_id}`));
 
 if (write) {
-  writeFileSync(outPath, JSON.stringify(plan, null, 1), 'utf8');
-  console.log(`\n계획 파일 기록: ${outPath}`);
+  /*
+   * 반드시 이어붙인다. 덮어쓰면 안 된다 (2026-09-17).
+   *
+   * lib/piping-xyz-site.mjs 의 subsByDomain 이 이 파일의 순서를 그대로 인덱스로 쓴다.
+   *   plan.items 에서 root 별로 나온 순서 = 0, 1, 2, ...
+   *   homeIndex 가 그 인덱스를 가리킨다.
+   * 기존 5,000개를 날리면 인덱스가 전부 밀려서, 이미 색인된 페이지가
+   * 엉뚱한 서브도메인 것으로 바뀐다.
+   */
+  let merged = items;
+  let head = { seed, strategy: STRATEGY, perAccount };
+  if (existsSync(outPath)) {
+    const prev = JSON.parse(readFileSync(outPath, 'utf8'));
+    const prevItems = prev.items || [];
+    const prevHosts = new Set(prevItems.map((x) => x.host));
+    const add = items.filter((x) => !prevHosts.has(x.host));
+    merged = [...prevItems, ...add];
+    head = {
+      seed: prev.seed || seed,
+      strategy: prev.strategy || 'joined-two-words',
+      perAccount: prev.perAccount || perAccount,
+      appended: [...(prev.appended || []), { at: new Date().toISOString(), seed, strategy: STRATEGY, count: add.length }],
+    };
+    console.log(`\n기존 ${prevItems.length.toLocaleString()}건 뒤에 ${add.length.toLocaleString()}건을 이어붙입니다.`);
+    // 루트별로 기존 뒤에 붙었는지 확인 — 순서가 인덱스다
+    const byRoot = {};
+    merged.forEach((x) => { (byRoot[x.root] ||= []).push(x); });
+    for (const [r, list] of Object.entries(byRoot)) {
+      const prevCount = prevItems.filter((x) => x.root === r).length;
+      const ok = list.slice(0, prevCount).every((x, i) => x.host === prevItems.filter((y) => y.root === r)[i].host);
+      console.log(`  ${r.padEnd(22)} ${prevCount} → ${list.length}  기존 순서 보존 ${ok ? '✅' : '❌'}`);
+      if (!ok) throw new Error(`${r}: 기존 순서가 깨졌습니다. 쓰지 않습니다.`);
+    }
+  }
+  writeFileSync(outPath, JSON.stringify({ ...head, total: merged.length, items: merged }, null, 1), 'utf8');
+  console.log(`\n계획 파일 기록: ${outPath}  (총 ${merged.length.toLocaleString()}건)`);
   console.log('다음: node scripts/apply-piping-xyz-subdomains.mjs --dry-run  (확인 후 --apply)');
 } else {
   console.log('\n미리보기만 했습니다. 파일로 쓰려면 --write 를 붙이세요.');
