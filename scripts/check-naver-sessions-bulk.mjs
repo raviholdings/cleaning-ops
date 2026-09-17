@@ -2,9 +2,14 @@
 /**
  * 저장된 세션으로 서치어드바이저 콘솔이 열리는지 계정별로 확인한다.
  *
+ *   node scripts/check-naver-sessions-bulk.mjs --vm            # 내 몫 전부 (.env)
+ *   node scripts/check-naver-sessions-bulk.mjs --vm vm2        # 담당 지정
  *   node scripts/check-naver-sessions-bulk.mjs --accounts 51-80
  *   node scripts/check-naver-sessions-bulk.mjs --account aaa,bbb,ccc
  *   node scripts/check-naver-sessions-bulk.mjs --accounts 51-80 --show
+ *
+ * ⚠ VM 계정은 순번이 3칸씩 건너뛰며 섞여 있다 (vm1 95,98,101… vm2 96,99,102…).
+ *   --accounts 로 범위를 주면 남의 VM 계정까지 딸려온다. VM 에서는 --vm 을 쓸 것.
  *
  * **로그인을 시도하지 않는다.** 이미 저장된 세션을 그대로 써서 콘솔 화면만
  * 열어보고 끝낸다. 보호조치가 걸린 상태에서 로그인을 반복하면 더 잠긴다.
@@ -172,8 +177,23 @@ async function loadAccounts() {
     if (!rows.length) throw new Error(`계정을 찾을 수 없습니다: ${ids.join(', ')}`);
     return rows;
   }
+  /*
+   * --vm vm2 / --vm (.env 의 NAVER_CRAWL_RUNNER_PC)
+   *
+   * VM 계정은 순번이 3칸씩 건너뛰며 섞여 있다 (vm1 95,98,101… vm2 96,99,102…).
+   * 그래서 --accounts 95-194 처럼 범위로 잡으면 남의 VM 계정까지 딸려온다.
+   * 담당으로 고르게 해서 그 사고를 막는다.
+   */
+  const vm = options.vm === true ? (process.env.NAVER_CRAWL_RUNNER_PC || '') : String(options.vm || '');
+  if (vm.trim()) {
+    const { rows } = await client.query(
+      select("where runner_pc = $1 and status = 'active' order by account_order"), [vm.trim()]);
+    if (!rows.length) throw new Error(`${vm.trim()} 에 배정된 활성 계정이 없습니다.`);
+    return rows;
+  }
+
   const range = String(options.accounts || '').match(/^(\d+)-(\d+)$/);
-  if (!range) throw new Error('--accounts <시작>-<끝> 또는 --account <id[,id...]> 가 필요합니다.');
+  if (!range) throw new Error('--vm <담당> 또는 --accounts <시작>-<끝> 또는 --account <id[,id...]> 가 필요합니다.');
   const { rows } = await client.query(
     select('where account_order between $1 and $2 order by account_order'),
     [Number(range[1]), Number(range[2])],
