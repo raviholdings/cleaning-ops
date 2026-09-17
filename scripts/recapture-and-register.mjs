@@ -8,6 +8,7 @@
  *   node scripts/recapture-and-register.mjs --list               # 뭘 할지만 보기
  *   node scripts/recapture-and-register.mjs acct --allow-new-ip  # 배정 IP 가 풀에서 사라졌을 때
  *   node scripts/recapture-and-register.mjs acct --skip-capture  # 등록만
+ *   node scripts/recapture-and-register.mjs acct --verify        # 소유확인까지
  *
  * 두 단계로 나눠서 돈다. 캡처는 사람이 브라우저에서 로그인해야 하고 등록은
  * 계정당 몇 분씩 걸리므로, 섞어 돌리면 사람이 등록 끝나기를 기다리며 앉아
@@ -20,10 +21,14 @@
  * (보호조치 풀고 온 계정이 이 경우다). 아이디 없이 돌리면 내 몫(runner_pc)
  * 중 세션이 없는 계정만 잡는다 — 멀쩡한 세션을 날리지 않는다.
  *
- * ⚠ 소유확인은 여기서 하지 않는다. 등록이 끝난 뒤 집 PC 에서
- *     node scripts/export-piping-xyz-naver-meta.mjs
- *   를 돌려 메타태그를 배포해야 소유확인이 통과한다. 이 순서를 빠뜨리면
- *   전건 "메타태그 없음" 으로 실패한다 (2026-09-17).
+ * --verify 를 붙이면 3단계로 소유확인까지 간다. 단, 소유확인은 집 PC 가
+ * 메타태그를 배포한 뒤에만 통과한다 (토큰을 gen/naver_meta.json 으로 내보내야
+ * head.sub1.php 가 찍는다). VM 에서는 그 파일을 만들 수 없으므로, 등록한
+ * 사이트를 실제로 열어보고 메타태그가 뜰 때까지 기다렸다가 소유확인을 건다.
+ *
+ * 집 PC 는 5분마다 export-piping-xyz-naver-meta.mjs 를 도는 작업이 걸려 있다
+ * (NaverMetaExport). 그래서 보통은 몇 분 안에 저절로 뜬다.
+ * 이 순서를 빠뜨리면 전건 "메타태그 없음" 으로 실패한다 (2026-09-17).
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -46,7 +51,7 @@ const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb 
 const flag = (n) => args.includes(n);
 
 /* 옵션이 아니고, 옵션의 값 자리도 아닌 인자를 계정 아이디로 본다. */
-const VALUE_OPTS = new Set(['--vm', '--limit', '--from', '--group-key']);
+const VALUE_OPTS = new Set(['--vm', '--limit', '--from', '--group-key', '--meta-wait']);
 const ids = [];
 for (let i = 0; i < args.length; i += 1) {
   if (args[i].startsWith('--')) { if (VALUE_OPTS.has(args[i])) i += 1; continue; }
@@ -57,6 +62,9 @@ for (let i = 0; i < args.length; i += 1) {
 const listOnly = flag('--list');
 const skipCapture = flag('--skip-capture');
 const skipRegister = flag('--skip-register');
+const doVerify = flag('--verify');
+// 집 PC 가 메타태그를 배포할 때까지 기다릴 시간 (분). 0 이면 기다리지 않는다.
+const metaWaitMin = Number(val('--meta-wait', 15));
 const allowNewIp = flag('--allow-new-ip');
 const groupKey = String(val('--group-key', 'piping-xyz'));
 const limit = val('--limit', null);
@@ -72,8 +80,15 @@ if (!ids.length && !vm) {
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!url) throw new Error('DATABASE_URL 이 없습니다 (.env 확인).');
 
-const c = new pg.Client({ connectionString: url, ssl: /127\.0\.0\.1|localhost/.test(url) ? false : { rejectUnauthorized: false } });
-await c.connect();
+const newClient = async () => {
+  const cl = new pg.Client({
+    connectionString: url,
+    ssl: /127\.0\.0\.1|localhost/.test(url) ? false : { rejectUnauthorized: false },
+  });
+  await cl.connect();
+  return cl;
+};
+const c = await newClient();
 
 const SELECT = `select account_order, account_id, status,
                        (searchadvisor_session_secret_id is not null) as has_session,
@@ -169,13 +184,89 @@ if (skipRegister) {
   }
 }
 
+/* ---------- 3단계 · 소유확인 ----------
+ *
+ * 메타태그는 집 PC 의 gen/naver_meta.json 이 찍는다. VM 에서는 그 파일을 만들 수
+ * 없으니, 등록한 사이트를 실제로 열어보고 토큰이 뜨는지로 배포 여부를 본다.
+ * 집 PC 의 NaverMetaExport 작업이 5분마다 도니까 보통 몇 분 안에 뜬다.
+ */
+async function liveMetaToken(host) {
+  try {
+    const res = await fetch(`https://${host}/`, {
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; meta-check)' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    const html = await res.text();
+    return (html.match(/name=["']naver-site-verification["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/content=["']([^"']+)["'][^>]*name=["']naver-site-verification["']/i)
+      || [])[1] || null;
+  } catch { return null; }
+}
+
+/** 이 계정의 등록완료 사이트 몇 개를 열어 메타태그가 배포됐는지 본다. */
+async function waitForMeta(accountId) {
+  const cl = await newClient();
+  const { rows: sample } = await cl.query(
+    `select host, naver_verification_token tok from naver_project_domains
+      where naver_account_id = $1 and group_key = $2
+        and naver_registration_status = 'registered'
+      order by naver_registered_at desc nulls last limit 3`, [accountId, groupKey]);
+  await cl.end();
+  if (!sample.length) return { ok: true, note: '소유확인할 사이트가 없습니다' };
+
+  const deadline = Date.now() + metaWaitMin * 60_000;
+  for (let round = 1; ; round += 1) {
+    const live = await Promise.all(sample.map((s) => liveMetaToken(s.host)));
+    const bad = sample.filter((s, i) => live[i] !== s.tok);
+    if (!bad.length) return { ok: true, note: `메타태그 확인 ${sample.length}건` };
+    if (Date.now() >= deadline) {
+      return { ok: false, note: `메타태그 미배포 (${bad.map((b) => b.host).join(', ')})` };
+    }
+    console.log(`  [${round}] 메타태그 아직입니다 (${bad.length}/${sample.length}). 60초 뒤 다시 봅니다.`
+      + `  남은 대기 ${Math.ceil((deadline - Date.now()) / 60_000)}분`);
+    await new Promise((r) => setTimeout(r, 60_000));
+  }
+}
+
+if (doVerify) {
+  const verifyTargets = skipRegister ? targets : captured;
+  console.log(`\n===== 3단계 · 소유확인 ${verifyTargets.length}개 =====`);
+  if (metaWaitMin > 0) {
+    console.log(`  메타태그가 배포될 때까지 계정마다 최대 ${metaWaitMin}분 기다립니다.`);
+    console.log(`  (집 PC 의 NaverMetaExport 가 5분마다 돕니다. 안 뜨면 집 PC 에서`);
+    console.log(`   node scripts/export-piping-xyz-naver-meta.mjs 를 직접 돌리세요.)`);
+  }
+  for (const [i, r] of verifyTargets.entries()) {
+    console.log(`\n----- 소유확인 [${i + 1}/${verifyTargets.length}] #${r.account_order} ${r.account_id} -----`);
+    const ready = await waitForMeta(r.account_id);
+    console.log(`  ${ready.ok ? '✓' : '✗'} ${ready.note}`);
+    if (!ready.ok) {
+      failed.push({ r, at: '소유확인', why: ready.note });
+      console.log('  메타태그가 없으면 전건 실패합니다. 건너뜁니다.');
+      continue;
+    }
+    const res = spawnSync(process.execPath, [
+      resolve(projectRoot, 'scripts/verify-naver-searchadvisor-sites.mjs'),
+      '--account', r.account_id, '--group-key', groupKey, '--delay-ms', '4000',
+    ], { stdio: 'inherit', cwd: projectRoot });
+    if (res.status !== 0) {
+      failed.push({ r, at: '소유확인', why: `종료코드 ${res.status}` });
+      console.log(`  ✗ 소유확인 실패. 다음 계정으로 갑니다.`);
+    }
+  }
+}
+
 console.log(`\n===== 끝 =====`);
 console.log(`  캡처 성공 ${captured.length} / 실패 ${failed.filter((f) => f.at === '캡처').length}`);
 console.log(`  등록 실패 ${failed.filter((f) => f.at === '등록').length}`);
+if (doVerify) console.log(`  소유확인 실패 ${failed.filter((f) => f.at === '소유확인').length}`);
 failed.forEach((f) => console.log(`    ✗ ${f.at}  ${f.r.account_id}  ${f.why}`));
 
-console.log('');
-console.log('  다음 순서 — 소유확인은 메타태그 배포 뒤에 해야 합니다.');
-console.log('   1) 집 PC   node scripts/export-piping-xyz-naver-meta.mjs');
-console.log('   2) 이 기계  node scripts/run-batch.mjs verify');
+if (!doVerify) {
+  console.log('');
+  console.log('  소유확인까지 하려면 --verify. 따로 하려면:');
+  console.log('   1) 집 PC   node scripts/export-piping-xyz-naver-meta.mjs   (5분마다 자동으로도 돕니다)');
+  console.log('   2) 이 기계  node scripts/run-batch.mjs verify');
+}
 if (failed.length) process.exitCode = 1;

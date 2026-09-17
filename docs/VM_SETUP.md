@@ -122,8 +122,8 @@ node scripts/capture-naver-session.mjs --account <아이디> --no-auto-click --k
 # 2) 사이트 등록 (계정당 100개)
 node scripts/register-naver-searchadvisor-sites.mjs --account <아이디> --profile auto --group-key piping-xyz
 
-# 3) 메타태그 배포 — ★ 집 PC 에서. 이걸 빼면 소유확인이 전건 실패한다
-#    (등록이 다 끝난 뒤에 돌릴 것. 돌리는 중에 하면 그 뒤 등록분이 빠진다)
+# 3) 메타태그 배포 — 집 PC 에서. 이걸 빼면 소유확인이 전건 실패한다.
+#    집 PC 의 NaverMetaExport 작업이 5분마다 자동으로 돈다. 당장 필요하면 직접:
 node scripts/export-piping-xyz-naver-meta.mjs
 
 # 4) 소유확인
@@ -146,11 +146,17 @@ node scripts/run-batch.mjs verify        # 소유확인
 # 보호조치 풀고 온 계정 — 재캡처부터 등록까지 한 번에
 node scripts/recapture-and-register.mjs <아이디> [<아이디> ...]
 node scripts/recapture-and-register.mjs <아이디> --allow-new-ip   # 배정 IP 가 풀에서 사라졌을 때
+node scripts/recapture-and-register.mjs <아이디> --verify         # 소유확인까지
 ```
 
 `recapture-and-register` 는 캡처를 전부 끝낸 뒤 등록으로 넘어간다.
 캡처는 사람이 붙어야 하고 등록은 계정당 몇 분씩 걸려서, 섞어 돌리면
 사람이 등록 끝나기를 기다리며 앉아 있게 된다.
+
+`--verify` 는 등록한 사이트를 실제로 열어 메타태그가 배포됐는지 보고 나서
+소유확인을 건다. 안 떠 있으면 60초마다 다시 보며 최대 15분 기다린다
+(`--meta-wait <분>`). 집 PC 의 **NaverMetaExport** 작업이 5분마다
+`export-piping-xyz-naver-meta.mjs` 를 도니 보통 몇 분 안에 뜬다.
 
 세션이 살아있는지 먼저 보고 싶으면 (**로그인을 시도하지 않는다**):
 
