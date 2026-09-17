@@ -51,7 +51,7 @@ const val = (n, fb = null) => { const i = args.indexOf(n); return i === -1 ? fb 
 const flag = (n) => args.includes(n);
 
 /* 옵션이 아니고, 옵션의 값 자리도 아닌 인자를 계정 아이디로 본다. */
-const VALUE_OPTS = new Set(['--vm', '--limit', '--from', '--group-key', '--meta-wait']);
+const VALUE_OPTS = new Set(['--vm', '--limit', '--from', '--group-key', '--meta-wait', '--orders']);
 const ids = [];
 for (let i = 0; i < args.length; i += 1) {
   if (args[i].startsWith('--')) { if (VALUE_OPTS.has(args[i])) i += 1; continue; }
@@ -63,6 +63,18 @@ const listOnly = flag('--list');
 const skipCapture = flag('--skip-capture');
 const skipRegister = flag('--skip-register');
 const doVerify = flag('--verify');
+/*
+ * --orders 101-194 : 계정 순번으로 범위를 자른다.
+ * --from 은 "목록의 몇 번째"라 VM 마다 값이 달라지지만, 순번은 세 VM 이
+ * 같은 값을 쓸 수 있다 (vm1 95,98,101… vm2 96,99,102… 여도 101-194 는 똑같다).
+ */
+const orderRange = (() => {
+  const raw = String(val('--orders', '') || '').trim();
+  if (!raw) return null;
+  const m = raw.match(/^(\d+)\s*-\s*(\d+)$/);
+  if (!m) throw new Error('--orders 는 <시작>-<끝> 형식입니다. 예: --orders 101-194');
+  return [Number(m[1]), Number(m[2])];
+})();
 // 집 PC 가 메타태그를 배포할 때까지 기다릴 시간 (분). 0 이면 기다리지 않는다.
 const metaWaitMin = Number(val('--meta-wait', 15));
 const allowNewIp = flag('--allow-new-ip');
@@ -114,10 +126,13 @@ for (const r of rows) {
 await c.end();
 
 /* 아이디를 안 줬으면 세션 없는 계정만 잡는다 — 멀쩡한 세션은 건드리지 않는다. */
-const targets = rows.filter((r) => r.status === 'active' && (force || !r.has_session));
+const inRange = (r) => !orderRange
+  || (Number(r.account_order) >= orderRange[0] && Number(r.account_order) <= orderRange[1]);
+const targets = rows.filter((r) => r.status === 'active' && (force || !r.has_session) && inRange(r));
 
 console.log(`${ids.length ? '계정 지정' : `담당 ${vm}`} — 재캡처 + 사이트 등록 (${groupKey})`);
-console.log(`  대상 ${targets.length}개 / 전체 ${rows.length}개${force ? '  (재캡처 모드)' : ''}`);
+console.log(`  대상 ${targets.length}개 / 전체 ${rows.length}개${force ? '  (재캡처 모드)' : ''}`
+  + (orderRange ? `   순번 ${orderRange[0]}~${orderRange[1]} 만` : ''));
 rows.forEach((r, i) => console.log(
   `  ${String(i + 1).padStart(3)}. #${String(r.account_order).padEnd(5)}${r.account_id.padEnd(18)}`
   + `${r.has_session ? '세션O' : '세션X'}  등록대기 ${String(r.pending).padStart(4)}건`

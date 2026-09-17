@@ -7,6 +7,8 @@
  *   node scripts/capture-batch.mjs --list          # 목록만 보기
  *   node scripts/capture-batch.mjs --from 3        # 3번째부터 (중단된 뒤 이어서)
  *   node scripts/capture-batch.mjs --force --allow-new-ip   # 전부 다시 잡기
+ *   node scripts/capture-batch.mjs --force --allow-new-ip --orders 101-194
+ *                                                  # 순번 101~194 만 (95~100 은 살아있어 제외)
  *
  * --allow-new-ip : 배정 IP 가 HaiIP 풀에서 사라졌을 때 지금 IP 로 진행한다.
  *   세션이 오래됐으면 배정 IP 도 대개 없어져 있어서, 재캡처 때는 사실상 필요하다.
@@ -45,6 +47,20 @@ const listOnly = args.includes('--list');
 const force = args.includes('--force');
 const allowNewIp = args.includes('--allow-new-ip');
 const from = Number(val('--from', 1));
+/*
+ * --orders 101-194 : 계정 순번으로 범위를 자른다.
+ *
+ * 멀쩡한 계정을 재캡처 대상에서 빼려고 넣었다. --from 은 "목록의 몇 번째"라
+ * VM 마다 숫자가 달라지지만, 순번은 세 VM 이 같은 값을 쓸 수 있다
+ * (vm1 은 95,98,101… vm2 는 96,99,102… 로 섞여 있어도 101-194 는 똑같이 먹는다).
+ */
+const orderRange = (() => {
+  const raw = String(val('--orders', '') || '').trim();
+  if (!raw) return null;
+  const m = raw.match(/^(\d+)\s*-\s*(\d+)$/);
+  if (!m) throw new Error('--orders 는 <시작>-<끝> 형식입니다. 예: --orders 101-194');
+  return [Number(m[1]), Number(m[2])];
+})();
 
 if (!vm) throw new Error('담당 이름이 없습니다. .env 의 NAVER_CRAWL_RUNNER_PC 를 넣거나 --vm vm1 로 주세요.');
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
@@ -63,12 +79,17 @@ await c.end();
 
 if (!rows.length) throw new Error(`${vm} 에 배정된 활성 계정이 없습니다.`);
 
-const todo = force ? rows : rows.filter((r) => !r.has_session);
-console.log(`담당: ${vm}   배정 ${rows.length}개   캡처 필요 ${todo.length}개`);
+const inRange = (r) => !orderRange
+  || (Number(r.account_order) >= orderRange[0] && Number(r.account_order) <= orderRange[1]);
+
+const todo = (force ? rows : rows.filter((r) => !r.has_session)).filter(inRange);
+console.log(`담당: ${vm}   배정 ${rows.length}개   캡처 필요 ${todo.length}개`
+  + (orderRange ? `   순번 ${orderRange[0]}~${orderRange[1]} 만` : ''));
 if (listOnly || !todo.length) {
   rows.forEach((r, i) => console.log(
     `  ${String(i + 1).padStart(3)}. #${String(r.account_order).padEnd(5)}${r.account_id.padEnd(18)}`
-    + `${r.has_session ? '세션있음' : '캡처필요'}  ${String(r.personal_info_source || '').startsWith('domestic') ? '국내' : '해외'}`));
+    + `${r.has_session ? '세션있음' : '캡처필요'}  ${String(r.personal_info_source || '').startsWith('domestic') ? '국내' : '해외'}`
+    + `${todo.includes(r) ? '' : '  ← 건너뜀'}`));
   process.exit(0);
 }
 
