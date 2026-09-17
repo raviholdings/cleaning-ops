@@ -215,6 +215,10 @@ async function registerForAccount(account) {
     page = await context.newPage();
   }
   let registered = 0;
+  // 계정 단위 상태 — return 에서 쓰므로 함수 스코프에 둔다.
+  // try 블록 안에 두면 'aborted is not defined' 가 난다 (2026-09-17 실제로 겪음).
+  let consecutiveFailures = 0;
+  let aborted = null;
   const failures = [];
   try {
 
@@ -233,8 +237,6 @@ async function registerForAccount(account) {
     }
     console.log(`  등록 화면 확인 ✅ (등록된 사이트 ${board.siteCount ?? '?'}개)`);
 
-    let consecutiveFailures = 0;
-    let aborted = null;
     for (const [index, domain] of targets.entries()) {
       try {
         const token = await registerOne(page, domain.site_url);
