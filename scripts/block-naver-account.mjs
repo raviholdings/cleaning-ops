@@ -25,7 +25,9 @@ if (!orders && !ids) throw new Error('--accounts <순번> 또는 --account <아�
 
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!url) throw new Error('DATABASE_URL 필요 (naverops 래퍼로 실행)');
-if (!/127\.0\.0\.1|localhost/.test(url)) throw new Error('안전장치: 로컬 DB 가 아닙니다. 중단.');
+// 2026-09-17: 정본이 로컬에서 Supabase 로 옮겨갔다 (VM 3대가 붙어야 해서).
+// 실수로 엉뚱한 DB 를 건드리지 않게 이름으로만 확인한다.
+if (!/naver_hub|supabase/.test(url)) throw new Error('안전장치: 모르는 DB 입니다. 중단.');
 
 const orderList = [];
 for (const part of orders.split(',').map((s) => s.trim()).filter(Boolean)) {

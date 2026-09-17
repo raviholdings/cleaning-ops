@@ -11,15 +11,29 @@
  *
  * register-naver-searchadvisor-sites.mjs 를 돌린 뒤, verify 전에 매번 실행.
  */
-import { writeFileSync, renameSync, existsSync } from 'node:fs';
+import { writeFileSync, renameSync, existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+
+/* 등록 직후 verify 전에 매번 불러야 하는 스크립트라 .env 를 직접 읽는다.
+   naverops.sh 를 안 거쳐도 그냥 돌아가야 한다. */
+const envPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', '.env');
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = (m[2] || '').replace(/^["']|["']$/g, '');
+  }
+}
 
 const dryRun = process.argv.includes('--dry-run');
 const GROUP = 'piping-xyz';
 const SITES_DIR = 'C:/xampp/sites';
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
 if (!url) throw new Error('DATABASE_URL 필요 (naverops.sh 로 실행)');
-if (!/127\.0\.0\.1|localhost/.test(url)) throw new Error('안전장치: 로컬 DB 가 아닙니다. 중단.');
+// 2026-09-17: 정본이 로컬에서 Supabase 로 옮겨갔다 (VM 3대가 붙어야 해서).
+// 실수로 엉뚱한 DB 를 건드리지 않게 이름으로만 확인한다.
+if (!/naver_hub|supabase/.test(url)) throw new Error('안전장치: 모르는 DB 입니다. 중단.');
 
 const c = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await c.connect();
