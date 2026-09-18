@@ -849,7 +849,7 @@ async function takeFreeIp(account, startIp) {
     }
     console.log(`  [${attempt}/${newIpAttempts}] ${ip} — ${owners.join(', ')} 가 쓰는 중, 바꿉니다.`);
     haiIpChange();
-    ip = await settledPublicIp();
+    ip = await settledPublicIp({ changedFrom: ip });
   }
   throw new Error(`빈 IP 를 ${newIpAttempts}번 안에 못 찾았습니다 (마지막 ${ip}).`);
 }
@@ -859,7 +859,7 @@ async function ensureIpForAccount(account, currentIp) {
   if (!preferred) {
     console.log('  배정 IP 가 없어 무작위로 바꾸고 그 IP 를 배정합니다.');
     haiIpChange();
-    return settledPublicIp();
+    return settledPublicIp({ changedFrom: currentIp });
   }
   if (preferred === currentIp) {
     console.log(`  배정 IP ${preferred} 에 이미 있습니다.`);
@@ -868,7 +868,7 @@ async function ensureIpForAccount(account, currentIp) {
 
   console.log(`  배정 IP ${preferred} 로 전환합니다.`);
   haiIpChange(['-PreferredIp', preferred, '-CheckPreferredResult']);
-  const next = await settledPublicIp();
+  const next = await settledPublicIp({ changedFrom: currentIp });
   if (next === preferred) return next;
 
   if (!allowNewIp) {
@@ -894,16 +894,27 @@ async function ensureIpForAccount(account, currentIp) {
  * (2026-09-18 vm3: 스크립트 211.35.130.122 / 브라우저는 다른 IP).
  * check-naver-sessions-bulk 는 원래 2.5초씩 6번 다시 봤는데 캡처만 빠져 있었다.
  */
-async function settledPublicIp({ tries = 8, gapMs = 2500, quiet = false } = {}) {
+async function settledPublicIp({ tries = 8, gapMs = 2500, changedFrom = null } = {}) {
   let last = null;
   for (let i = 1; i <= tries; i += 1) {
     const ip = await currentPublicIp();
-    if (ip === last) return ip;
-    if (last && !quiet) console.log(`  IP 가 아직 바뀌는 중입니다 (${last} → ${ip}). 다시 봅니다.`);
+    /*
+     * changedFrom 을 주면 "그 값에서 벗어난 뒤" 안정된 값만 받는다.
+     *
+     * 이게 없으면 전환이 걸리기 전에 옛 IP 를 두 번 연속 읽고 "안정됐다" 며
+     * 그대로 돌려준다. 그러면 바깥 루프가 같은 IP 를 계속 다시 보게 된다
+     * (2026-09-18 gorx537: 222.112.136.30 을 6번 내리 잡았다).
+     */
+    if (ip === last && ip !== changedFrom) return ip;
+    if (last && last !== ip) console.log(`  IP 가 아직 바뀌는 중입니다 (${last} → ${ip}). 다시 봅니다.`);
     last = ip;
     await new Promise((r) => { setTimeout(r, gapMs); });
   }
-  console.log(`  ⚠ IP 가 ${tries}번 안에 안정되지 않았습니다. 마지막 값 ${last} 로 갑니다.`);
+  if (changedFrom && last === changedFrom) {
+    console.log(`  ⚠ IP 가 ${changedFrom} 에서 안 바뀝니다 (${tries}번 확인). HaiIP 가 전환을 못 걸고 있습니다.`);
+  } else {
+    console.log(`  ⚠ IP 가 ${tries}번 안에 안정되지 않았습니다. 마지막 값 ${last} 로 갑니다.`);
+  }
   return last;
 }
 
