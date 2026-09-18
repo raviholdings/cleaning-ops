@@ -212,11 +212,24 @@ async function ensureAccountIp(account) {
   if (skipHaiIp) throw new Error(`IP 불일치: 현재 ${current}, 필요 ${target} (--no-haiip)`);
 
   console.log(`  IP 전환: ${current} -> ${target}`);
-  execFileSync('powershell.exe', [
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', haiIpScript,
-    '-Command', 'change', '-PreferredIp', target, '-CheckPreferredResult',
-    '-PreferredWaitSeconds', '30', '-PreferredActivationRetries', '3',
-  ], { stdio: 'pipe', timeout: 240_000 });
+  /*
+   * PS 스크립트는 전환이 끝날 때까지 기다렸다가 결과를 JSON 으로 준다.
+   * 그걸 버리고 따로 재면 아직 안 바뀐 값을 읽고 헛돈다 (2026-09-18).
+   * afterPublicIp 를 먼저 믿고, 못 받았을 때만 직접 확인한다.
+   */
+  let after = null;
+  try {
+    const stdout = String(execFileSync('powershell.exe', [
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', haiIpScript,
+      '-Command', 'change', '-PreferredIp', target, '-CheckPreferredResult',
+      '-PreferredWaitSeconds', '30', '-PreferredActivationRetries', '3',
+    ], { stdio: 'pipe', timeout: 240_000, encoding: 'utf8' }) || '');
+    const json = JSON.parse(stdout.slice(stdout.indexOf('{')));
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(json.afterPublicIp || '')) after = json.afterPublicIp;
+  } catch { /* 결과를 못 읽으면 아래에서 직접 확인한다 */ }
+
+  if (after === target) { console.log(`  IP 확인: ${after} ✅`); return; }
+  if (after) current = after;
 
   for (let attempt = 1; attempt <= 6; attempt += 1) {
     await new Promise((r) => { setTimeout(r, 2500); });
