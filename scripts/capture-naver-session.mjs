@@ -14,6 +14,12 @@
  *     배정 IP 가 HaiIP 풀에서 사라졌을 때. 지금 IP 를 그대로 쓰고, 다른 계정이
  *     물고 있을 때만 빈 IP 가 나올 때까지 바꾼다 (--new-ip-attempts, 기본 6).
  *
+ * IP 안전장치 (2026-09-18)
+ *   · HaiIP 전환 뒤 IP 가 **안정될 때까지** 읽는다 (연속 두 번 같은 값).
+ *     한 번만 읽으면 바뀌는 중의 값을 DB 에 박는다.
+ *   · 로그인 직전 **브라우저 안에서** IP 를 다시 읽어 Node 값과 대조한다.
+ *     다르면 멈춘다 — 네이버가 보는 건 브라우저 IP 다. 끄려면 --skip-ip-check.
+ *
  * 흐름 (사람이 하는 건 5번뿐)
  *   1. DB 에서 계정·비밀번호·배정 IP 조회
  *   2. HaiIP 로 그 계정의 IP 로 전환 (배정 IP 가 없으면 무작위 변경 후 기록)
@@ -91,6 +97,11 @@ const SA_LOGIN_URL = 'https://searchadvisor.naver.com/auth/login?caller=/console
  * 않는다 (운영자 결정 2026-09-01).
  */
 const allowNewIp = Boolean(options.allowNewIp);
+/*
+ * 브라우저 IP 와 Node IP 가 다르면 멈춘다. 끄면 Node 값으로 그냥 간다.
+ * 끄지 말 것 — 네이버가 보는 건 브라우저 IP 다.
+ */
+const skipIpCheck = Boolean(options.skipIpCheck);
 const newIpAttempts = Math.max(1, Number(options.newIpAttempts || 6));
 
 /*
@@ -254,6 +265,34 @@ async function captureOne(account) {
   });
   try {
     const page = context.pages()[0] || await context.newPage();
+
+    /*
+     * 브라우저가 실제로 어느 IP 로 나가는지 확인한다.
+     *
+     * 네이버가 보는 건 Node 가 읽은 IP 가 아니라 **이 브라우저**의 IP 다. 둘이
+     * 어긋나면 DB 에는 없는 IP 가 배정 IP 로 박히고, 다음 실행부터 매번 새 IP 로
+     * 로그인하게 된다 — 계정이 죽는 경로다.
+     * 2026-09-18 vm3 에서 실제로 갈렸다 (스크립트 211.35.130.122 / 브라우저는 딴 IP).
+     * HaiIP 목록 선택이 한 칸 밀리거나 전환이 늦게 적용되면 이렇게 된다.
+     * 여기서 멈추는 편이 잘못된 IP 로 로그인하는 것보다 싸다.
+     */
+    const browserIp = skipIpCheck ? null : await browserPublicIp(page);
+    if (skipIpCheck) {
+      console.log('  --skip-ip-check — 브라우저 IP 대조를 건너뜁니다.');
+    } else if (!browserIp) {
+      console.log('  ⚠ 브라우저 IP 를 못 읽었습니다. Node 가 읽은 값으로 진행합니다.');
+    } else if (browserIp !== publicIp) {
+      throw new Error(
+        `브라우저와 스크립트가 서로 다른 IP 로 나갑니다.\n`
+        + `    스크립트(Node) ${publicIp}\n`
+        + `    브라우저       ${browserIp}   ← 네이버가 보는 IP\n`
+        + '  이 상태로 로그인하면 DB 에 틀린 IP 가 저장돼 다음 실행이 깨집니다.\n'
+        + '  HaiIP 전환이 제대로 걸렸는지 확인하고 다시 돌리세요.\n'
+        + '  (검사를 건너뛰려면 --skip-ip-check — 권하지 않습니다)');
+    } else {
+      console.log(`  브라우저 IP 확인: ${browserIp} (스크립트와 일치)`);
+    }
+
     if (loginViaSearchAdvisor) {
       // 서치어드바이저 → (OAuth) → 네이버 로그인 화면. 리다이렉트가 끝날 때까지 기다린다.
       console.log('  서치어드바이저를 거쳐 로그인 화면으로 들어갑니다.');
@@ -814,7 +853,7 @@ async function takeFreeIp(account, startIp) {
     }
     console.log(`  [${attempt}/${newIpAttempts}] ${ip} — ${owners.join(', ')} 가 쓰는 중, 바꿉니다.`);
     haiIpChange();
-    ip = await currentPublicIp();
+    ip = await settledPublicIp();
   }
   throw new Error(`빈 IP 를 ${newIpAttempts}번 안에 못 찾았습니다 (마지막 ${ip}).`);
 }
@@ -824,7 +863,7 @@ async function ensureIpForAccount(account, currentIp) {
   if (!preferred) {
     console.log('  배정 IP 가 없어 무작위로 바꾸고 그 IP 를 배정합니다.');
     haiIpChange();
-    return currentPublicIp();
+    return settledPublicIp();
   }
   if (preferred === currentIp) {
     console.log(`  배정 IP ${preferred} 에 이미 있습니다.`);
@@ -833,7 +872,7 @@ async function ensureIpForAccount(account, currentIp) {
 
   console.log(`  배정 IP ${preferred} 로 전환합니다.`);
   haiIpChange(['-PreferredIp', preferred, '-CheckPreferredResult']);
-  const next = await currentPublicIp();
+  const next = await settledPublicIp();
   if (next === preferred) return next;
 
   if (!allowNewIp) {
@@ -850,6 +889,48 @@ async function ensureIpForAccount(account, currentIp) {
  * IP 변경 직후에 부르면 캐시된 옛 주소가 돌아온다. 타임스탬프를 붙여 캐시를 피한다.
  * (레거시 haiip-windows-ui-control.ps1 의 Get-PublicIp 도 같은 이유로 _ts 를 붙인다.)
  */
+/**
+ * IP 가 안정될 때까지 읽는다 — 연속 두 번 같은 값이 나오면 그 값.
+ *
+ * HaiIP 전환 직후엔 아직 옛 연결로 나가거나, 바뀌는 중의 값이 잡힌다.
+ * 한 번만 읽고 그대로 DB 에 박으면 **네이버가 보는 IP 와 기록이 어긋난다**.
+ * 그러면 다음 실행이 있지도 않은 IP 를 찾아가고, 매번 새 IP 로 로그인하게 된다
+ * (2026-09-18 vm3: 스크립트 211.35.130.122 / 브라우저는 다른 IP).
+ * check-naver-sessions-bulk 는 원래 2.5초씩 6번 다시 봤는데 캡처만 빠져 있었다.
+ */
+async function settledPublicIp({ tries = 8, gapMs = 2500, quiet = false } = {}) {
+  let last = null;
+  for (let i = 1; i <= tries; i += 1) {
+    const ip = await currentPublicIp();
+    if (ip === last) return ip;
+    if (last && !quiet) console.log(`  IP 가 아직 바뀌는 중입니다 (${last} → ${ip}). 다시 봅니다.`);
+    last = ip;
+    await new Promise((r) => { setTimeout(r, gapMs); });
+  }
+  console.log(`  ⚠ IP 가 ${tries}번 안에 안정되지 않았습니다. 마지막 값 ${last} 로 갑니다.`);
+  return last;
+}
+
+/**
+ * 브라우저 안에서 공인 IP 를 읽는다 — 네이버가 실제로 보는 IP.
+ * 새 탭에서 읽고 바로 닫는다. 로그인 페이지는 건드리지 않는다.
+ * 못 읽으면 null (네트워크 문제로 캡처 자체를 막지는 않는다).
+ */
+async function browserPublicIp(page) {
+  const tab = await page.context().newPage();
+  try {
+    await tab.goto(`https://api.ipify.org?format=json&_ts=${Date.now()}`,
+      { waitUntil: 'domcontentloaded', timeout: 20_000 });
+    const text = await tab.evaluate(() => document.body?.innerText || '');
+    const ip = (text.match(/\d{1,3}(?:\.\d{1,3}){3}/) || [])[0] || null;
+    return ip;
+  } catch {
+    return null;
+  } finally {
+    await tab.close().catch(() => {});
+  }
+}
+
 async function currentPublicIp() {
   const url = `https://api.ipify.org?format=json&_ts=${Date.now()}`;
   const response = await fetch(url, {
