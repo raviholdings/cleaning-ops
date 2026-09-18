@@ -18,7 +18,8 @@
  *   · HaiIP 전환 뒤 IP 가 **안정될 때까지** 읽는다 (연속 두 번 같은 값).
  *     한 번만 읽으면 바뀌는 중의 값을 DB 에 박는다.
  *   · 로그인 직전 **브라우저 안에서** IP 를 다시 읽어 Node 값과 대조한다.
- *     다르면 멈춘다 — 네이버가 보는 건 브라우저 IP 다. 끄려면 --skip-ip-check.
+ *     다르면 브라우저 값으로 갈아타 그걸 저장한다 — 네이버가 보는 건 그쪽이다.
+ *     (그 IP 를 다른 계정이 쓰고 있으면 그때는 멈춘다.) 끄려면 --skip-ip-check.
  *
  * 흐름 (사람이 하는 건 5번뿐)
  *   1. DB 에서 계정·비밀번호·배정 IP 조회
@@ -219,16 +220,7 @@ async function captureOne(account) {
   console.log(`  공인 IP: ${publicIp}`);
 
   // --- 3. 다른 계정이 쓰는 IP 인지 ---
-  const conflict = await client.query(
-    `select account_id from public.naver_searchadvisor_accounts
-      where account_id <> $1
-        and (host(searchadvisor_session_validated_public_ip) = $2
-             or host(searchadvisor_session_saved_public_ip) = $2)`,
-    [account.account_id, publicIp],
-  );
-  if (conflict.rowCount) {
-    throw new Error(`IP ${publicIp} 는 이미 ${conflict.rows.map((r) => r.account_id).join(', ')} 가 씁니다.`);
-  }
+  await assertIpFree(account.account_id, publicIp);
 
   if (dryRun) {
     console.log('  (dry-run: 브라우저를 띄우지 않고 여기서 멈춥니다)');
@@ -267,14 +259,17 @@ async function captureOne(account) {
     const page = context.pages()[0] || await context.newPage();
 
     /*
-     * 브라우저가 실제로 어느 IP 로 나가는지 확인한다.
+     * 브라우저가 실제로 어느 IP 로 나가는지 확인하고, 다르면 **그쪽을 정답으로 삼는다.**
      *
-     * 네이버가 보는 건 Node 가 읽은 IP 가 아니라 **이 브라우저**의 IP 다. 둘이
-     * 어긋나면 DB 에는 없는 IP 가 배정 IP 로 박히고, 다음 실행부터 매번 새 IP 로
-     * 로그인하게 된다 — 계정이 죽는 경로다.
-     * 2026-09-18 vm3 에서 실제로 갈렸다 (스크립트 211.35.130.122 / 브라우저는 딴 IP).
+     * 네이버가 보는 건 Node 가 읽은 IP 가 아니라 이 브라우저의 IP 다. 둘이 어긋난
+     * 채로 Node 값을 저장하면 DB 에 없는 IP 가 배정 IP 로 박히고, 다음 실행부터
+     * 매번 새 IP 로 로그인하게 된다 — 계정이 죽는 경로다.
+     * 2026-09-18 vm3 에서 실제로 갈렸다 (Node 118.36.239.24 / 브라우저 112.175.53.87).
      * HaiIP 목록 선택이 한 칸 밀리거나 전환이 늦게 적용되면 이렇게 된다.
-     * 여기서 멈추는 편이 잘못된 IP 로 로그인하는 것보다 싸다.
+     *
+     * 어느 IP 로 나가든 그 자체는 문제가 아니다. **기록이 실제와 다른 것**이 문제다.
+     * 그래서 멈추지 않고 브라우저 IP 로 갈아탄다. 다만 그 IP 를 다른 계정이 물고
+     * 있으면 그건 진짜 충돌이라 거기서 멈춘다.
      */
     const browserIp = skipIpCheck ? null : await browserPublicIp(page);
     if (skipIpCheck) {
@@ -282,13 +277,10 @@ async function captureOne(account) {
     } else if (!browserIp) {
       console.log('  ⚠ 브라우저 IP 를 못 읽었습니다. Node 가 읽은 값으로 진행합니다.');
     } else if (browserIp !== publicIp) {
-      throw new Error(
-        `브라우저와 스크립트가 서로 다른 IP 로 나갑니다.\n`
-        + `    스크립트(Node) ${publicIp}\n`
-        + `    브라우저       ${browserIp}   ← 네이버가 보는 IP\n`
-        + '  이 상태로 로그인하면 DB 에 틀린 IP 가 저장돼 다음 실행이 깨집니다.\n'
-        + '  HaiIP 전환이 제대로 걸렸는지 확인하고 다시 돌리세요.\n'
-        + '  (검사를 건너뛰려면 --skip-ip-check — 권하지 않습니다)');
+      console.log(`  브라우저는 다른 IP 로 나갑니다: Node ${publicIp} / 브라우저 ${browserIp}`);
+      console.log('    네이버가 보는 건 브라우저 쪽입니다. 그 IP 로 기록합니다.');
+      await assertIpFree(account.account_id, browserIp);
+      publicIp = browserIp;
     } else {
       console.log(`  브라우저 IP 확인: ${browserIp} (스크립트와 일치)`);
     }
@@ -909,6 +901,20 @@ async function settledPublicIp({ tries = 8, gapMs = 2500, quiet = false } = {}) 
   }
   console.log(`  ⚠ IP 가 ${tries}번 안에 안정되지 않았습니다. 마지막 값 ${last} 로 갑니다.`);
   return last;
+}
+
+/** 다른 계정이 이미 물고 있는 IP 면 멈춘다. 한 IP 를 두 계정이 쓰면 둘 다 위험하다. */
+async function assertIpFree(accountId, ip) {
+  const conflict = await client.query(
+    `select account_id from public.naver_searchadvisor_accounts
+      where account_id <> $1
+        and (host(searchadvisor_session_validated_public_ip) = $2
+             or host(searchadvisor_session_saved_public_ip) = $2)`,
+    [accountId, ip],
+  );
+  if (conflict.rowCount) {
+    throw new Error(`IP ${ip} 는 이미 ${conflict.rows.map((r) => r.account_id).join(', ')} 가 씁니다.`);
+  }
 }
 
 /**
