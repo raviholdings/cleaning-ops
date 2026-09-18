@@ -55,6 +55,7 @@ const args = process.argv.slice(2);
  */
 const KNOWN = new Set(['--vm', '--list', '--force', '--allow-new-ip', '--from', '--orders',
   '--verify', '--skip-capture', '--skip-register', '--limit', '--group-key', '--meta-wait',
+  '--keep-profile',
   // 캡처에 항상 넘기는 값이라 붙여도 무해하다. 받아만 준다.
   '--no-auto-click', '--keep-open', '--login-via-searchadvisor']);
 const ALIAS = { '--order': '--orders', '--accounts': '--orders' };
@@ -105,6 +106,13 @@ const orderRange = (() => {
 // 집 PC 가 메타태그를 배포할 때까지 기다릴 시간 (분). 0 이면 기다리지 않는다.
 const metaWaitMin = Number(val('--meta-wait', 15));
 const allowNewIp = flag('--allow-new-ip');
+/*
+ * 크롬 프로필은 남기지 않는다 (운영자 결정 2026-09-18).
+ * 캡처가 끝나면 세션 쿠키만 DB 에 남기고 프로필 폴더는 지운다. 등록·소유확인도
+ * --profile 없이 돌아서 매번 깨끗한 브라우저에 쿠키만 주입한다 = 시크릿과 같다.
+ * 프로필을 남기려면 --keep-profile.
+ */
+const keepProfile = flag('--keep-profile');
 const groupKey = String(val('--group-key', 'piping-xyz'));
 const limit = val('--limit', null);
 const from = Number(val('--from', 1));
@@ -201,6 +209,7 @@ if (skipCapture) {
       '--no-auto-click', '--keep-open', '--login-via-searchadvisor',
       ...(force ? ['--force'] : []),
       ...(allowNewIp ? ['--allow-new-ip'] : []),
+      ...(keepProfile ? [] : ['--drop-profile']),
     ], { stdio: 'inherit', cwd: projectRoot });
     if (res.status === 0) captured.push(r);
     else {

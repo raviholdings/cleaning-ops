@@ -120,14 +120,14 @@ node scripts/capture-naver-session.mjs --account <아이디> --no-auto-click --k
 #    (IP보안 끄기를 캡처 직후에 했더니 22개 중 19개가 보호조치를 맞았다 — 2026-09-16)
 
 # 2) 사이트 등록 (계정당 100개)
-node scripts/register-naver-searchadvisor-sites.mjs --account <아이디> --profile auto --group-key piping-xyz
+node scripts/register-naver-searchadvisor-sites.mjs --account <아이디> --group-key piping-xyz
 
 # 3) 메타태그 배포 — 집 PC 에서. 이걸 빼면 소유확인이 전건 실패한다.
 #    집 PC 의 NaverMetaExport 작업이 5분마다 자동으로 돈다. 당장 필요하면 직접:
 node scripts/export-piping-xyz-naver-meta.mjs
 
 # 4) 소유확인
-node scripts/verify-naver-searchadvisor-sites.mjs --account <아이디> --profile auto --group-key piping-xyz --delay-ms 4000
+node scripts/verify-naver-searchadvisor-sites.mjs --account <아이디> --group-key piping-xyz --delay-ms 4000
 
 # 5) 수집요청 (사이트당 하루 50건)
 node scripts/submit-naver-searchadvisor-crawl-requests.mjs
@@ -170,8 +170,11 @@ node scripts/check-naver-sessions-bulk.mjs --account <아이디>
 
 - **재로그인 금지.** 저장된 세션으로 안 열리면 그 계정은 죽은 것이다. 다시 로그인하면 더 잠긴다.
 - **캡처 직후 계정 설정을 건드리지 말 것.** 위 사고 기록 참조.
-- **크롬 프로필을 지우지 말 것.** `tmp/naver-login/<계정>-profile` 이 "같은 기기"를 만든다.
-  이게 있으면 다음 실행이 로그인 화면을 아예 안 거친다.
+- **크롬 프로필은 남기지 않는다** (운영자 결정 2026-09-18). 캡처가 끝나면 세션 쿠키만
+  DB 에 남기고 프로필 폴더는 지운다(`--drop-profile`). 등록·소유확인도 `--profile` 없이
+  돌려서 매번 깨끗한 브라우저에 쿠키만 주입한다 — 시크릿으로 들어가는 것과 같다.
+  배치 스크립트(`capture-batch` · `recapture-and-register`)가 이걸 기본으로 한다.
+  프로필을 남기고 싶으면 `--keep-profile`.
 - **수집요청 전에 IP 를 맞출 것.** 수집요청 스크립트는 Hai-IP 를 스스로 바꾸지 않는다.
   `check-naver-sessions-bulk` 가 IP 전환 + 생존확인을 같이 해주므로 앞에 붙이면 된다.
 - 호스트명에 **`fast`** 가 들어가면 Hai-IP 가 막는다(SNI 차단으로 추정). 신규 생성기는 이미 제외한다.

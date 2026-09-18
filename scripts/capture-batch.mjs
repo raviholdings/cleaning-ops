@@ -49,7 +49,8 @@ const args = process.argv.slice(2);
  * 안 걸린 채 멀쩡한 계정부터 재캡처가 시작됐다. 오타 하나가 계정을 날릴 수
  * 있는 스크립트라 알려진 이름만 받는다.
  */
-const KNOWN = new Set(['--vm', '--list', '--force', '--allow-new-ip', '--from', '--orders']);
+const KNOWN = new Set(['--vm', '--list', '--force', '--allow-new-ip', '--from', '--orders',
+  '--keep-profile']);
 // --accounts 51-80 은 다른 스크립트에서 순번 범위를 뜻한다. 같은 뜻으로 받는다.
 const ALIAS = { '--order': '--orders', '--accounts': '--orders' };
 for (let i = 0; i < args.length; i += 1) {
@@ -73,6 +74,13 @@ const vm = String(val('--vm', process.env.NAVER_CRAWL_RUNNER_PC || '')).trim();
 const listOnly = args.includes('--list');
 const force = args.includes('--force');
 const allowNewIp = args.includes('--allow-new-ip');
+/*
+ * 크롬 프로필은 남기지 않는다 (운영자 결정 2026-09-18).
+ * 캡처가 끝나면 세션 쿠키만 DB 에 남기고 프로필 폴더는 지운다. 등록·소유확인도
+ * --profile 없이 돌아서 매번 깨끗한 브라우저에 쿠키만 주입한다 = 시크릿과 같다.
+ * 프로필을 남기려면 --keep-profile.
+ */
+const keepProfile = args.includes('--keep-profile');
 const from = Number(val('--from', 1));
 /*
  * --orders 101-194 : 계정 순번으로 범위를 자른다.
@@ -138,6 +146,7 @@ for (const [i, r] of todo.entries()) {
     // 안 잡히는 상태가 된다 (2026-09-17 에 이걸로 헛돌았다).
     ...(force ? ['--force'] : []),
     ...(allowNewIp ? ['--allow-new-ip'] : []),
+    ...(keepProfile ? [] : ['--drop-profile']),
   ], { stdio: 'inherit', cwd: projectRoot });
   if (res.status === 0) { ok += 1; } else {
     fail += 1;
