@@ -472,6 +472,10 @@ async function captureOne(account) {
     '--status', 'valid',
   ], { stdio: 'inherit' });
 
+  // 계정 칸의 IP 는 다음 캡처 때 덮어써진다. 이력은 남겨서 이 IP 가 다른 계정에
+  // 넘어가지 않게 한다 (assertIpFree 가 이 표도 같이 본다).
+  await recordIpHistory(account.account_id, publicIp, '캡처');
+
   rmSync(statePath, { force: true });
   /*
    * 크롬 프로필은 기본으로 남긴다 (2026-09-15).
@@ -903,7 +907,14 @@ async function settledPublicIp({ tries = 8, gapMs = 2500, quiet = false } = {}) 
   return last;
 }
 
-/** 다른 계정이 이미 물고 있는 IP 면 멈춘다. 한 IP 를 두 계정이 쓰면 둘 다 위험하다. */
+/**
+ * 다른 계정이 쓰는 IP 면 멈춘다. **지금 쓰는 것뿐 아니라 예전에 쓴 것도** 본다.
+ *
+ * 계정 IP 는 덮어써지므로 계정 칸만 보면 옛 IP 가 기록에서 사라진다. 그러면
+ * 다른 계정이 그 IP 를 집어갈 수 있는데, 네이버 입장에선 한 IP 에 여러 계정이
+ * 붙는 모양이 된다 — 특히 그 IP 를 쓰던 계정이 죽은 계정이면 더 나쁘다.
+ * naver_account_ip_history 에 쓴 적 있는 IP 를 전부 남겨두고 여기서 같이 본다.
+ */
 async function assertIpFree(accountId, ip) {
   const conflict = await client.query(
     `select account_id from public.naver_searchadvisor_accounts
@@ -915,6 +926,26 @@ async function assertIpFree(accountId, ip) {
   if (conflict.rowCount) {
     throw new Error(`IP ${ip} 는 이미 ${conflict.rows.map((r) => r.account_id).join(', ')} 가 씁니다.`);
   }
+  const past = await client.query(
+    `select account_id, to_char(last_seen, 'YYYY-MM-DD') as seen
+       from public.naver_account_ip_history
+      where account_id <> $1 and host(ip) = $2`,
+    [accountId, ip],
+  );
+  if (past.rowCount) {
+    throw new Error(`IP ${ip} 는 예전에 ${past.rows.map((r) => `${r.account_id}(${r.seen})`).join(', ')} 가 쓴 IP 입니다. `
+      + '쓴 적 있는 IP 는 다른 계정에 다시 주지 않습니다.');
+  }
+}
+
+/** 이 계정이 이 IP 를 썼다는 사실을 남긴다. 덮어써도 기록은 사라지지 않는다. */
+async function recordIpHistory(accountId, ip, note) {
+  await client.query(
+    `insert into public.naver_account_ip_history (account_id, ip, note)
+     values ($1, $2, $3)
+     on conflict (account_id, ip) do update set last_seen = now()`,
+    [accountId, ip, note || null],
+  ).catch((e) => console.log(`  (IP 이력 기록 실패: ${e.message.split('\n')[0]})`));
 }
 
 /**
