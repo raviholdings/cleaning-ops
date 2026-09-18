@@ -8,7 +8,9 @@
  *   node scripts/capture-batch.mjs --from 3        # 3번째부터 (중단된 뒤 이어서)
  *   node scripts/capture-batch.mjs --force --allow-new-ip   # 전부 다시 잡기
  *   node scripts/capture-batch.mjs --force --allow-new-ip --orders 101-194
- *                                                  # 순번 101~194 만 (95~100 은 살아있어 제외)
+ *                                                  # 순번 101~194 만
+ *   node scripts/capture-batch.mjs --force --allow-new-ip --stale-before 2026-09-17T10:30
+ *                                                  # 아직 재캡처 안 된 것만 (세션이 그 시각 이전)
  *
  * --allow-new-ip : 배정 IP 가 HaiIP 풀에서 사라졌을 때 지금 IP 로 진행한다.
  *   세션이 오래됐으면 배정 IP 도 대개 없어져 있어서, 재캡처 때는 사실상 필요하다.
@@ -50,7 +52,7 @@ const args = process.argv.slice(2);
  * 있는 스크립트라 알려진 이름만 받는다.
  */
 const KNOWN = new Set(['--vm', '--list', '--force', '--allow-new-ip', '--from', '--orders',
-  '--keep-profile']);
+  '--keep-profile', '--stale-before']);
 // --accounts 51-80 은 다른 스크립트에서 순번 범위를 뜻한다. 같은 뜻으로 받는다.
 const ALIAS = { '--order': '--orders', '--accounts': '--orders' };
 for (let i = 0; i < args.length; i += 1) {
@@ -96,6 +98,24 @@ const orderRange = (() => {
   if (!m) throw new Error('--orders 는 <시작>-<끝> 형식입니다. 예: --orders 101-194');
   return [Number(m[1]), Number(m[2])];
 })();
+/*
+ * --stale-before 2026-09-17T10:30 : 세션이 이 시각보다 오래된 계정만.
+ *
+ * 재캡처를 며칠에 걸쳐 나눠 하면 이미 다시 잡은 계정이 순번 사이사이에 박힌다.
+ * 그때 --orders 로 범위만 주면 멀쩡한 계정까지 또 잡는다. "아직 재캡처 안 된 것"
+ * 을 순번이 아니라 세션 시각으로 고른다. 시각은 DB 기준 UTC 다.
+ */
+const staleBefore = (() => {
+  const raw = String(val('--stale-before', '') || '').trim();
+  if (!raw) return null;
+  // 시간대를 안 붙이면 UTC 로 본다 — DB 시각이 UTC 라 눈에 보이는 값과 맞춘다.
+  // (그냥 new Date 에 넘기면 로컬(KST)로 읽어 9시간 어긋난다)
+  let text = raw.replace(' ', 'T');
+  if (!/[Zz]$|[+-]\d{2}:?\d{2}$/.test(text)) text += 'Z';
+  const d = new Date(text);
+  if (Number.isNaN(d.getTime())) throw new Error(`--stale-before 날짜를 못 읽었습니다: ${raw}`);
+  return d;
+})();
 
 if (!vm) throw new Error('담당 이름이 없습니다. .env 의 NAVER_CRAWL_RUNNER_PC 를 넣거나 --vm vm1 로 주세요.');
 const url = process.env.DATABASE_URL || process.env.DIRECT_URL;
@@ -106,6 +126,7 @@ await c.connect();
 const rows = (await c.query(
   `select account_order, account_id,
           (searchadvisor_session_secret_id is not null) as has_session,
+          searchadvisor_session_saved_at,
           personal_info_source
      from naver_searchadvisor_accounts
     where runner_pc = $1 and status = 'active'
@@ -116,14 +137,19 @@ if (!rows.length) throw new Error(`${vm} 에 배정된 활성 계정이 없습�
 
 const inRange = (r) => !orderRange
   || (Number(r.account_order) >= orderRange[0] && Number(r.account_order) <= orderRange[1]);
+const isStale = (r) => !staleBefore
+  || !r.searchadvisor_session_saved_at
+  || new Date(r.searchadvisor_session_saved_at) < staleBefore;
 
-const todo = (force ? rows : rows.filter((r) => !r.has_session)).filter(inRange);
+const todo = (force ? rows : rows.filter((r) => !r.has_session)).filter(inRange).filter(isStale);
 console.log(`담당: ${vm}   배정 ${rows.length}개   캡처 필요 ${todo.length}개`
-  + (orderRange ? `   순번 ${orderRange[0]}~${orderRange[1]} 만` : ''));
+  + (orderRange ? `   순번 ${orderRange[0]}~${orderRange[1]} 만` : '')
+  + (staleBefore ? `   세션이 ${staleBefore.toISOString().slice(0, 16).replace('T', ' ')} 이전인 것만` : ''));
 if (listOnly || !todo.length) {
   rows.forEach((r, i) => console.log(
     `  ${String(i + 1).padStart(3)}. #${String(r.account_order).padEnd(5)}${r.account_id.padEnd(18)}`
     + `${r.has_session ? '세션있음' : '캡처필요'}  ${String(r.personal_info_source || '').startsWith('domestic') ? '국내' : '해외'}`
+    + `  ${r.searchadvisor_session_saved_at ? new Date(r.searchadvisor_session_saved_at).toISOString().slice(5, 16).replace('T', ' ') : '   -   '}`
     + `${todo.includes(r) ? '' : '  ← 건너뜀'}`));
   process.exit(0);
 }
