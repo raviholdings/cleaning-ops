@@ -829,10 +829,49 @@ async function ipOwners(accountId, ip) {
   return rows.map((r) => r.account_id);
 }
 
+/**
+ * HaiIP 로 IP 를 바꾸고 **그 결과를 읽어서 돌려준다.**
+ *
+ * 예전에는 출력을 버리고 성공했다고 가정한 뒤, 따로 ipify 를 찔러 확인했다.
+ * 그런데 PS 스크립트는 이미 전환을 기다렸다가 바뀐 IP 까지 알려준다
+ * ({ changed, beforePublicIp, afterPublicIp, statusText, attempts }).
+ * 그걸 버리고 다시 재니 "안 바뀐다" 며 헛돌았다 (2026-09-18 uv7q_99a_o-zxi).
+ *
+ * 실패해도 던지지 않는다 — 부르는 쪽이 changed 를 보고 판단한다.
+ */
 function haiIpChange(extraArgs = []) {
   const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', haiIpScript,
     '-Command', 'change', '-RequireChanged', ...extraArgs];
-  execFileSync('powershell.exe', args, { stdio: 'pipe', timeout: 180_000 });
+  let stdout = '';
+  try {
+    stdout = String(execFileSync('powershell.exe', args, { stdio: 'pipe', timeout: 180_000 }) || '');
+  } catch (error) {
+    stdout = String(error.stdout || '');
+    if (!stdout.trim()) {
+      console.log(`  (HaiIP 전환 실행 실패: ${String(error.message).split('\n')[0]})`);
+      return { ok: false, changed: false, afterPublicIp: null };
+    }
+  }
+  try {
+    const json = JSON.parse(stdout.slice(stdout.indexOf('{')));
+    const after = /^\d{1,3}(\.\d{1,3}){3}$/.test(json.afterPublicIp || '') ? json.afterPublicIp : null;
+    if (!json.changed) {
+      console.log(`  HaiIP 가 IP 를 못 바꿨습니다 (${json.statusText || '상태 불명'}, 시도 ${json.attempts ?? '?'}회).`);
+    }
+    return { ok: Boolean(json.ok), changed: Boolean(json.changed), afterPublicIp: after };
+  } catch {
+    console.log('  (HaiIP 응답을 못 읽었습니다. 직접 IP 를 확인합니다.)');
+    return { ok: false, changed: false, afterPublicIp: null };
+  }
+}
+
+/**
+ * 전환 뒤의 IP. HaiIP 가 알려준 값을 그대로 믿되, 못 받았을 때만 직접 잰다.
+ * HaiIP 는 전환이 끝날 때까지 기다린 뒤 값을 주므로 이쪽이 더 정확하고 빠르다.
+ */
+async function ipAfterChange(result, previousIp) {
+  if (result.afterPublicIp) return result.afterPublicIp;
+  return settledPublicIp({ changedFrom: previousIp });
 }
 
 /**
@@ -848,8 +887,8 @@ async function takeFreeIp(account, startIp) {
       return ip;
     }
     console.log(`  [${attempt}/${newIpAttempts}] ${ip} — ${owners.join(', ')} 가 쓰는 중, 바꿉니다.`);
-    haiIpChange();
-    ip = await settledPublicIp({ changedFrom: ip });
+    const changed = haiIpChange();
+    ip = await ipAfterChange(changed, ip);
   }
   throw new Error(`빈 IP 를 ${newIpAttempts}번 안에 못 찾았습니다 (마지막 ${ip}).`);
 }
@@ -858,8 +897,7 @@ async function ensureIpForAccount(account, currentIp) {
   const preferred = account.validated_ip;
   if (!preferred) {
     console.log('  배정 IP 가 없어 무작위로 바꾸고 그 IP 를 배정합니다.');
-    haiIpChange();
-    return settledPublicIp({ changedFrom: currentIp });
+    return ipAfterChange(haiIpChange(), currentIp);
   }
   if (preferred === currentIp) {
     console.log(`  배정 IP ${preferred} 에 이미 있습니다.`);
@@ -867,8 +905,8 @@ async function ensureIpForAccount(account, currentIp) {
   }
 
   console.log(`  배정 IP ${preferred} 로 전환합니다.`);
-  haiIpChange(['-PreferredIp', preferred, '-CheckPreferredResult']);
-  const next = await settledPublicIp({ changedFrom: currentIp });
+  const next = await ipAfterChange(
+    haiIpChange(['-PreferredIp', preferred, '-CheckPreferredResult']), currentIp);
   if (next === preferred) return next;
 
   if (!allowNewIp) {
