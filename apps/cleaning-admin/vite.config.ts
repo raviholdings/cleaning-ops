@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { handleAuth, requireApproved, requireRole } from './server/auth';
 import { handleDevTasks } from './server/devTasks';
-import { handleLeads } from './server/leads';
+import { handleLeads, handleLeadCalls } from './server/leads';
 
 // Load root .env
 try {
@@ -98,6 +98,7 @@ function dbApiPlugin() {
         }
       };
       server.middlewares.use('/api/leads', leadGate);
+      server.middlewares.use('/api/lead-calls', leadGate);
 
       /*
        * 색인 현황.
@@ -324,6 +325,17 @@ function dbApiPlugin() {
       /*
        * 배관 접수(리드). lead-dashboard.uloung.com 화면 전용.
        */
+      /* 전화 클릭 집계 — 같은 화면의 위쪽 패널. 접수 목록과 섞지 않는다 (2026-09-19). */
+      server.middlewares.use('/api/lead-calls', async (req: any, res: any) => {
+        try {
+          await withDb((query) => handleLeadCalls(query, req, res));
+        } catch (error: any) {
+          console.error('[lead-calls]', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: String(error?.message || error) }));
+        }
+      });
+
       server.middlewares.use('/api/leads', async (req: any, res: any) => {
         try {
           await withDb((query) => handleLeads(query, req, res));

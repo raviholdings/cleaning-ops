@@ -43,6 +43,14 @@ const dryRun = args.includes('--dry-run');
 const useSsh = args.includes('--ssh');
 const since = valueOf('--since') || '';
 const groupKey = valueOf('--group') || 'cleaning-ravi';
+/*
+ * 브랜드 도메인(dreamcome.kr 등)은 group_key 를 brand-ravi 로 넣는다 (2026-09-19).
+ * 전에는 전부 --group 기본값(cleaning-ravi)이라 lead-dashboard(brand-ravi 필터)에서
+ * 브랜드 전화 클릭 13건이 보이지 않았다. 목록은 data/brands/*.json 의 host 다 —
+ * 오리진에 올린 사본에는 그 파일이 없어 여기 박아 둔다.
+ */
+const BRAND_HOSTS = new Set(['dreamcome.kr', 'thunderdrain.kr', 'beaverpipe.kr', 'ssac3.kr', 'dosadosa.kr']);
+const groupOf = (host) => (BRAND_HOSTS.has(String(host || '').replace(/^www\./, '')) ? 'brand-ravi' : groupKey);
 const instance = process.env.ORIGIN_SSM_INSTANCE_ID || 'i-039361b55ae33808b';
 const region = process.env.AWS_DEFAULT_REGION || 'ap-northeast-2';
 const profile = process.env.AWS_PROFILE || 'cleaning-ops';
@@ -93,7 +101,7 @@ try {
       // 이사 페이지 이벤트는 경로로 구분해 moving-ravi 로 태그한다.
       // UA 를 notes 에 남긴다 — "누가(기기·브라우저)" 를 나중에 볼 수 있게 (2026-08-22).
       // client_ip 는 2026-09-11 부터. 옛 줄은 로그에 IP 칸이 없어 null 이다.
-      [row.path.startsWith('/이사/') ? 'moving-ravi' : groupKey,
+      [row.path.startsWith('/이사/') ? 'moving-ravi' : groupOf(row.host),
         row.host, row.path, `beacon:${row.event}`,
         row.ua ? `제휴사 iframe 폼 이벤트 · ${row.ua.slice(0, 200)}` : '제휴사 iframe 폼 이벤트 (입력값은 수집 불가)',
         row.at, row.ip],

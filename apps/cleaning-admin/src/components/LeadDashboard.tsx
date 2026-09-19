@@ -119,6 +119,24 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
 
   useEffect(() => { load(); }, [load]);
 
+  /*
+   * 전화 클릭 (2026-09-19). 브랜드 사이트의 tel: 링크를 누른 기록 — 통화가 아니라
+   * '눌렀다' 라 통화 수의 상한이다. 어느 사이트·어느 페이지가 전화를 부르는지 본다.
+   * 실제 통화 수는 070 수신 기록(사이트마다 번호가 다르다)으로 본다.
+   */
+  type CallHost = { host: string; today: number; d7: number; d30: number; total: number };
+  type CallRow = { id: string; created_at: string; host: string; site_url: string | null; client_ip: string | null };
+  const [calls, setCalls] = useState<{ byHost: CallHost[]; recent: CallRow[] } | null>(null);
+  const [showCalls, setShowCalls] = useState(false);
+  const loadCalls = useCallback(async () => {
+    try {
+      const res = await fetch('/api/lead-calls');
+      if (!res.ok) return;
+      setCalls(await res.json());
+    } catch { /* 패널 하나 못 그려도 접수 목록은 살려 둔다 */ }
+  }, []);
+  useEffect(() => { loadCalls(); }, [loadCalls]);
+
   if (!allowed) {
     return (
       <div style={{ padding: '64px 24px', textAlign: 'center', color: '#9ca3af' }}>
@@ -180,6 +198,51 @@ export default function LeadDashboard({ user }: LeadDashboardProps) {
           <button type="submit" style={chip(false)}><Search size={14} /></button>
         </form>
       </div>
+
+      {calls && (
+        <div style={{ marginBottom: '14px', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <strong style={{ fontSize: '0.95rem' }}>전화 버튼 클릭</strong>
+            <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>
+              브랜드 사이트에서 전화 링크를 누른 수 — 통화가 아니라 클릭이라 통화 수의 상한입니다. 실제 통화는 070 수신 기록으로 보세요.
+            </span>
+            <button onClick={() => setShowCalls((v) => !v)} style={{ ...chip(false), marginLeft: 'auto' }}>
+              {showCalls ? '최근 클릭 접기' : '최근 클릭 펼치기'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+            {calls.byHost.length === 0 && <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>아직 클릭 기록이 없습니다.</span>}
+            {calls.byHost.map((h) => (
+              <div key={h.host} style={{
+                minWidth: '150px', padding: '8px 12px', borderRadius: '10px',
+                background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)',
+              }}>
+                <div style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600 }}>{h.host}</div>
+                <div style={{ fontSize: '0.8rem', color: '#d1d5db', marginTop: '4px' }}>
+                  오늘 <strong>{h.today}</strong> · 7일 <strong>{h.d7}</strong> · 30일 <strong>{h.d30}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+          {showCalls && (
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '0.8rem' }}>
+              <tbody>
+                {calls.recent.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ ...cell, whiteSpace: 'nowrap' }}>{fmt(c.created_at)}</td>
+                    <td style={{ ...cell, whiteSpace: 'nowrap', color: '#34d399' }}>{c.host}</td>
+                    <td style={cell}>
+                      <a href={`https://${c.host}${c.site_url || '/'}`} target="_blank" rel="noreferrer"
+                         style={{ color: '#9ca3af', textDecoration: 'none' }}>{c.site_url || '/'}</a>
+                    </td>
+                    <td style={{ ...cell, whiteSpace: 'nowrap', color: '#9ca3af' }}>{c.client_ip || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {error && (
         <div style={{

@@ -36,7 +36,11 @@ export async function handleLeads(query: DbQuery, req: IncomingMessage, res: Ser
     const status = url.searchParams.get('status') || 'all';
     const q = (url.searchParams.get('q') || '').trim();
 
-    const where: string[] = ['group_key = any($1::text[])'];
+    /*
+     * 비콘 행(beacon:view · beacon:call)은 접수가 아니다 — 전화 클릭은 아래
+     * handleLeadCalls 가 따로 집계한다. 여기 섞이면 이름·번호 없는 줄이 쌓인다.
+     */
+    const where: string[] = ['group_key = any($1::text[])', "(service_type is null or service_type not like 'beacon:%')"];
     const params: unknown[] = [GROUP_KEYS];
     if (status === 'unhandled') where.push('handled_at is null');
     if (status === 'handled') where.push('handled_at is not null');
@@ -114,4 +118,35 @@ export async function handleLeads(query: DbQuery, req: IncomingMessage, res: Ser
   }
 
   send(res, 405, { error: 'method not allowed' });
+}
+
+/*
+ * 전화 클릭 집계 (2026-09-19). 브랜드 사이트의 tel: 링크를 누르면 /_e?t=call 비콘이
+ * 오리진 로그에 남고, 오리진 타이머가 5분마다 lead_submissions 에 넣는다
+ * (service_type = 'beacon:call', group_key = 'brand-ravi', host = 사이트, site_url = 페이지).
+ * 통화가 아니라 '눌렀다' 다 — 통화 수의 상한으로 읽는다. 실제 통화는 070 수신 기록.
+ *
+ * GET /api/lead-calls → { byHost: [{host, today, d7, d30}], recent: [...] }
+ * 날짜 경계는 KST 다 — 운영자가 보는 하루와 맞춘다.
+ */
+export async function handleLeadCalls(query: DbQuery, req: IncomingMessage, res: ServerResponse) {
+  if (req.method !== 'GET') { send(res, 405, { error: 'method not allowed' }); return; }
+  const byHostP = query(
+    `select host,
+            count(*) filter (where created_at >= date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul')::int as today,
+            count(*) filter (where created_at >= now() - interval '7 days')::int  as d7,
+            count(*) filter (where created_at >= now() - interval '30 days')::int as d30,
+            count(*)::int as total
+       from public.lead_submissions
+      where group_key = 'brand-ravi' and service_type = 'beacon:call'
+      group by host order by d30 desc, host`,
+  );
+  const recentP = query(
+    `select id, created_at, host, site_url, host(client_ip) as client_ip, user_agent
+       from public.lead_submissions
+      where group_key = 'brand-ravi' and service_type = 'beacon:call'
+      order by created_at desc limit 40`,
+  );
+  const [byHost, recent] = await Promise.all([byHostP, recentP]);
+  send(res, 200, { byHost: byHost.rows, recent: recent.rows });
 }
